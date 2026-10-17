@@ -18,6 +18,7 @@ import com.nascon.league.domain.model.Fixture
 import com.nascon.league.domain.model.Permissions
 import com.nascon.league.ui.fixtures.StatusKind
 import com.nascon.league.ui.fixtures.statusKind
+import com.nascon.league.ui.scoring.dedupePendingByEventId
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -138,7 +139,13 @@ class MatchDetailViewModel(
                 else -> null
             }
         }
-        val pendingEvents = pendingEventsFor(matchId, session?.user?.userId, b.pending, teamName)
+        // A queued event whose event_id already arrived from the server (realtime) is shown once.
+        val pendingEvents = pendingEventsFor(
+            matchId,
+            session?.user?.userId,
+            dedupePendingByEventId(b.pending, m?.events.orEmpty().map { it.eventId }.toSet()),
+            teamName,
+        )
         MatchUiState(
             cacheChecked = true,
             match = m,

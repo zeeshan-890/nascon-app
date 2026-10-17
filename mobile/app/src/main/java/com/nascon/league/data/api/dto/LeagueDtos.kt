@@ -96,6 +96,8 @@ data class SportConfigDto(
     @SerialName("sport_id") val sportId: String? = null,
     @SerialName("scoring_model") val scoringModel: String? = null,
     @SerialName("scoring_events") val scoringEvents: JsonObject? = null,
+    @SerialName("draw_allowed") val drawAllowed: Boolean? = null,
+    @SerialName("discipline") val discipline: kotlinx.serialization.json.JsonElement? = null,
 )
 
 @Serializable

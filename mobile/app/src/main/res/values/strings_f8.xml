@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="f8_panel_title">Score this match</string>
+    <string name="f8_team_section_cd">Scoring controls for %1$s</string>
+    <string name="f8_score_button">%1$s</string>
+    <string name="f8_score_button_points">%1$s (+%2$d)</string>
+    <string name="f8_score_button_cd">Add %1$s for %2$s</string>
+    <string name="f8_discipline_button">Discipline %1$d</string>
+    <string name="f8_discipline_button_cd">Add %1$d discipline points for %2$s</string>
+    <string name="f8_tiebreak_button">Tie-break winner</string>
+    <string name="f8_tiebreak_button_cd">Mark %1$s as tie-break winner</string>
+    <string name="f8_start_match">Start match</string>
+    <string name="f8_end_match">End match</string>
+    <string name="f8_no_buttons">No scoring actions are set up for this sport.</string>
+    <string name="f8_read_only_notice">Scoring isn\'t available for this match.</string>
+    <string name="f8_pending_scores">Pending: %1$d unsynced</string>
+
+    <string name="f8_msg_score_added">Score added</string>
+    <string name="f8_msg_score_offline">Score saved on this device</string>
+    <string name="f8_msg_change_saved">Change saved</string>
+    <string name="f8_msg_change_offline">Change saved on this device</string>
+    <string name="f8_msg_failed">Couldn\'t save that. Please try again.</string>
+
+    <string name="f8_end_title">End match</string>
+    <string name="f8_end_message">End this match? Final score will be locked.</string>
+    <string name="f8_end_confirm">End match</string>
+    <string name="f8_cancel">Cancel</string>
+
+    <string name="f8_undo">Undo</string>
+    <string name="f8_undo_cd">Undo %1$s</string>
+    <string name="f8_undo_title">Undo event</string>
+    <string name="f8_undo_message">Undo this event? A correction will be recorded; the original stays in the history.</string>
+    <string name="f8_undo_confirm">Undo event</string>
+    <string name="f8_reason_label">Reason (required)</string>
+    <string name="f8_reason_counter">%1$d / 200</string>
+    <string name="f8_reason_empty">Please enter a reason.</string>
+    <string name="f8_reason_too_long">Reason must be 200 characters or fewer.</string>
+
+    <string name="f8_screen_loading_cd">Loading match</string>
+</resources>

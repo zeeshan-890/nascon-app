@@ -23,6 +23,8 @@ import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.EventBusy
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.automirrored.filled.Undo
+import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -70,6 +72,12 @@ import com.nascon.league.ui.fixtures.FixtureStatusChip
 import com.nascon.league.ui.fixtures.labelRes
 import com.nascon.league.ui.fixtures.statusKind
 import com.nascon.league.ui.navigation.LocalSnackbarHostState
+import com.nascon.league.ui.scoring.ScoringHost
+import com.nascon.league.ui.scoring.ScoringPanel
+import com.nascon.league.ui.scoring.ScoringSurface
+import com.nascon.league.ui.scoring.ScoringUiState
+import com.nascon.league.ui.scoring.ScoringViewModel
+import com.nascon.league.ui.scoring.surfaceFor
 import com.nascon.league.ui.theme.ScoreTextStyle
 import com.nascon.league.ui.theme.Spacing
 
@@ -83,6 +91,11 @@ fun MatchDetailScreen(
     val container = LocalAppContainer.current
     val vm: MatchDetailViewModel = viewModel(factory = MatchDetailViewModel.factory(container))
     val s by vm.state.collectAsStateWithLifecycle()
+    val scoring: ScoringViewModel = viewModel(
+        key = "scoring:" + vm.matchId,
+        factory = ScoringViewModel.factory(container, vm.matchId),
+    )
+    val sc by scoring.state.collectAsStateWithLifecycle()
     val snackbar = LocalSnackbarHostState.current
 
     // Realtime + polling only while the screen is visible.
@@ -100,8 +113,11 @@ fun MatchDetailScreen(
         onRetry = vm::retry,
         onOpenProduct = onOpenProduct,
         onScore = { onScore(vm.matchId) },
+        scoring = scoring,
+        sc = sc,
         modifier = modifier,
     )
+    ScoringHost(scoring)
 }
 
 @Composable
@@ -111,6 +127,8 @@ private fun MatchDetailContent(
     onRetry: () -> Unit,
     onOpenProduct: (String) -> Unit,
     onScore: () -> Unit,
+    scoring: ScoringViewModel,
+    sc: ScoringUiState,
     modifier: Modifier = Modifier,
 ) {
     val m = s.match
@@ -159,10 +177,10 @@ private fun MatchDetailContent(
                 onRefresh = onRetry,
                 modifier = Modifier.fillMaxSize(),
             ) {
-                MatchBody(s, m, onOpenProduct)
+                MatchBody(s, m, onOpenProduct, scoring, sc)
             }
         }
-        if (s.canScore) {
+        if (s.canScore && surfaceFor(sc.showPanel, sc.mode, embedded = true) == ScoringSurface.NONE) {
             PrimaryButton(
                 text = stringResource(R.string.f3_score_button),
                 onClick = onScore,
@@ -176,16 +194,31 @@ private fun MatchDetailContent(
 }
 
 @Composable
-private fun MatchBody(s: MatchUiState, m: MatchDetailDto, onOpenProduct: (String) -> Unit) {
+private fun MatchBody(
+    s: MatchUiState,
+    m: MatchDetailDto,
+    onOpenProduct: (String) -> Unit,
+    scoring: ScoringViewModel,
+    sc: ScoringUiState,
+) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = Spacing.md),
         verticalArrangement = Arrangement.spacedBy(Spacing.sm),
     ) {
         item(key = "scoreboard") {
-            Scoreboard(s, m, Modifier.padding(horizontal = Spacing.md, vertical = Spacing.sm))
+            // Optimistic score: server score plus queued score events, marked "Pending".
+            val shown = if (sc.hasPending) {
+                m.copy(home = m.home.copy(score = sc.homeScore), away = m.away.copy(score = sc.awayScore))
+            } else {
+                m
+            }
+            Scoreboard(s, shown, Modifier.padding(horizontal = Spacing.md, vertical = Spacing.sm), pendingScore = sc.hasPending)
         }
         item(key = "strip") { StatusStrip(s) }
+        if (surfaceFor(sc.showPanel, sc.mode, embedded = true) != ScoringSurface.NONE) {
+            item(key = "scoring-panel") { ScoringPanel(scoring) }
+        }
         if (m.pinnedProducts.isNotEmpty()) {
             item(key = "products") { ProductsRow(m.pinnedProducts, onOpenProduct) }
         }
@@ -209,14 +242,29 @@ private fun MatchBody(s: MatchUiState, m: MatchDetailDto, onOpenProduct: (String
             }
         } else {
             items(s.timeline, key = { it.key }) { item ->
-                TimelineRow(item, Modifier.padding(horizontal = Spacing.md))
+                val eventId = if (item.key.startsWith("e-")) item.key.removePrefix("e-") else null
+                TimelineRow(
+                    item,
+                    Modifier.padding(horizontal = Spacing.md),
+                    onUndo = if (eventId != null && eventId in sc.undoableEventIds) {
+                        { scoring.requestUndo(eventId) }
+                    } else {
+                        null
+                    },
+                )
             }
         }
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun Scoreboard(s: MatchUiState, m: MatchDetailDto, modifier: Modifier = Modifier) {
+internal fun Scoreboard(
+    s: MatchUiState,
+    m: MatchDetailDto,
+    modifier: Modifier = Modifier,
+    pendingScore: Boolean = false,
+) {
     val kind = statusKind(m.status)
     val homeName = s.homeName ?: stringResource(R.string.f3_home_team)
     val awayName = s.awayName ?: stringResource(R.string.f3_away_team)
@@ -245,7 +293,10 @@ private fun Scoreboard(s: MatchUiState, m: MatchDetailDto, modifier: Modifier = 
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         ) {
-            FixtureStatusChip(kind)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                FixtureStatusChip(kind)
+                if (pendingScore) StatusChip(stringResource(R.string.f3_chip_pending), Icons.Default.Schedule)
+            }
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
                 TeamColumn(homeName, home, Modifier.weight(1f))
                 TeamColumn(awayName, away, Modifier.weight(1f))
@@ -410,7 +461,7 @@ private fun ProductCard(p: PinnedProductDto, onOpenProduct: (String) -> Unit) {
 }
 
 @Composable
-private fun EventLabel.asString(): String = when (this) {
+internal fun EventLabel.asString(): String = when (this) {
     EventLabel.MatchInit -> stringResource(R.string.f3_ev_match_init)
     EventLabel.MatchStart -> stringResource(R.string.f3_ev_match_start)
     EventLabel.MatchEnd -> stringResource(R.string.f3_ev_match_end)
@@ -431,7 +482,7 @@ private fun EventLabel.asString(): String = when (this) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun TimelineRow(item: TimelineItem, modifier: Modifier = Modifier) {
+internal fun TimelineRow(item: TimelineItem, modifier: Modifier = Modifier, onUndo: (() -> Unit)? = null) {
     val label = item.label.asString()
     val seq = item.sequence?.let { stringResource(R.string.f3_event_seq, it) }
     val pendingText = stringResource(R.string.f3_chip_pending)
@@ -466,6 +517,16 @@ private fun TimelineRow(item: TimelineItem, modifier: Modifier = Modifier) {
                         if (item.pending) StatusChip(pendingText, Icons.Default.Schedule)
                         if (item.compensated) StatusChip(correctedText, Icons.Default.CheckCircle)
                     }
+                }
+            }
+            if (onUndo != null) {
+                val undoCd = stringResource(R.string.f8_undo_cd, label)
+                TextButton(
+                    onClick = onUndo,
+                    modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = undoCd },
+                ) {
+                    Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Text(stringResource(R.string.f8_undo), modifier = Modifier.padding(start = Spacing.xs))
                 }
             }
         }
