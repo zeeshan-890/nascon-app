@@ -49,6 +49,9 @@ class SettingsViewModel(private val container: AppContainer) : ViewModel() {
     private val _signedOut = Channel<Unit>(Channel.BUFFERED)
     val signedOut = _signedOut.receiveAsFlow()
 
+    private val _cleared = Channel<Unit>(Channel.BUFFERED)
+    val cleared = _cleared.receiveAsFlow()
+
     init {
         viewModelScope.launch {
             val url = config.baseUrl.first()
@@ -99,6 +102,13 @@ class SettingsViewModel(private val container: AppContainer) : ViewModel() {
     fun setUseDemo(v: Boolean) {
         _state.update { it.copy(useDemo = v) }
         viewModelScope.launch { config.setUseDemoData(v) }
+    }
+
+    fun clearSavedData() {
+        viewModelScope.launch {
+            container.cacheManager.clearCache()
+            _cleared.send(Unit)
+        }
     }
 
     fun signOut() {

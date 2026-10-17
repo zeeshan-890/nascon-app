@@ -49,7 +49,7 @@ import retrofit2.Response
 import java.util.UUID
 import kotlin.math.abs
 
-class FakeLeagueApi : LeagueApi {
+class FakeLeagueApi(private val hasNetwork: () -> Boolean = { true }) : LeagueApi {
 
     private data class Team(val id: String, val name: String)
     private data class Game(
@@ -68,7 +68,8 @@ class FakeLeagueApi : LeagueApi {
     private val sharks = Team("team-delta-sharks", "Delta Sharks")
     private val teams = listOf(lions, hawks, wolves, sharks)
 
-    private val games = listOf(
+    private val lock = Any()
+    private val games: MutableList<Game> = mutableListOf(
         Game("demo-m-1", lions, hawks, "completed", "2026-10-04T14:00:00Z", 2, 1),
         Game("demo-m-2", wolves, sharks, "completed", "2026-10-04T16:00:00Z", 0, 0),
         Game("demo-m-3", sharks, hawks, "completed", "2026-10-11T14:00:00Z", 1, 2),
@@ -77,8 +78,20 @@ class FakeLeagueApi : LeagueApi {
         Game("demo-m-6", wolves, lions, "scheduled", "2026-10-25T14:00:00Z", 0, 0),
     )
 
+    // Fake sport config data table: the scoring event keys live here only.
+    private val footballScoringKeys = listOf("goal")
+    private val scoringKey get() = footballScoringKeys.first()
+
+    // Events of the live demo match (mutable, in memory).
+    private val liveEvents = ArrayList<MatchEventDto>()
+    private var liveToggle = false
+
     private val postedEvents = HashMap<String, Int>()
     private var syncOrder = 0
+
+    init {
+        liveEvents += scoreEvent(LIVE_ID, 1, lions.id, 10)
+    }
 
     private val variants = mapOf(
         "var-jersey-s" to Triple("prod-jersey", "S", 4999L),
@@ -95,7 +108,12 @@ class FakeLeagueApi : LeagueApi {
         "prod-cap" to "Alpha Lions Cap",
     )
 
+    private companion object {
+        const val LIVE_ID = "demo-m-live"
+    }
+
     private suspend fun pause(key: String) {
+        if (!hasNetwork()) throw java.net.UnknownHostException("offline")
         delay(300L + (abs(key.hashCode()) % 400).toLong())
     }
 
@@ -165,7 +183,7 @@ class FakeLeagueApi : LeagueApi {
     override suspend fun fixtures(leagueId: String): List<FixtureDto> {
         pause("fixtures$leagueId")
         requireLeague(leagueId)
-        return games.map {
+        return synchronized(lock) { games.toList() }.map {
             FixtureDto(
                 matchId = it.matchId,
                 homeTeamId = it.home.id,
@@ -194,22 +212,16 @@ class FakeLeagueApi : LeagueApi {
 
     override suspend fun match(id: String): MatchDetailDto {
         pause("match$id")
-        val g = games.firstOrNull { it.matchId == id } ?: fail(404, "MATCH_NOT_FOUND", "Match not found.")
+        val g = synchronized(lock) { games.firstOrNull { it.matchId == id } }
+            ?: fail(404, "MATCH_NOT_FOUND", "Match not found.")
         val goals = ArrayList<Pair<Int, String>>() // minute, team
         for (i in 0 until g.homeScore) goals += (10 + i * 20) to g.home.id
         for (i in 0 until g.awayScore) goals += (25 + i * 20) to g.away.id
         goals.sortBy { it.first }
-        val events = goals.mapIndexed { idx, (minute, team) ->
-            MatchEventDto(
-                sequence = idx + 1,
-                eventId = "${g.matchId}-e${idx + 1}",
-                type = "goal",
-                payload = buildJsonObject {
-                    put("team_id", team)
-                    put("minute", minute)
-                },
-                signature = "demo-signature",
-            )
+        val events = if (g.matchId == LIVE_ID) {
+            synchronized(lock) { liveEvents.toList() }
+        } else goals.mapIndexed { idx, (minute, team) ->
+            scoreEvent(g.matchId, idx + 1, team, minute)
         }
         val winner = when (outcomeOf(g)) {
             "home_win" -> g.home.id
@@ -229,6 +241,32 @@ class FakeLeagueApi : LeagueApi {
             events = events,
             pinnedProducts = listOf(PinnedProductDto("prod-jersey", "Alpha Lions Home Jersey", 4999)),
         )
+    }
+
+    private fun scoreEvent(matchId: String, seq: Int, teamId: String, minute: Int) = MatchEventDto(
+        sequence = seq,
+        eventId = "$matchId-e$seq",
+        type = "score",
+        payload = buildJsonObject {
+            put("team_id", teamId)
+            put("event_type", scoringKey)
+            put("minute", minute)
+        },
+        signature = "demo-signature",
+    )
+
+    /** Appends one scoring event to the live demo match, alternating home/away. */
+    fun simulateLiveEvent() {
+        synchronized(lock) {
+            val idx = games.indexOfFirst { it.matchId == LIVE_ID }
+            if (idx < 0) return
+            val g = games[idx]
+            liveToggle = !liveToggle
+            val homeScores = liveToggle
+            games[idx] = if (homeScores) g.copy(homeScore = g.homeScore + 1) else g.copy(awayScore = g.awayScore + 1)
+            val team = if (homeScores) g.home.id else g.away.id
+            liveEvents += scoreEvent(LIVE_ID, liveEvents.size + 1, team, 10 + liveEvents.size * 5)
+        }
     }
 
     override suspend fun postEvent(matchId: String, body: MatchEventRequest): MatchEventResponse {
@@ -253,7 +291,7 @@ class FakeLeagueApi : LeagueApi {
             sportId = "football",
             scoringModel = "goals",
             scoringEvents = buildJsonObject {
-                put("goal", buildJsonObject { put("points", 1) })
+                footballScoringKeys.forEach { key -> put(key, buildJsonObject { put("points", 1) }) }
             },
         )
     }
@@ -268,7 +306,7 @@ class FakeLeagueApi : LeagueApi {
             val diff get() = gf - ga
         }
         val rows = teams.associate { it.id to Row(it) }
-        for (g in games.filter { it.status == "completed" }) {
+        for (g in synchronized(lock) { games.toList() }.filter { it.status == "completed" }) {
             val h = rows.getValue(g.home.id)
             val a = rows.getValue(g.away.id)
             h.gf += g.homeScore; h.ga += g.awayScore

@@ -2,10 +2,463 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "403c025d270d0031bcf999991092e0c0",
+    "identityHash": "e6859cb78e29c2ed2fc8d2f6bc5d48a7",
     "entities": [
       {
-        "tableName": "key_value",
+        "tableName": "leagues",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`league_id` TEXT NOT NULL, `name` TEXT NOT NULL, `sport_id` TEXT NOT NULL, `season` TEXT, `sort_index` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL, PRIMARY KEY(`league_id`))",
+        "fields": [
+          {
+            "fieldPath": "leagueId",
+            "columnName": "league_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sportId",
+            "columnName": "sport_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "season",
+            "columnName": "season",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "sortIndex",
+            "columnName": "sort_index",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "league_id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "fixtures",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`match_id` TEXT NOT NULL, `league_id` TEXT NOT NULL, `home_team_id` TEXT NOT NULL, `home_name` TEXT NOT NULL, `away_team_id` TEXT NOT NULL, `away_name` TEXT NOT NULL, `status` TEXT NOT NULL, `scheduled_at` TEXT, `venue_name` TEXT, `home_score` INTEGER, `away_score` INTEGER, `version` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL, PRIMARY KEY(`match_id`))",
+        "fields": [
+          {
+            "fieldPath": "matchId",
+            "columnName": "match_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "leagueId",
+            "columnName": "league_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "homeTeamId",
+            "columnName": "home_team_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "homeName",
+            "columnName": "home_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "awayTeamId",
+            "columnName": "away_team_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "awayName",
+            "columnName": "away_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "scheduledAt",
+            "columnName": "scheduled_at",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "venueName",
+            "columnName": "venue_name",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "homeScore",
+            "columnName": "home_score",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "awayScore",
+            "columnName": "away_score",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "version",
+            "columnName": "version",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "match_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_fixtures_league_id",
+            "unique": false,
+            "columnNames": [
+              "league_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_fixtures_league_id` ON `${TABLE_NAME}` (`league_id`)"
+          }
+        ],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "matches",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`match_id` TEXT NOT NULL, `league_id` TEXT NOT NULL, `json` TEXT NOT NULL, `version` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL, PRIMARY KEY(`match_id`))",
+        "fields": [
+          {
+            "fieldPath": "matchId",
+            "columnName": "match_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "leagueId",
+            "columnName": "league_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "json",
+            "columnName": "json",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "version",
+            "columnName": "version",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "match_id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "standings",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`league_id` TEXT NOT NULL, `json` TEXT NOT NULL, `updated_at` INTEGER NOT NULL, PRIMARY KEY(`league_id`))",
+        "fields": [
+          {
+            "fieldPath": "leagueId",
+            "columnName": "league_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "json",
+            "columnName": "json",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "league_id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "clubs",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`club_id` TEXT NOT NULL, `json` TEXT NOT NULL, `updated_at` INTEGER NOT NULL, PRIMARY KEY(`club_id`))",
+        "fields": [
+          {
+            "fieldPath": "clubId",
+            "columnName": "club_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "json",
+            "columnName": "json",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "club_id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "sports",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`sport_id` TEXT NOT NULL, `json` TEXT NOT NULL, `updated_at` INTEGER NOT NULL, PRIMARY KEY(`sport_id`))",
+        "fields": [
+          {
+            "fieldPath": "sportId",
+            "columnName": "sport_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "json",
+            "columnName": "json",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "sport_id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "products",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`product_id` TEXT NOT NULL, `json` TEXT NOT NULL, `sort_index` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL, PRIMARY KEY(`product_id`))",
+        "fields": [
+          {
+            "fieldPath": "productId",
+            "columnName": "product_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "json",
+            "columnName": "json",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sortIndex",
+            "columnName": "sort_index",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "product_id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "pending_actions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`action_id` TEXT NOT NULL, `type` TEXT NOT NULL, `queued_at` TEXT NOT NULL, `base_version` INTEGER NOT NULL, `payload_json` TEXT NOT NULL, `entity_key` TEXT NOT NULL, `label` TEXT NOT NULL, `owner_user_id` TEXT NOT NULL, `status` TEXT NOT NULL, `error_code` TEXT, `resolution` TEXT, `server_version` INTEGER, `signature` TEXT, `created_at` INTEGER NOT NULL, `settled_at` INTEGER, PRIMARY KEY(`action_id`))",
+        "fields": [
+          {
+            "fieldPath": "actionId",
+            "columnName": "action_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "queuedAt",
+            "columnName": "queued_at",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "baseVersion",
+            "columnName": "base_version",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "payloadJson",
+            "columnName": "payload_json",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "entityKey",
+            "columnName": "entity_key",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "label",
+            "columnName": "label",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ownerUserId",
+            "columnName": "owner_user_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "errorCode",
+            "columnName": "error_code",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "resolution",
+            "columnName": "resolution",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "serverVersion",
+            "columnName": "server_version",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "signature",
+            "columnName": "signature",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "settledAt",
+            "columnName": "settled_at",
+            "affinity": "INTEGER",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "action_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_pending_actions_entity_key",
+            "unique": false,
+            "columnNames": [
+              "entity_key"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pending_actions_entity_key` ON `${TABLE_NAME}` (`entity_key`)"
+          },
+          {
+            "name": "index_pending_actions_owner_user_id",
+            "unique": false,
+            "columnNames": [
+              "owner_user_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pending_actions_owner_user_id` ON `${TABLE_NAME}` (`owner_user_id`)"
+          }
+        ],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "meta",
         "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`key` TEXT NOT NULL, `value` TEXT NOT NULL, PRIMARY KEY(`key`))",
         "fields": [
           {
@@ -34,7 +487,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '403c025d270d0031bcf999991092e0c0')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'e6859cb78e29c2ed2fc8d2f6bc5d48a7')"
     ]
   }
 }

@@ -32,12 +32,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.nascon.league.BuildConfig
+import com.nascon.league.R
 import com.nascon.league.di.LocalAppContainer
 import com.nascon.league.ui.components.ConfirmDialog
 import com.nascon.league.ui.components.PrimaryButton
@@ -57,8 +59,11 @@ fun SettingsScreen(
     val session by vm.session.collectAsStateWithLifecycle()
     val snackbar = LocalSnackbarHostState.current
     var confirmSignOut by rememberSaveable { mutableStateOf(false) }
+    var confirmClear by rememberSaveable { mutableStateOf(false) }
+    val clearedMessage = stringResource(R.string.f2_saved_data_cleared)
 
     LaunchedEffect(Unit) { vm.messages.collect { snackbar.showSnackbar(it) } }
+    LaunchedEffect(Unit) { vm.cleared.collect { snackbar.showSnackbar(clearedMessage) } }
     LaunchedEffect(Unit) { vm.signedOut.collect { onSignedOut() } }
 
     Box(
@@ -144,6 +149,13 @@ fun SettingsScreen(
                 )
             }
 
+            SecondaryButton(
+                text = stringResource(R.string.f2_clear_saved_data),
+                onClick = { confirmClear = true },
+                modifier = Modifier.fillMaxWidth(),
+                destructive = false,
+            )
+
             if (session != null) {
                 SecondaryButton(
                     text = "Sign out",
@@ -153,6 +165,19 @@ fun SettingsScreen(
                 )
             }
         }
+    }
+
+    if (confirmClear) {
+        ConfirmDialog(
+            title = stringResource(R.string.f2_clear_saved_title),
+            message = stringResource(R.string.f2_clear_saved_message),
+            confirmLabel = stringResource(R.string.f2_clear_confirm),
+            onConfirm = {
+                confirmClear = false
+                vm.clearSavedData()
+            },
+            onDismiss = { confirmClear = false },
+        )
     }
 
     if (confirmSignOut) {

@@ -19,6 +19,7 @@ class AuthRepository(
     private val apiProvider: () -> LeagueApi,
     private val tokenStore: TokenStore,
     private val sessionRepository: SessionRepository,
+    private val cacheManager: CacheManager? = null,
 ) {
     suspend fun login(email: String, password: String): NetworkResult<Session> {
         return when (val result = safeCall { apiProvider().login(LoginRequest(email.trim(), password)) }) {
@@ -30,6 +31,9 @@ class AuthRepository(
                     result.data.refreshToken,
                     Clock.nowEpochSeconds() + result.data.expiresIn,
                 )
+                // Clear another user's cached data before the new session becomes visible.
+                runCatching { cacheManager?.onLogin(session.user.userId) }
+                    .onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
                 sessionRepository.setSession(session)
                 NetworkResult.Success(session)
             }
@@ -40,6 +44,8 @@ class AuthRepository(
         val refresh = tokenStore.refreshToken()
         if (refresh != null) safeCall { apiProvider().logout(LogoutRequest(refresh)) }
         sessionRepository.clear()
+        runCatching { cacheManager?.onLogout() }
+            .onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
     }
 
     suspend fun refreshIfNeeded() {

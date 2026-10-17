@@ -91,6 +91,8 @@ class ConnectivityMonitor(
         reachable.value = safeCall { apiProvider().ping() } is NetworkResult.Success
     }
 
+    fun isNetworkAvailable(): Boolean = hasNetwork()
+
     private fun hasNetwork(): Boolean {
         val network = cm.activeNetwork ?: return false
         val caps = cm.getNetworkCapabilities(network) ?: return false

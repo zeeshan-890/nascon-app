@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="f2_updated_just_now">Updated just now</string>
+    <string name="f2_updated_minutes">Updated %1$d min ago</string>
+    <string name="f2_updated_hours">Updated %1$d h ago</string>
+    <string name="f2_updated_absolute">Updated %1$s</string>
+    <string name="f2_saved_data">Saved data</string>
+    <string name="f2_refresh">Refresh</string>
+    <string name="f2_clear_saved_data">Clear saved data</string>
+    <string name="f2_clear_saved_title">Clear saved data?</string>
+    <string name="f2_clear_saved_message">This removes saved screens from this device. Pending offline actions are kept.</string>
+    <string name="f2_clear_confirm">Clear</string>
+    <string name="f2_saved_data_cleared">Saved data cleared</string>
+</resources>
