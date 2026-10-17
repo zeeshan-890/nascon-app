@@ -10,6 +10,8 @@ router.use(require('./checkout'));
 router.use(require('./inventory'));
 router.use(require('./rbac'));
 router.use(require('./roster'));
+router.use(require('./standings'));
 router.use(require('./fixtures'));
+router.use(require('./offlineSync'));
 
 module.exports = router;

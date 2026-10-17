@@ -9,6 +9,8 @@ module.exports = {
   coverageDirectory: '<rootDir>/backend/coverage',
   coverageThreshold: {
     './src/domain/fixtures/': { lines: 85, statements: 85, functions: 85, branches: 80 },
+    './src/domain/roster/': { lines: 85, statements: 85, functions: 85, branches: 80 },
+    './src/domain/standings/': { lines: 85, statements: 85, functions: 85, branches: 80 },
   },
   testTimeout: 30000,
   maxWorkers: 1,
