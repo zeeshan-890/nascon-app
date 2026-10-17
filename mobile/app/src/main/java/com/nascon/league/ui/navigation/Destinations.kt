@@ -9,6 +9,10 @@ object Destinations {
     const val MATCH = "match/{matchId}"
     const val STANDINGS = "standings"
     const val CLUB = "club/{clubId}"
+    const val CLUBS = "clubs"
+    const val CHECKOUT = "checkout"
+    const val ORDER_SUCCESS = "order/{orderId}"
+    const val RECEIPTS = "receipts"
     const val STORE = "store"
     const val PRODUCT = "product/{productId}"
     const val CART = "cart"
@@ -27,4 +31,5 @@ object Destinations {
     fun scoring(id: String) = "scoring/$id"
     fun product(id: String) = "product/$id"
     fun receipt(id: String) = "receipt/$id"
+    fun orderSuccess(id: String) = "order/$id"
 }

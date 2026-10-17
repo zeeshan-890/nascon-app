@@ -23,7 +23,7 @@ val tabItems = listOf(
     TabItem(Destinations.FIXTURES, "Fixtures", Icons.Default.SportsSoccer),
     TabItem(Destinations.STANDINGS, "Standings", Icons.Default.Leaderboard),
     TabItem(Destinations.STORE, "Store", Icons.Default.ShoppingBag),
-    TabItem(Destinations.CLUB, "Club", Icons.Default.Groups),
+    TabItem(Destinations.CLUBS, "Club", Icons.Default.Groups),
 )
 
 /** Route without query part, so "fixtures?filter={filter}" counts as the Fixtures tab. */

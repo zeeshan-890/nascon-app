@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="f6r_share">Share</string>
+    <string name="f6r_download">Download</string>
+    <string name="f6r_share_title">Share receipt</string>
+    <string name="f6r_share_failed">No app available to share this receipt</string>
+    <string name="f6r_saved_downloads">Saved to Downloads</string>
+    <string name="f6r_storage_full">Your phone is out of storage space. Free some space and try again.</string>
+    <string name="f6r_download_failed">The receipt couldn\'t be saved. Please try again.</string>
+    <string name="f6r_loading">Opening receipt…</string>
+    <string name="f6r_loading_list">Loading receipts…</string>
+    <string name="f6r_offline_title">Receipt not available</string>
+    <string name="f6r_offline_message">This receipt isn\'t saved on this device. Connect to the internet to download it.</string>
+    <string name="f6r_try_again">Try again</string>
+    <string name="f6r_corrupt_title">This receipt couldn\'t be opened</string>
+    <string name="f6r_download_again">Download again</string>
+    <string name="f6r_order_ref">Order %1$s</string>
+    <string name="f6r_total">Total: %1$s</string>
+    <string name="f6r_paid_on">Paid on %1$s</string>
+    <string name="f6r_page_cd">Receipt page %1$d of %2$d</string>
+    <string name="f6r_empty_title">No receipts yet</string>
+    <string name="f6r_empty_message">Receipts for your purchases will appear here.</string>
+    <string name="f6r_open_receipt">Open receipt</string>
+</resources>

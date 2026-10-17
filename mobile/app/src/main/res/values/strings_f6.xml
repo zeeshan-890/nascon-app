@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Store -->
+    <string name="f6_my_receipts">My receipts</string>
+    <string name="f6_cart_cd">Cart, %1$d items</string>
+    <string name="f6_category_all">All</string>
+    <string name="f6_selected_cd">%1$s, selected</string>
+    <string name="f6_no_products_title">No products yet</string>
+    <string name="f6_no_products_message">Check back soon for new merchandise.</string>
+    <string name="f6_no_products_in_category">Nothing in this category</string>
+    <string name="f6_no_products_in_category_message">Show all products to keep browsing.</string>
+    <string name="f6_not_saved_title">Not saved for offline yet</string>
+    <string name="f6_not_saved_message">Connect to the internet to load the store.</string>
+    <string name="f6_try_again">Try again</string>
+    <string name="f6_refresh">Refresh</string>
+    <string name="f6_loading_cd">Loading</string>
+    <string name="f6_image_cd">Photo of %1$s</string>
+    <string name="f6_open_product">View product</string>
+    <string name="f6_from_price">From %1$s</string>
+    <string name="f6_out_of_stock">Out of stock</string>
+    <string name="f6_in_stock">In stock</string>
+    <string name="f6_sold_out">Sold out</string>
+    <string name="f6_only_left">Only %1$d left</string>
+
+    <!-- Product detail -->
+    <string name="f6_choose_option">Choose an option</string>
+    <string name="f6_variant_sold_out">%1$s · Sold out</string>
+    <string name="f6_variant_with_price">%1$s · %2$s</string>
+    <string name="f6_quantity">Quantity</string>
+    <string name="f6_quantity_value_cd">Quantity %1$d</string>
+    <string name="f6_decrease_qty">Decrease quantity</string>
+    <string name="f6_increase_qty">Increase quantity</string>
+    <string name="f6_decrease_qty_of">Decrease quantity of %1$s</string>
+    <string name="f6_increase_qty_of">Increase quantity of %1$s</string>
+    <string name="f6_add_to_cart">Add to cart</string>
+    <string name="f6_added_to_cart">Added to cart</string>
+    <string name="f6_view_cart">View cart</string>
+    <string name="f6_unavailable_title">This product is no longer available</string>
+    <string name="f6_unavailable_message">It may have been removed from the store.</string>
+
+    <!-- Cart -->
+    <string name="f6_cart_empty_title">Your cart is empty</string>
+    <string name="f6_cart_empty_message">Add something from the store and it will appear here.</string>
+    <string name="f6_browse_store">Browse the store</string>
+    <string name="f6_remove">Remove</string>
+    <string name="f6_remove_cd">Remove %1$s</string>
+    <string name="f6_removed">%1$s removed from your cart</string>
+    <string name="f6_undo">Undo</string>
+    <string name="f6_unit_price">%1$s each</string>
+    <string name="f6_subtotal">Subtotal</string>
+    <string name="f6_checkout">Checkout</string>
+    <string name="f6_checkout_blocked">Remove the unavailable items to continue.</string>
+    <string name="f6_problem_price">Price updated</string>
+    <string name="f6_problem_unavailable">No longer available</string>
+
+    <!-- Checkout -->
+    <string name="f6_order_summary">Order summary</string>
+    <string name="f6_summary_detail">%1$s × %2$d</string>
+    <string name="f6_discount_label">Discount code (optional)</string>
+    <string name="f6_discount_helper">Your code is checked when you pay</string>
+    <string name="f6_discount_invalid">That discount code isn\'t valid.</string>
+    <string name="f6_payment_method">Payment method</string>
+    <string name="f6_method_approved">Demo card — approved</string>
+    <string name="f6_method_declined">Demo card — declined</string>
+    <string name="f6_method_capture_fail">Demo card — payment fails after approval</string>
+    <string name="f6_demo_note">Demo payment — no real money is charged.</string>
+    <string name="f6_estimated_total">Estimated total</string>
+    <string name="f6_pay_button">Pay %1$s</string>
+    <string name="f6_paying_cd">Processing payment</string>
+    <string name="f6_pay_offline">Checkout needs an internet connection</string>
+    <string name="f6_back_to_cart">Back to cart</string>
+    <string name="f6_confirm_title">Pay %1$s?</string>
+    <string name="f6_confirm_message">This is a demo payment. No real money is charged.</string>
+    <string name="f6_confirm_pay">Pay</string>
+    <string name="f6_cancel">Cancel</string>
+    <string name="f6_banner_declined">Your payment was declined. No money was taken.</string>
+    <string name="f6_banner_capture">The payment couldn\'t be completed. No money was taken.</string>
+    <string name="f6_banner_connection">The connection was lost. Your payment status is being checked — tap Pay again to confirm.</string>
+    <string name="f6_banner_try_again">Something went wrong placing your order. Please tap Pay again.</string>
+    <string name="f6_banner_generic">Something went wrong on the server. Please try again.</string>
+
+    <!-- Order success -->
+    <string name="f6_order_placed">Order placed</string>
+    <string name="f6_order_ref">Order reference: %1$s</string>
+    <string name="f6_order_total">Total: %1$s</string>
+    <string name="f6_order_thanks">Thank you! Your receipt is saved on this device.</string>
+    <string name="f6_view_receipt">View receipt</string>
+    <string name="f6_continue_shopping">Continue shopping</string>
+</resources>

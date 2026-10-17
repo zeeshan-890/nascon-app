@@ -17,6 +17,10 @@ import com.nascon.league.data.realtime.SwitchingRealtimeClient
 import com.nascon.league.data.repo.AuthRepository
 import com.nascon.league.data.repo.CacheManager
 import com.nascon.league.data.repo.ClubRepository
+import com.nascon.league.data.repo.ClubsListRepository
+import com.nascon.league.data.receipts.ReceiptStore
+import com.nascon.league.data.store.CartStore
+import com.nascon.league.data.store.CheckoutAttemptStore
 import com.nascon.league.data.repo.FixturesRepository
 import com.nascon.league.data.repo.LeaguesRepository
 import com.nascon.league.data.repo.MatchRepository
@@ -77,6 +81,10 @@ class AppContainer(context: Context) {
     val clubRepository = ClubRepository(database.clubDao(), apiProvider, deduper, isOnline)
     val sportRepository = SportRepository(database.sportDao(), apiProvider, deduper, isOnline)
     val productRepository = ProductRepository(database.productDao(), apiProvider, deduper, isOnline)
+    val clubsListRepository = ClubsListRepository(database.cacheDao(), apiProvider, deduper, isOnline)
+    val cartStore = CartStore(appContext, currentUserId)
+    val checkoutAttemptStore = CheckoutAttemptStore(appContext, currentUserId)
+    val receiptStore = ReceiptStore(appContext, currentUserId, apiProvider)
     val pendingRepository = PendingActionRepository(database.pendingActionDao(), currentUserId)
 
     val realtime: RealtimeClient = SwitchingRealtimeClient(

@@ -5,6 +5,7 @@ import com.nascon.league.data.api.dto.CheckoutRequest
 import com.nascon.league.data.api.dto.CheckoutResponse
 import com.nascon.league.data.api.dto.ClubDto
 import com.nascon.league.data.api.dto.ClubStatDto
+import com.nascon.league.data.api.dto.ClubSummaryDto
 import com.nascon.league.data.api.dto.FixtureDto
 import com.nascon.league.data.api.dto.LeagueDto
 import com.nascon.league.data.api.dto.LoginRequest
@@ -348,6 +349,15 @@ class FakeLeagueApi(private val hasNetwork: () -> Boolean = { true }) : LeagueAp
     }
 
     // ---- clubs ----
+    override suspend fun clubs(): List<ClubSummaryDto> {
+        pause("clubs")
+        return listOf(
+            ClubSummaryDto("club-alpha-1", "Alpha Lions FC", null),
+            ClubSummaryDto("club-alpha-2", "Beta Hawks United", null),
+            ClubSummaryDto("club-alpha-3", "Gamma Wolves Athletic", null),
+        )
+    }
+
     override suspend fun club(id: String): ClubDto {
         pause("club$id")
         if (id != "club-alpha-1") fail(404, "CLUB_NOT_FOUND", "Club not found.")
@@ -411,89 +421,27 @@ class FakeLeagueApi(private val hasNetwork: () -> Boolean = { true }) : LeagueAp
     }
 
     // ---- commerce ----
+    private val fakeStore = FakeStore(AndroidReceiptPdfGenerator())
+
+    private fun requireNetwork() {
+        if (!hasNetwork()) throw java.net.UnknownHostException("offline")
+    }
+
     override suspend fun products(): List<ProductDto> {
-        pause("products")
-        return listOf(
-            ProductDto(
-                "prod-jersey", productNames.getValue("prod-jersey"), "apparel", null,
-                listOf(
-                    VariantDto("var-jersey-s", "S", "Blue", 4999, 20),
-                    VariantDto("var-jersey-m", "M", "Blue", 4999, 15),
-                    VariantDto("var-jersey-l", "L", "Blue", 5499, 8),
-                ),
-            ),
-            ProductDto(
-                "prod-scarf", productNames.getValue("prod-scarf"), "accessories", null,
-                listOf(
-                    VariantDto("var-scarf-red", null, "Red", 1999, 30),
-                    VariantDto("var-scarf-blue", null, "Blue", 1999, 25),
-                ),
-            ),
-            ProductDto(
-                "prod-cap", productNames.getValue("prod-cap"), "accessories", null,
-                listOf(
-                    VariantDto("var-cap-black", null, "Black", 1499, 40),
-                    VariantDto("var-cap-white", null, "White", 1499, 0),
-                ),
-            ),
-        )
+        requireNetwork()
+        return fakeStore.products()
     }
 
     override suspend fun checkout(body: CheckoutRequest): CheckoutResponse {
-        pause("checkout${body.orderId}")
-        if (body.items.isEmpty()) fail(422, "EMPTY_CART", "Cart is empty.")
-        var subtotal = 0L
-        val items = body.items.map {
-            val v = variants[it.variantId] ?: fail(404, "VARIANT_NOT_FOUND", "Variant not found.")
-            val line = v.third * it.quantity
-            subtotal += line
-            buildJsonObject {
-                put("variant_id", it.variantId)
-                put("product_id", v.first)
-                put("name", productNames.getValue(v.first))
-                put("quantity", it.quantity)
-                put("unit_price_minor", v.third)
-                put("line_total_minor", line)
-            }
-        }
-        val code = body.discountCode?.trim().orEmpty()
-        val discount = when {
-            code.isEmpty() -> 0L
-            code.equals("WELCOME10", ignoreCase = true) -> subtotal / 10
-            else -> fail(422, "INVALID_DISCOUNT_CODE", "Discount code is not valid.")
-        }
-        val total = subtotal - discount
-        return CheckoutResponse(
-            orderId = body.orderId,
-            status = "paid",
-            currency = "USD",
-            items = items,
-            subtotalMinor = subtotal,
-            discountMinor = discount,
-            totalMinor = total,
-            payment = buildJsonObject {
-                put("status", "captured")
-                put("amount_minor", total)
-            },
-            receipt = ReceiptDto(
-                payload = buildJsonObject {
-                    put("order_id", body.orderId)
-                    put("total_minor", total)
-                    put("currency", "USD")
-                },
-                signature = "demo-signature",
-                pdfBase64 = "",
-            ),
-        )
+        requireNetwork()
+        return fakeStore.checkout(body)
     }
 
     override suspend fun receiptPdf(orderId: String): ResponseBody {
-        pause("receipt$orderId")
-        val pdf = "%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n" +
-            "2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n" +
-            "3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 200 200]>>endobj\n" +
-            "trailer<</Root 1 0 R>>\n%%EOF\n"
-        return pdf.toByteArray().toResponseBody("application/pdf".toMediaType())
+        requireNetwork()
+        delay(300L)
+        val bytes = fakeStore.receiptPdf(orderId) ?: fail(404, "ORDER_NOT_FOUND", "Order not found.")
+        return bytes.toResponseBody("application/pdf".toMediaType())
     }
 
     // ---- sync ----

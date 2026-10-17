@@ -46,6 +46,16 @@ import com.nascon.league.ui.components.ConnectivityBanner
 import com.nascon.league.ui.home.HomeScreen
 import com.nascon.league.ui.login.LoginScreen
 import com.nascon.league.ui.placeholder.ComingSoonScreen
+import com.nascon.league.ui.standings.StandingsScreen
+import com.nascon.league.ui.club.ClubProfileScreen
+import com.nascon.league.ui.club.ClubTabScreen
+import com.nascon.league.ui.receipt.MyReceiptsScreen
+import com.nascon.league.ui.receipt.ReceiptScreen
+import com.nascon.league.ui.store.CartScreen
+import com.nascon.league.ui.store.CheckoutScreen
+import com.nascon.league.ui.store.OrderSuccessScreen
+import com.nascon.league.ui.store.ProductDetailScreen
+import com.nascon.league.ui.store.StoreScreen
 import com.nascon.league.ui.settings.SettingsScreen
 import com.nascon.league.ui.theme.NasconTheme
 import com.nascon.league.data.repo.SessionEvent
@@ -61,6 +71,10 @@ private fun titleFor(route: String?): String = when (baseRoute(route)) {
     Destinations.MATCH -> "Match details"
     Destinations.STANDINGS -> "Standings"
     Destinations.CLUB -> "Club"
+    Destinations.CLUBS -> "Club"
+    Destinations.CHECKOUT -> "Checkout"
+    Destinations.ORDER_SUCCESS -> "Order placed"
+    Destinations.RECEIPTS -> "My receipts"
     Destinations.STORE -> "Store"
     Destinations.PRODUCT -> "Product"
     Destinations.CART -> "Cart"
@@ -127,7 +141,7 @@ private fun AppShell(session: Session?) {
         navController.navigate(Destinations.SETTINGS) { launchSingleTop = true }
     }
 
-    fun clubRoute() = Destinations.club(session?.user?.clubId ?: Destinations.DEFAULT_CLUB_ID)
+    fun clubRoute() = Destinations.CLUBS
 
     fun navigateFromHome(target: String) {
         val tabLike = target == Destinations.FIXTURES || target == Destinations.STANDINGS ||
@@ -216,10 +230,79 @@ private fun AppShell(session: Session?) {
                             },
                         )
                     }
+                    composable(Destinations.STANDINGS) {
+                        StandingsScreen(onViewFixtures = { navigateTab(Destinations.FIXTURES) })
+                    }
+                    composable(Destinations.CLUBS) {
+                        ClubTabScreen(
+                            onOpenClub = { id -> navController.navigate(Destinations.club(id)) { launchSingleTop = true } },
+                            onManageRoster = { id -> navController.navigate(Destinations.roster(id)) { launchSingleTop = true } },
+                        )
+                    }
+                    composable(
+                        Destinations.CLUB,
+                        arguments = listOf(navArgument("clubId") { type = NavType.StringType }),
+                    ) { entry ->
+                        ClubProfileScreen(
+                            clubId = entry.arguments?.getString("clubId").orEmpty(),
+                            onManageRoster = { id -> navController.navigate(Destinations.roster(id)) { launchSingleTop = true } },
+                        )
+                    }
+                    composable(Destinations.STORE) {
+                        StoreScreen(
+                            onOpenProduct = { id -> navController.navigate(Destinations.product(id)) { launchSingleTop = true } },
+                            onOpenCart = { navController.navigate(Destinations.CART) { launchSingleTop = true } },
+                            onOpenReceipts = { navController.navigate(Destinations.RECEIPTS) { launchSingleTop = true } },
+                        )
+                    }
+                    composable(
+                        Destinations.PRODUCT,
+                        arguments = listOf(navArgument("productId") { type = NavType.StringType }),
+                    ) { entry ->
+                        ProductDetailScreen(
+                            productId = entry.arguments?.getString("productId").orEmpty(),
+                            onOpenCart = { navController.navigate(Destinations.CART) { launchSingleTop = true } },
+                        )
+                    }
+                    composable(Destinations.CART) {
+                        CartScreen(
+                            onCheckout = { navController.navigate(Destinations.CHECKOUT) { launchSingleTop = true } },
+                            onBrowse = { navigateTab(Destinations.STORE) },
+                        )
+                    }
+                    composable(Destinations.CHECKOUT) {
+                        CheckoutScreen(
+                            onOrderPlaced = { id ->
+                                navController.navigate(Destinations.orderSuccess(id)) {
+                                    popUpTo(Destinations.CART) { inclusive = true }
+                                }
+                            },
+                            onBackToCart = { navController.popBackStack() },
+                        )
+                    }
+                    composable(
+                        Destinations.ORDER_SUCCESS,
+                        arguments = listOf(navArgument("orderId") { type = NavType.StringType }),
+                    ) { entry ->
+                        OrderSuccessScreen(
+                            orderId = entry.arguments?.getString("orderId").orEmpty(),
+                            onViewReceipt = { id -> navController.navigate(Destinations.receipt(id)) { launchSingleTop = true } },
+                            onContinueShopping = { navigateTab(Destinations.STORE) },
+                        )
+                    }
+                    composable(Destinations.RECEIPTS) {
+                        MyReceiptsScreen(
+                            onOpenReceipt = { id -> navController.navigate(Destinations.receipt(id)) { launchSingleTop = true } },
+                        )
+                    }
+                    composable(
+                        Destinations.RECEIPT,
+                        arguments = listOf(navArgument("orderId") { type = NavType.StringType }),
+                    ) { entry ->
+                        ReceiptScreen(orderId = entry.arguments?.getString("orderId").orEmpty())
+                    }
                     listOf(
-                        Destinations.STANDINGS,
-                        Destinations.CLUB, Destinations.STORE, Destinations.PRODUCT,
-                        Destinations.CART, Destinations.RECEIPT, Destinations.ROSTER,
+                        Destinations.ROSTER,
                         Destinations.SCORING, Destinations.SYNC, Destinations.ADMIN,
                     ).forEach { r ->
                         composable(r) { ComingSoonScreen(title = titleFor(r)) }

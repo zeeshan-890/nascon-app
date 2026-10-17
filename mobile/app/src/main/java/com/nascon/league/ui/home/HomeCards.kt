@@ -30,7 +30,7 @@ fun homeCards(session: Session): List<HomeCard> {
         Role.SUPER_ADMIN -> listOf(
             HomeCard("standings", "Leagues & Standings", "Tables for every league", Icons.Default.Leaderboard, Destinations.STANDINGS),
             fixtures,
-            HomeCard("clubs", "Clubs", "Browse all clubs", Icons.Default.Groups, Destinations.club(clubId)),
+            HomeCard("clubs", "Clubs", "Browse all clubs", Icons.Default.Groups, Destinations.CLUBS),
             store,
             HomeCard("admin", "Admin overview", "Leagues, users and system status", Icons.Default.AdminPanelSettings, Destinations.ADMIN),
         )
@@ -42,12 +42,12 @@ fun homeCards(session: Session): List<HomeCard> {
         )
         Role.CLUB_MANAGER -> listOf(
             HomeCard("roster", "Manage roster", "Add or edit your players", Icons.Default.Edit, Destinations.roster(clubId)),
-            HomeCard("club", "My club profile", "Club details and squad", Icons.Default.Groups, Destinations.club(clubId)),
+            HomeCard("club", "My club profile", "Club details and squad", Icons.Default.Groups, Destinations.CLUBS),
             fixtures,
             store,
         )
         Role.PLAYER -> listOf(
-            HomeCard("club", "My club", "Your club and teammates", Icons.Default.Person, Destinations.club(clubId)),
+            HomeCard("club", "My club", "Your club and teammates", Icons.Default.Person, Destinations.CLUBS),
             HomeCard("fixtures", "My fixtures", "Your upcoming matches", Icons.Default.SportsSoccer, Destinations.FIXTURES),
             HomeCard("standings", "Standings", "League tables", Icons.Default.Leaderboard, Destinations.STANDINGS),
             store,
@@ -55,7 +55,7 @@ fun homeCards(session: Session): List<HomeCard> {
         Role.VIEWER -> listOf(
             fixtures,
             HomeCard("standings", "Standings", "League tables", Icons.Default.Leaderboard, Destinations.STANDINGS),
-            HomeCard("clubs", "Clubs", "Browse all clubs", Icons.Default.Groups, Destinations.club(Destinations.DEFAULT_CLUB_ID)),
+            HomeCard("clubs", "Clubs", "Browse all clubs", Icons.Default.Groups, Destinations.CLUBS),
             store,
         )
     }
