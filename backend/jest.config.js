@@ -7,7 +7,11 @@ module.exports = {
   modulePaths: ['<rootDir>/backend/node_modules'],
   collectCoverageFrom: ['backend/src/domain/**/*.js'],
   coverageDirectory: '<rootDir>/backend/coverage',
+  coverageReporters: ['text', 'text-summary', 'json-summary'],
   coverageThreshold: {
+    './src/domain/scoring/': { lines: 85, statements: 85, functions: 85, branches: 80 },
+    './src/domain/store/': { lines: 85, statements: 85, functions: 85, branches: 80 },
+    './src/domain/rbac/': { lines: 85, statements: 85, functions: 85, branches: 80 },
     './src/domain/fixtures/': { lines: 85, statements: 85, functions: 85, branches: 80 },
     './src/domain/roster/': { lines: 85, statements: 85, functions: 85, branches: 80 },
     './src/domain/standings/': { lines: 85, statements: 85, functions: 85, branches: 80 },
