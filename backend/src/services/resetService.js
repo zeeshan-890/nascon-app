@@ -9,6 +9,7 @@ const { normalise } = require('./sportService');
 const { normaliseTieBreak } = require('../domain/scoring/sportSchema');
 const sports = require('../repos/sports');
 const settings = require('../repos/settings');
+const { DEFAULT_POLICIES } = require('../domain/rbac/defaultPolicies');
 const { getRedis } = require('../db/redis');
 
 const DEFAULT_SEED = 42;
@@ -42,28 +43,6 @@ function parseBody(body) {
     }
   }
   return { seed: body.seed === undefined ? DEFAULT_SEED : body.seed, stock: { ...DEFAULT_STOCK, ...stock } };
-}
-
-// What each role may do per resource; expanded into (role, resource, action, allowed) rows.
-const POLICY = {
-  super_admin: { '*': ['read', 'create', 'update', 'delete'] },
-  league_organizer: { leagues: ['read', 'update'], matches: ['read', 'create', 'update'], events: ['read', 'create'], clubs: ['read'], players: ['read'], store: ['read'] },
-  club_manager: { leagues: ['read'], matches: ['read'], clubs: ['read', 'update'], players: ['read', 'update'], roster: ['read', 'create', 'update'], store: ['read', 'create'] },
-  player: { leagues: ['read'], matches: ['read'], clubs: ['read'], players: ['read'], store: ['read', 'create'] },
-  viewer: { leagues: ['read'], matches: ['read'], clubs: ['read'], players: ['read'], store: ['read'] },
-};
-const RESOURCES = ['leagues', 'matches', 'events', 'clubs', 'players', 'roster', 'store'];
-const ACTIONS = ['read', 'create', 'update', 'delete'];
-
-function policyRows() {
-  const rows = [];
-  for (const [role, grants] of Object.entries(POLICY)) {
-    for (const resource of RESOURCES) {
-      const allowed = new Set(grants['*'] || grants[resource] || []);
-      for (const action of ACTIONS) rows.push([role, resource, action, allowed.has(action)]);
-    }
-  }
-  return rows;
 }
 
 async function seedBase(client, { seed, stock }) {
@@ -126,8 +105,8 @@ async function seedBase(client, { seed, stock }) {
      ('user-viewer', 'viewer@nascon.test', $1, 'viewer', 'tenant-alpha', NULL, NULL, '{}')`,
     [DEMO_HASH]
   );
-  for (const row of policyRows()) {
-    await client.query('INSERT INTO role_policies (role, resource, action, allowed) VALUES ($1, $2, $3, $4)', row);
+  for (const p of DEFAULT_POLICIES) {
+    await client.query('INSERT INTO role_policies (role, action, scope) VALUES ($1, $2, $3)', [p.role, p.action, p.scope]);
   }
   await settings.set(client, 'last_reset_seed', seed);
   return sportIds;

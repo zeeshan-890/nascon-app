@@ -29,16 +29,16 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
   token_hash text PRIMARY KEY,
   user_id text NOT NULL,
   expires_at timestamptz NOT NULL,
-  revoked boolean NOT NULL DEFAULT false,
+  revoked_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens (user_id);
 
 CREATE TABLE IF NOT EXISTS role_policies (
   role text NOT NULL,
-  resource text NOT NULL,
   action text NOT NULL,
-  allowed boolean NOT NULL,
-  PRIMARY KEY (role, resource, action)
+  scope text NOT NULL,
+  PRIMARY KEY (role, action)
 );
 
 CREATE TABLE IF NOT EXISTS settings (
@@ -227,6 +227,7 @@ CREATE TABLE IF NOT EXISTS products (
   club_id text,
   category text,
   name text NOT NULL,
+  description text,
   image_url text
 );
 
@@ -235,7 +236,7 @@ CREATE TABLE IF NOT EXISTS variants (
   product_id text NOT NULL,
   size text,
   color text,
-  price_minor bigint NOT NULL,
+  price_minor integer NOT NULL,
   currency text NOT NULL DEFAULT 'PKR',
   stock int NOT NULL DEFAULT 0 CHECK (stock >= 0),
   reserved int NOT NULL DEFAULT 0 CHECK (reserved >= 0)
@@ -243,41 +244,46 @@ CREATE TABLE IF NOT EXISTS variants (
 
 CREATE TABLE IF NOT EXISTS price_schedules (
   variant_id text NOT NULL,
-  starts_at timestamptz NOT NULL,
-  price_minor bigint NOT NULL,
-  PRIMARY KEY (variant_id, starts_at)
+  price_minor integer NOT NULL,
+  effective_from timestamptz NOT NULL,
+  PRIMARY KEY (variant_id, effective_from)
 );
 
 CREATE TABLE IF NOT EXISTS discount_codes (
   code text PRIMARY KEY,
   percent int NOT NULL,
-  active boolean NOT NULL DEFAULT true
+  active_from timestamptz,
+  active_to timestamptz,
+  tenant_id text
 );
 
 CREATE TABLE IF NOT EXISTS orders (
   order_id text PRIMARY KEY,
   customer_id text,
+  tenant_id text,
   status text NOT NULL,
-  subtotal_minor bigint,
-  discount_minor bigint,
-  total_minor bigint,
-  currency text NOT NULL DEFAULT 'PKR',
   request_canonical text,
+  subtotal_minor integer,
+  discount_minor integer,
+  total_minor integer,
+  currency text NOT NULL DEFAULT 'PKR',
+  response_status int,
   response json,
-  http_status int,
-  created_at timestamptz NOT NULL DEFAULT now()
+  receipt_object_key text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  paid_at timestamptz
 );
 
 CREATE TABLE IF NOT EXISTS order_items (
   order_id text NOT NULL,
   variant_id text NOT NULL,
   quantity int NOT NULL,
-  unit_price_minor bigint NOT NULL,
+  unit_price_minor integer NOT NULL,
   PRIMARY KEY (order_id, variant_id)
 );
 
 CREATE TABLE IF NOT EXISTS reservations (
-  reservation_id text PRIMARY KEY,
+  reservation_id bigserial PRIMARY KEY,
   order_id text NOT NULL,
   variant_id text NOT NULL,
   quantity int NOT NULL,
@@ -285,21 +291,25 @@ CREATE TABLE IF NOT EXISTS reservations (
   expires_at timestamptz NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_reservations_expiry ON reservations (expires_at) WHERE status = 'held';
+CREATE INDEX IF NOT EXISTS idx_reservations_order ON reservations (order_id);
 
 CREATE TABLE IF NOT EXISTS payments (
-  payment_id text PRIMARY KEY,
+  payment_id bigserial PRIMARY KEY,
   order_id text NOT NULL,
+  authorization_id text,
+  capture_id text,
+  state text NOT NULL,
   token text,
-  status text NOT NULL,
-  amount_minor bigint,
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS order_status_history (
   id bigserial PRIMARY KEY,
   order_id text NOT NULL,
-  status text NOT NULL,
-  at timestamptz NOT NULL DEFAULT now()
+  from_status text,
+  to_status text NOT NULL,
+  at timestamptz NOT NULL DEFAULT now(),
+  actor text
 );
 
 CREATE TABLE IF NOT EXISTS match_pins (
