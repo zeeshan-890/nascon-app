@@ -80,12 +80,23 @@ CREATE TABLE IF NOT EXISTS league_teams (
   PRIMARY KEY (league_id, team_id)
 );
 
+ALTER TABLE league_teams ADD COLUMN IF NOT EXISTS name text;
+CREATE INDEX IF NOT EXISTS idx_league_teams_league ON league_teams (league_id);
+
 CREATE TABLE IF NOT EXISTS venues (
   venue_id text PRIMARY KEY,
   tenant_id text,
   name text NOT NULL,
   lat double precision,
   lng double precision
+);
+
+CREATE TABLE IF NOT EXISTS venue_hours (
+  venue_id text NOT NULL,
+  weekday smallint NOT NULL CHECK (weekday BETWEEN 0 AND 6),
+  opens time NOT NULL,
+  closes time NOT NULL,
+  PRIMARY KEY (venue_id, weekday, opens)
 );
 
 CREATE TABLE IF NOT EXISTS venue_availability (
@@ -108,6 +119,10 @@ CREATE TABLE IF NOT EXISTS matches (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_matches_league ON matches (league_id);
+ALTER TABLE matches ADD COLUMN IF NOT EXISTS admin_status text;
+ALTER TABLE matches ADD COLUMN IF NOT EXISTS duration_minutes int;
+ALTER TABLE matches ADD COLUMN IF NOT EXISTS round int;
+ALTER TABLE matches ADD COLUMN IF NOT EXISTS bracket_slot jsonb;
 
 CREATE TABLE IF NOT EXISTS match_events (
   event_id text PRIMARY KEY,

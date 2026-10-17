@@ -15,37 +15,7 @@ const { uploadWithRetry } = require('./services/receiptUploader');
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// Publishes committed outbox rows to the Redis stream and pub/sub channel.
-async function relayOnce() {
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
-    const { rows } = await client.query(
-      `SELECT id, aggregate_type, aggregate_id, event_type, payload FROM outbox
-       WHERE published_at IS NULL ORDER BY id LIMIT 100 FOR UPDATE SKIP LOCKED`
-    );
-    if (!rows.length) {
-      await client.query('COMMIT');
-      return 0;
-    }
-    const redis = getRedis();
-    if (redis.status === 'wait') await redis.connect();
-    for (const row of rows) {
-      const json = JSON.stringify(row.payload);
-      await redis.xadd('domain-events', '*', 'type', row.event_type, 'aggregate_id', row.aggregate_id, 'json', json);
-      const topic = `${row.aggregate_type}:${row.aggregate_id}`;
-      await redis.publish(`rt:${topic}`, JSON.stringify({ type: row.event_type, match_id: row.aggregate_id, data: row.payload }));
-    }
-    await client.query('UPDATE outbox SET published_at = now() WHERE id = ANY($1::bigint[])', [rows.map((r) => r.id)]);
-    await client.query('COMMIT');
-    return rows.length;
-  } catch (err) {
-    await client.query('ROLLBACK').catch(() => {});
-    throw err;
-  } finally {
-    client.release();
-  }
-}
+const { relayOnce } = require('./services/outboxRelayService');
 
 // Receipt storage is optional: failures here must never stop the relay.
 async function ensureBucket() {
@@ -133,7 +103,7 @@ async function main() {
   while (running) {
     try {
       const n = await relayOnce();
-      await sleep(n === 100 ? 0 : 500);
+      await sleep(n === 100 ? 0 : 250);
     } catch (err) {
       logger.warn({ err: err.message }, 'outbox relay failed; retrying');
       await sleep(2000);

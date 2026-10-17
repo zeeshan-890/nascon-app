@@ -1,0 +1,45 @@
+{
+  "league": { "name": "Alpha Premier League", "season": "2026/27", "qualification_spots": 2 },
+  "teams": [
+    { "team_id": "demo-team-1", "name": "Lahore Lions", "squad_id": "demo-sq-alpha-1", "club_id": "club-alpha-1" },
+    { "team_id": "demo-team-2", "name": "Karachi Kings", "squad_id": "demo-sq-alpha-2", "club_id": "club-alpha-2" },
+    { "team_id": "demo-team-3", "name": "Islamabad Falcons" },
+    { "team_id": "demo-team-4", "name": "Peshawar Hawks" }
+  ],
+  "venues": [
+    { "venue_id": "demo-venue-1", "name": "Gaddafi Park", "lat": 31.5134, "lng": 74.3333 },
+    { "venue_id": "demo-venue-2", "name": "National Arena", "lat": 33.6844, "lng": 73.0479 }
+  ],
+  "fixtures": [
+    { "match_id": "demo-m-1", "home": 0, "away": 1, "state": "completed", "days": -3, "venue": 0, "score": [2, 0] },
+    { "match_id": "demo-m-2", "home": 2, "away": 3, "state": "completed", "days": -2, "venue": 1, "score": [1, 1] },
+    { "match_id": "demo-m-3", "home": 1, "away": 2, "state": "completed", "days": -1, "venue": 0, "score": [0, 3] },
+    { "match_id": "demo-m-live", "home": 0, "away": 3, "state": "live", "hours": -0.5, "venue": 0, "score": [1, 1] },
+    { "match_id": "demo-m-5", "home": 2, "away": 0, "state": "upcoming", "days": 2, "venue": 1 },
+    { "match_id": "demo-m-6", "home": 3, "away": 1, "state": "upcoming", "days": 4, "venue": 0 }
+  ],
+  "clubs": {
+    "club-alpha-1": {
+      "venue": { "name": "Gaddafi Park", "lat": 31.5134, "lng": 74.3333 },
+      "socials": { "instagram": "https://instagram.com/lahorelions", "twitter": "https://twitter.com/lahorelions" },
+      "staff": [ { "name": "Imran Sheikh", "role": "Head Coach" }, { "name": "Sana Malik", "role": "Manager" }, { "name": "Dr. Adeel Raza", "role": "Physio" } ],
+      "stats": { "season": "2025/26", "played": 22, "won": 13, "drawn": 5, "lost": 4, "scored": 41, "conceded": 20 }
+    },
+    "club-alpha-2": {
+      "venue": { "name": "National Arena", "lat": 33.6844, "lng": 73.0479 },
+      "socials": { "instagram": "https://instagram.com/karachikings" },
+      "staff": [ { "name": "Farhan Qureshi", "role": "Head Coach" }, { "name": "Hina Baig", "role": "Manager" }, { "name": "Dr. Omar Siddiqui", "role": "Physio" } ],
+      "stats": { "season": "2025/26", "played": 22, "won": 10, "drawn": 6, "lost": 6, "scored": 33, "conceded": 27 }
+    }
+  },
+  "filler_positions": ["df", "mf", "fw"],
+  "players": [
+    "Ali Raza", "Bilal Ahmed", "Hamza Khan", "Usman Tariq", "Zain Malik", "Saad Hussain", "Danish Iqbal", "Fahad Mirza",
+    "Kamran Akmal", "Noman Ali", "Rizwan Shah", "Talha Butt", "Waqar Younis", "Yasir Nawaz", "Adnan Javed", "Haris Sohail"
+  ],
+  "products": [
+    { "product_id": "demo-prod-cap", "name": "Club Cap", "category": "accessories", "variant_id": "demo-var-cap-std", "size": "Standard", "color": "Navy", "price_minor": 120000 },
+    { "product_id": "demo-prod-scarf", "name": "Supporters Scarf", "category": "accessories", "variant_id": "demo-var-scarf-std", "size": "Standard", "color": "Gold", "price_minor": 180000 },
+    { "product_id": "demo-prod-ebook", "name": "Season Guide (eBook)", "category": "digital", "variant_id": "demo-var-ebook", "size": null, "color": null, "price_minor": 50000 }
+  ]
+}

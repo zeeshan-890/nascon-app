@@ -95,12 +95,19 @@ async function doAppend(client, req, requestCanonical) {
   });
   await matches.bumpVersion(client, match_id);
 
-  const out = { match_id, event_id, type, sequence, match_version: sequence };
+  const out = { match_id, event_id, type, event_type: type, sequence, match_version: sequence, version: sequence, league_id: match.league_id || null };
   await outbox.enqueue(client, { aggregate_type: 'match', aggregate_id: match_id, event_type: 'match.event_appended', payload: out });
   if (STATUS_TYPES.has(type)) {
-    await outbox.enqueue(client, { aggregate_type: 'match', aggregate_id: match_id, event_type: 'match.status_changed', payload: out });
+    const status = type === 'match_start' ? 'in_progress' : 'completed';
+    await outbox.enqueue(client, { aggregate_type: 'match', aggregate_id: match_id, event_type: 'match.status_changed', payload: { ...out, status } });
   }
   return { created: response };
+}
+
+// League-scoped caches (fixtures, standings) must be fresh right after a write.
+async function invalidateForMatch(matchId) {
+  const m = await matches.get(pool, matchId);
+  if (m && m.league_id) await require('../db/cache').invalidateLeague(m.league_id);
 }
 
 function mapUniqueViolation(err) {
@@ -136,6 +143,7 @@ async function appendEvent(body) {
 
   try {
     const result = await withTransaction((client) => doAppend(client, req, requestCanonical));
+    if (result.created) await invalidateForMatch(req.match_id);
     return result.replay || { status: 201, body: result.created };
   } catch (err) {
     // A racing request with the same event_id may have won; resolve idempotently.
@@ -147,4 +155,4 @@ async function appendEvent(body) {
   }
 }
 
-module.exports = { appendEvent, appendEventIn, parseEventRequest: parseRequest, canonicalOf };
+module.exports = { invalidateForMatch, appendEvent, appendEventIn, parseEventRequest: parseRequest, canonicalOf };

@@ -14,6 +14,7 @@ async function sweepOnce() {
     );
     released += r.released;
   }
+  if (released) await require('../db/cache').invalidateProducts();
   return released;
 }
 

@@ -179,7 +179,9 @@ async function transfer(body) {
   const early = await repo.getRequest(pool, body.request_id);
   if (early) return replayOf(early, canon);
 
-  return withTransaction((client) => transferIn(client, body, canon));
+  const out = await withTransaction((client) => transferIn(client, body, canon));
+  if (out.status === 201) await require('../db/cache').invalidate('clubs-roster');
+  return out;
 }
 
 // Number of audit entries of the player (the base_version clients queue), after due loan returns.

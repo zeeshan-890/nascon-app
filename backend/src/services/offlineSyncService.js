@@ -81,7 +81,8 @@ async function applyScoreEvent(client, action, authorize) {
   } else if (!match) {
     throw new Rejection('MATCH_NOT_FOUND');
   }
-  await authorizeOrReject(authorize, { type: 'score_event', league_id: leagueId, match_id: req.match_id });
+  const league = leagueId ? await leagues.get(client, leagueId) : null;
+  await authorizeOrReject(authorize, { type: 'score_event', league_id: leagueId, tenant_id: league ? league.tenant_id : null, match_id: req.match_id });
   const resolution = checkBase(action, match ? match.version : 0);
   const out = await eventService.appendEventIn(client, req);
   if (out.status === 200) return { dup: true, version: out.body.match_version };
@@ -104,12 +105,20 @@ async function applyRosterTransfer(client, action, authorize) {
   const squads = new Map((await rosterRepo.listSquads(client, body.league_id)).map((s) => [s.squad_id, s]));
   const from = squads.get(body.from_squad_id);
   if (!from || (body.type !== 'release' && !squads.get(body.to_squad_id))) throw new Rejection('SQUAD_NOT_FOUND');
-  await authorizeOrReject(authorize, { type: 'roster_transfer', league_id: body.league_id, club_id: from.club_id });
+  await authorizeOrReject(authorize, { type: 'roster_transfer', league_id: body.league_id, club_id: from.club_id, tenant_id: from.tenant_id });
 
   const resolution = checkBase(action, await version());
   const out = await rosterService.transferIn(client, body, canon);
   if (out.status === 200) return { dup: true, version: await version() };
   return { result: applied(resolution, await version()) };
+}
+
+// Fixtures/standings and club rosters cached for the mobile API must reflect an applied action at once.
+async function invalidateAfter(action) {
+  try {
+    if (action.type === 'score_event') await eventService.invalidateForMatch(action.payload.match_id);
+    else await require('../db/cache').invalidate('clubs-roster');
+  } catch (e) { /* cache is best-effort */ }
 }
 
 // Runs one action in its own transaction; the outcome record commits together with the effect.
@@ -127,6 +136,7 @@ async function processOne(client, deviceId, action, authorize) {
     const result = outcome.dup ? duplicate(outcome.version) : outcome.result;
     await record(client, deviceId, action, result);
     await client.query('COMMIT');
+    if (result.status === 'applied') await invalidateAfter(action);
     return result;
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});

@@ -31,7 +31,7 @@ describeDb('auth endpoints', () => {
     const c = jwt.verify(r.body.access_token, config.jwtSecret, { algorithms: ['HS256'] });
     expect(c.role).toBe(role);
     if (role === 'super_admin') expect(r.body.tenant).toBeNull();
-    else expect(r.body.tenant).toEqual({ tenant_id: 'tenant-alpha', name: 'Alpha Sports', logo_url: '/static/tenant-alpha.png', primary_color: '#0B5FFF', secondary_color: '#FFB800' });
+    else expect(r.body.tenant).toEqual({ tenant_id: 'tenant-alpha', name: 'Alpha Sports', logo_url: '/static/logo/tenant-alpha.png', primary_color: '#0B5FFF', secondary_color: '#FFB800' });
     expect(JSON.stringify(r.body)).not.toMatch(/password_hash|\$2[aby]\$/);
   });
 

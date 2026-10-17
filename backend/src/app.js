@@ -24,6 +24,7 @@ function createApp(opts = {}) {
   app.use(jsonBody);
   app.use(hardening);
   app.use(require('./routes/health'));
+  app.use(require('./routes/static'));
   app.use('/audit/v1', require('./routes/audit'));
   app.use('/api/v1', require('./routes/api/v1'));
   app.use(notFound);

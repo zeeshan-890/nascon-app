@@ -46,7 +46,7 @@ describeDb('reset', () => {
       const r = await post({ stock: { 'var-jersey-001-M': 0 } });
       expect(r.status).toBe(200);
       expect(r.body.stock).toEqual({ 'var-jersey-001-M': 0, 'var-jersey-001-L': 5 });
-      const rows = await q('SELECT variant_id, stock FROM variants ORDER BY variant_id');
+      const rows = await q("SELECT variant_id, stock FROM variants WHERE variant_id LIKE 'var-jersey%' ORDER BY variant_id");
       expect(rows).toEqual([{ variant_id: 'var-jersey-001-L', stock: 5 }, { variant_id: 'var-jersey-001-M', stock: 0 }]);
     });
     test.each([['x'], [1.5], [null], [true]])('bad seed %p -> 400 with seed field', async (seed) => {
@@ -109,7 +109,7 @@ describeDb('reset', () => {
       const s2 = await snapshot();
       expect(b.body).toEqual(a.body);
       expect(s2).toEqual(s1);
-      expect(s1).toMatchObject({ tenants: 2, sports: 4, users: 5, variants: 2, seed: 11 });
+      expect(s1).toMatchObject({ tenants: 2, sports: 4, users: 5, variants: 5, seed: 11 });
       await resetDb();
     });
 
@@ -143,7 +143,7 @@ describeDb('reset', () => {
         { league_id: 'league-beta-1', tenant_id: 'tenant-beta' },
       ]);
       expect(await count('clubs')).toBe(3);
-      const players = await q('SELECT player_id, club_id, tenant_id FROM players');
+      const players = await q("SELECT player_id, club_id, tenant_id FROM players WHERE player_id NOT LIKE 'demo-%'");
       expect(players).toHaveLength(3);
       players.forEach((p) => { expect(p.club_id).toBeTruthy(); expect(p.tenant_id).toBeTruthy(); });
     });
@@ -151,7 +151,7 @@ describeDb('reset', () => {
     test('discount and variant price', async () => {
       const d = await q('SELECT code, percent FROM discount_codes');
       expect(d).toEqual([{ code: 'WELCOME10', percent: 10 }]);
-      const v = await q('SELECT price_minor, currency FROM variants');
+      const v = await q("SELECT price_minor, currency FROM variants WHERE variant_id LIKE 'var-jersey%'");
       expect(v).toHaveLength(2);
       v.forEach((x) => expect({ ...x, price_minor: Number(x.price_minor) }).toEqual({ price_minor: 450000, currency: 'PKR' }));
     });
@@ -173,11 +173,11 @@ describeDb('reset', () => {
         payload: { sport_id: 'football', home_team_id: 'a', away_team_id: 'b' },
       });
       expect(ev.status).toBe(201);
-      expect(await count('match_events')).toBe(1);
+      expect(await q("SELECT 1 FROM match_events WHERE match_id='rst-m1'")).toHaveLength(1);
       const r = await post({});
       expect(r.status).toBe(200);
-      expect(await count('match_events')).toBe(0);
-      expect(await count('matches')).toBe(0);
+      expect(await q("SELECT 1 FROM match_events WHERE match_id='rst-m1'")).toHaveLength(0);
+      expect(await q("SELECT 1 FROM matches WHERE match_id='rst-m1'")).toHaveLength(0);
     });
 
     test('custom sport is removed by reset', async () => {

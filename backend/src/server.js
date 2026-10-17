@@ -23,8 +23,10 @@ async function main() {
   config.state.ready = true;
 
   const server = createHttpServer(createApp());
+  const hub = require('./realtime/hub').createHub(server);
   server.listen(config.port, '0.0.0.0', () => logger.info(`api listening on ${config.port}`));
   const shutdown = () => {
+    hub.close().catch(() => {});
     server.close(() => pool.end().finally(() => process.exit(0)));
     setTimeout(() => process.exit(0), 5000).unref();
   };

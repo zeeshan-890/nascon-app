@@ -116,7 +116,7 @@ describeDb('POST /audit/v1/leagues', () => {
       expect(await q("SELECT 1 FROM leagues WHERE league_id='lg-1'")).toHaveLength(0);
       expect(await q("SELECT 1 FROM league_teams WHERE league_id='lg-1'")).toHaveLength(0);
       expect(await q("SELECT 1 FROM matches WHERE match_id='fx-1'")).toHaveLength(0);
-      expect(await count('matches')).toBe(1);
+      expect(await q("SELECT 1 FROM matches WHERE match_id NOT LIKE 'demo-%'")).toHaveLength(1);
     });
     test('400 takes precedence over 404 and 409', async () => {
       const r = await post(league({ sport_id: 'nope', league_id: 'league-alpha-1', teams: ['a'] }));

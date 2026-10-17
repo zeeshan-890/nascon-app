@@ -276,7 +276,7 @@ async function compensate(client, req, money) {
   }
 }
 
-async function checkout(body) {
+async function checkoutInner(body) {
   const parsed = parseRequest(body);
   const req = {
     ...parsed,
@@ -309,6 +309,13 @@ async function checkout(body) {
     }
     client.release(broken ? true : undefined);
   }
+}
+
+async function checkout(body) {
+  const result = await checkoutInner(body);
+  // Stock changed (reserve/commit/release): the product catalogue must not be served stale.
+  await require('../db/cache').invalidateProducts();
+  return result;
 }
 
 module.exports = { checkout, parseRequest, __setFailureHook };

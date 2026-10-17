@@ -171,8 +171,10 @@ async function reset(body) {
   const parsed = parseBody(body);
   const sportIds = await runReset(parsed);
   await refreshPolicies();
+  await require('./demoSeedService').seedDemoData(parsed.seed);
   require('./authService').resetThrottles();
   await clearCache();
+  require('../routes/static').clearArtCache();
   return {
     status: 'reset_complete',
     seed: parsed.seed,

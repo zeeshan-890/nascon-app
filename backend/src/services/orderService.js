@@ -29,6 +29,7 @@ async function transition(orderId, toStatus, actor) {
     const r = await gateway.refund(result.payment.capture_id);
     if (r.ok) await withTransaction((c) => store.setPaymentState(c, orderId, 'refunded'));
   }
+  await require('../db/cache').invalidateProducts();
   return { order_id: orderId, from: result.from, to: result.to };
 }
 

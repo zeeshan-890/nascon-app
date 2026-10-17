@@ -33,7 +33,8 @@ function authorize(principal, action, resource, policies) {
       return isStr(principal.club_id) && res.club_id === principal.club_id
         ? { allowed: true } : deny('scope_mismatch');
     case 'self':
-      return isStr(principal.player_id) && res.player_id === principal.player_id
+      return (isStr(principal.player_id) && res.player_id === principal.player_id)
+        || (isStr(res.user_id) && res.user_id === principal.user_id)
         ? { allowed: true } : deny('scope_mismatch');
     default:
       return deny('unknown_scope');
