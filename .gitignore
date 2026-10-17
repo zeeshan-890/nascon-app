@@ -1,0 +1,11 @@
+mobile/build/
+mobile/app/build/
+mobile/.gradle/
+mobile/local.properties
+mobile/.idea/
+.gradle/
+local.properties
+.idea/
+*.iml
+.env
+node_modules/
