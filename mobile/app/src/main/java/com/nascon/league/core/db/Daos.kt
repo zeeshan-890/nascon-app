@@ -62,6 +62,9 @@ abstract class MatchDao {
     @Query("SELECT * FROM matches WHERE match_id = :matchId")
     abstract fun observe(matchId: String): Flow<MatchEntity?>
 
+    @Query("SELECT * FROM matches WHERE match_id = :matchId")
+    abstract suspend fun get(matchId: String): MatchEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     abstract suspend fun upsert(entity: MatchEntity)
 
@@ -92,6 +95,9 @@ abstract class StandingsDao {
 abstract class ClubDao {
     @Query("SELECT * FROM clubs WHERE club_id = :clubId")
     abstract fun observe(clubId: String): Flow<ClubEntity?>
+
+    @Query("SELECT club_id FROM clubs")
+    abstract suspend fun cachedIds(): List<String>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     abstract suspend fun upsert(entity: ClubEntity)
@@ -153,6 +159,69 @@ abstract class PendingActionDao {
 
     @Query("SELECT * FROM pending_actions WHERE action_id = :id")
     abstract suspend fun get(id: String): PendingActionEntity?
+
+    /** Oldest first: queued_at, then creation time, then insertion order. */
+    @Query(
+        "SELECT * FROM pending_actions WHERE owner_user_id = :owner AND status = 'PENDING' " +
+            "ORDER BY queued_at ASC, created_at ASC, rowid ASC LIMIT :limit",
+    )
+    abstract suspend fun pendingForOwner(owner: String, limit: Int): List<PendingActionEntity>
+
+    @Query(
+        "SELECT * FROM pending_actions WHERE owner_user_id = :owner AND status IN ('PENDING','SYNCING') " +
+            "ORDER BY queued_at ASC, created_at ASC, rowid ASC",
+    )
+    abstract fun observeActive(owner: String): Flow<List<PendingActionEntity>>
+
+    @Query("SELECT COUNT(*) FROM pending_actions WHERE owner_user_id = :owner AND status = 'PENDING'")
+    abstract suspend fun countPending(owner: String): Int
+
+    @Query(
+        "SELECT COUNT(*) FROM pending_actions WHERE owner_user_id = :owner AND entity_key = :entityKey " +
+            "AND type = :type AND status IN ('PENDING','SYNCING')",
+    )
+    abstract suspend fun countActiveForEntity(owner: String, entityKey: String, type: String): Int
+
+    @Query("UPDATE pending_actions SET status = 'SYNCING' WHERE action_id IN (:ids)")
+    abstract suspend fun markSyncing(ids: List<String>)
+
+    @Query("UPDATE pending_actions SET status = 'PENDING', attempts = attempts + 1 WHERE action_id IN (:ids)")
+    abstract suspend fun releaseWithAttempt(ids: List<String>)
+
+    @Query("UPDATE pending_actions SET status = 'PENDING' WHERE action_id IN (:ids)")
+    abstract suspend fun releaseNoAttempt(ids: List<String>)
+
+    @Query("UPDATE pending_actions SET status = 'PENDING' WHERE status = 'SYNCING'")
+    abstract suspend fun resetSyncing()
+
+    @Query("DELETE FROM pending_actions WHERE action_id IN (:ids)")
+    abstract suspend fun deleteByIds(ids: List<String>)
+
+    @Transaction
+    open suspend fun claim(owner: String, limit: Int): List<PendingActionEntity> {
+        val rows = pendingForOwner(owner, limit)
+        if (rows.isNotEmpty()) markSyncing(rows.map { it.actionId })
+        return rows.map { it.copy(status = ActionStatus.SYNCING) }
+    }
+}
+
+@Dao
+abstract class SyncResultDao {
+    @Query(
+        "SELECT * FROM sync_results WHERE owner_user_id = :owner " +
+            "ORDER BY synced_at DESC, processed_order DESC LIMIT 50",
+    )
+    abstract fun observe(owner: String): Flow<List<SyncResultEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    abstract suspend fun insertAll(items: List<SyncResultEntity>)
+
+    @Query(
+        "DELETE FROM sync_results WHERE owner_user_id = :owner AND action_id NOT IN (" +
+            "SELECT action_id FROM sync_results WHERE owner_user_id = :owner " +
+            "ORDER BY synced_at DESC, processed_order DESC LIMIT 50)",
+    )
+    abstract suspend fun trim(owner: String)
 }
 
 /** Cache housekeeping: clears every cache table, never pending_actions. */

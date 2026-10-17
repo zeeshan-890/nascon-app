@@ -77,6 +77,7 @@ class FakeMatchDao : MatchDao() {
     val rows = MutableStateFlow<Map<String, MatchEntity>>(emptyMap())
     override fun observe(matchId: String): Flow<MatchEntity?> = rows.map { it[matchId] }
     override suspend fun upsert(entity: MatchEntity) { rows.value = rows.value + (entity.matchId to entity) }
+    override suspend fun get(matchId: String): MatchEntity? = rows.value[matchId]
     override suspend fun idsNewestFirst(): List<String> =
         rows.value.values.sortedWith(compareByDescending<MatchEntity> { it.updatedAt }.thenBy { it.matchId }).map { it.matchId }
     override suspend fun deleteByIds(ids: List<String>) { rows.value = rows.value - ids.toSet() }
@@ -94,6 +95,21 @@ class FakePendingDao : PendingActionDao() {
     override fun observePendingByType(owner: String, type: String): Flow<List<PendingActionEntity>> =
         rows.map { l -> l.filter { it.ownerUserId == owner && it.type == type && it.status == "PENDING" } }
     override suspend fun insert(entity: PendingActionEntity) { rows.value = rows.value + entity }
+    override fun observeActive(owner: String): Flow<List<PendingActionEntity>> =
+        rows.map { l -> l.filter { it.ownerUserId == owner && it.status in setOf("PENDING", "SYNCING") }.sortedBy { it.queuedAt } }
+    override suspend fun countPending(owner: String): Int = rows.value.count { it.ownerUserId == owner && it.status == "PENDING" }
+    override suspend fun countActiveForEntity(owner: String, entityKey: String, type: String): Int =
+        rows.value.count { it.ownerUserId == owner && it.entityKey == entityKey && it.type == type && it.status in setOf("PENDING", "SYNCING") }
+    private fun setStatus(ids: List<String>, status: String, bump: Int = 0) {
+        rows.value = rows.value.map { if (it.actionId in ids) it.copy(status = status, attempts = it.attempts + bump) else it }
+    }
+    override suspend fun markSyncing(ids: List<String>) = setStatus(ids, "SYNCING")
+    override suspend fun releaseWithAttempt(ids: List<String>) = setStatus(ids, "PENDING", 1)
+    override suspend fun releaseNoAttempt(ids: List<String>) = setStatus(ids, "PENDING")
+    override suspend fun resetSyncing() { rows.value = rows.value.map { if (it.status == "SYNCING") it.copy(status = "PENDING") else it } }
+    override suspend fun deleteByIds(ids: List<String>) { rows.value = rows.value.filter { it.actionId !in ids } }
+    override suspend fun pendingForOwner(owner: String, limit: Int): List<PendingActionEntity> =
+        rows.value.filter { it.ownerUserId == owner && it.status == "PENDING" }.sortedBy { it.queuedAt }.take(limit)
     override suspend fun get(id: String): PendingActionEntity? = rows.value.firstOrNull { it.actionId == id }
 }
 

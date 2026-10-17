@@ -8,6 +8,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -19,6 +20,7 @@ import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -29,11 +31,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.nascon.league.R
 import com.nascon.league.core.network.ConnState
+import com.nascon.league.ui.sync.BannerKind
+import com.nascon.league.ui.sync.bannerModel
 import com.nascon.league.ui.theme.Spacing
 
 @Composable
@@ -45,36 +51,47 @@ fun ConnectivityBanner(
     modifier: Modifier = Modifier,
 ) {
     val scheme = MaterialTheme.colorScheme
+    val model = bannerModel(state, pendingCount)
     val icon: ImageVector
-    val text: String
     val container: Color
     val content: Color
-    when (state) {
-        ConnState.ONLINE -> {
+    when (model.kind) {
+        BannerKind.ONLINE -> {
             icon = Icons.Default.CloudDone
-            text = "Online"
             container = scheme.surfaceVariant
             content = scheme.onSurfaceVariant
         }
-        ConnState.OFFLINE -> {
-            icon = Icons.Default.CloudOff
-            text = "Offline — showing saved data"
-            container = scheme.errorContainer
-            content = scheme.onErrorContainer
-        }
-        ConnState.SERVER_UNREACHABLE -> {
-            icon = Icons.Default.ErrorOutline
-            text = "Server unreachable — showing saved data"
-            container = scheme.errorContainer
-            content = scheme.onErrorContainer
-        }
-        ConnState.SYNCING -> {
+        BannerKind.PENDING -> {
             icon = Icons.Default.Sync
-            text = "Syncing…"
+            container = scheme.secondaryContainer
+            content = scheme.onSecondaryContainer
+        }
+        BannerKind.OFFLINE -> {
+            icon = Icons.Default.CloudOff
+            container = scheme.errorContainer
+            content = scheme.onErrorContainer
+        }
+        BannerKind.SERVER_UNREACHABLE -> {
+            icon = Icons.Default.ErrorOutline
+            container = scheme.errorContainer
+            content = scheme.onErrorContainer
+        }
+        BannerKind.SYNCING -> {
+            icon = Icons.Default.Sync
             container = scheme.secondaryContainer
             content = scheme.onSecondaryContainer
         }
     }
+    val text = when (model.kind) {
+        BannerKind.ONLINE -> stringResource(R.string.f9_banner_online)
+        BannerKind.OFFLINE -> stringResource(R.string.f9_banner_offline)
+        BannerKind.SERVER_UNREACHABLE -> stringResource(R.string.f9_banner_unreachable)
+        BannerKind.PENDING ->
+            if (model.pendingCount == 1) stringResource(R.string.f9_banner_pending_one)
+            else stringResource(R.string.f9_banner_pending_many, model.pendingCount)
+        BannerKind.SYNCING -> stringResource(R.string.f9_banner_syncing)
+    }
+    val openLabel = stringResource(R.string.f9_banner_open_status)
 
     val angle = if (state == ConnState.SYNCING) {
         val transition = rememberInfiniteTransition(label = "sync")
@@ -91,12 +108,14 @@ fun ConnectivityBanner(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClickLabel = "Open sync status", onClick = onClick),
+            .clickable(onClickLabel = openLabel, onClick = onClick),
         color = container,
         contentColor = content,
     ) {
+        Column {
         Row(
             modifier = Modifier
+                .fillMaxWidth()
                 .heightIn(min = 48.dp)
                 .padding(horizontal = Spacing.md, vertical = Spacing.xs),
             verticalAlignment = Alignment.CenterVertically,
@@ -112,12 +131,16 @@ fun ConnectivityBanner(
             )
             if (state == ConnState.SERVER_UNREACHABLE) {
                 TextButton(onClick = onOpenSettings, modifier = Modifier.heightIn(min = 48.dp)) {
-                    Text("Settings")
+                    Text(stringResource(R.string.f9_banner_settings))
                 }
             }
-            if (pendingCount > 0) {
-                Text("$pendingCount pending", style = MaterialTheme.typography.labelLarge)
+            if (pendingCount > 0 && model.kind != BannerKind.PENDING) {
+                Text(stringResource(R.string.f9_banner_trailing_pending, pendingCount), style = MaterialTheme.typography.labelLarge)
             }
+        }
+        if (model.kind == BannerKind.SYNCING) {
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+        }
         }
     }
 }

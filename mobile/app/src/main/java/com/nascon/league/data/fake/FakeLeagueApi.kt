@@ -52,47 +52,10 @@ import kotlin.math.abs
 
 class FakeLeagueApi(private val hasNetwork: () -> Boolean = { true }) : LeagueApi {
 
-    private data class Team(val id: String, val name: String)
-    private data class Game(
-        val matchId: String,
-        val home: Team,
-        val away: Team,
-        val status: String,
-        val scheduledAt: String?,
-        val homeScore: Int,
-        val awayScore: Int,
-    )
-
-    private val lions = Team("team-alpha-lions", "Alpha Lions")
-    private val hawks = Team("team-beta-hawks", "Beta Hawks")
-    private val wolves = Team("team-gamma-wolves", "Gamma Wolves")
-    private val sharks = Team("team-delta-sharks", "Delta Sharks")
-    private val teams = listOf(lions, hawks, wolves, sharks)
-
-    private val lock = Any()
-    private val games: MutableList<Game> = mutableListOf(
-        Game("demo-m-1", lions, hawks, "completed", "2026-10-04T14:00:00Z", 2, 1),
-        Game("demo-m-2", wolves, sharks, "completed", "2026-10-04T16:00:00Z", 0, 0),
-        Game("demo-m-3", sharks, hawks, "completed", "2026-10-11T14:00:00Z", 1, 2),
-        Game("demo-m-live", lions, sharks, "in_progress", "2026-10-17T14:00:00Z", 1, 0),
-        Game("demo-m-5", hawks, wolves, "scheduled", "2026-10-18T14:00:00Z", 0, 0),
-        Game("demo-m-6", wolves, lions, "scheduled", "2026-10-25T14:00:00Z", 0, 0),
-    )
-
-    // Fake sport config data table: the scoring event keys live here only.
-    private val footballScoringKeys = listOf("goal")
-    private val scoringKey get() = footballScoringKeys.first()
-
-    // Events of the live demo match (mutable, in memory).
-    private val liveEvents = ArrayList<MatchEventDto>()
-    private var liveToggle = false
-
-    private val postedEvents = HashMap<String, Int>()
-    private var syncOrder = 0
-
-    init {
-        liveEvents += scoreEvent(LIVE_ID, 1, lions.id, 10)
-    }
+    private val matches = FakeMatches()
+    private val rosterState = FakeRoster()
+    private val syncState = FakeSync(matches, rosterState)
+    private val teams = matches.teams
 
     private val variants = mapOf(
         "var-jersey-s" to Triple("prod-jersey", "S", 4999L),
@@ -110,7 +73,6 @@ class FakeLeagueApi(private val hasNetwork: () -> Boolean = { true }) : LeagueAp
     )
 
     private companion object {
-        const val LIVE_ID = "demo-m-live"
     }
 
     private suspend fun pause(key: String) {
@@ -184,105 +146,28 @@ class FakeLeagueApi(private val hasNetwork: () -> Boolean = { true }) : LeagueAp
     override suspend fun fixtures(leagueId: String): List<FixtureDto> {
         pause("fixtures$leagueId")
         requireLeague(leagueId)
-        return synchronized(lock) { games.toList() }.map {
-            FixtureDto(
-                matchId = it.matchId,
-                homeTeamId = it.home.id,
-                homeName = it.home.name,
-                awayTeamId = it.away.id,
-                awayName = it.away.name,
-                status = it.status,
-                scheduledAt = it.scheduledAt,
-                venueName = "Alpha Stadium",
-                homeScore = it.homeScore,
-                awayScore = it.awayScore,
-                version = if (it.status == "scheduled") 0 else (it.homeScore + it.awayScore + 1).toLong(),
-            )
-        }
-    }
-
-    private fun outcomeOf(g: Game) = when (g.status) {
-        "scheduled" -> "scheduled"
-        "in_progress" -> "in_progress"
-        else -> when {
-            g.homeScore > g.awayScore -> "home_win"
-            g.awayScore > g.homeScore -> "away_win"
-            else -> "draw"
-        }
+        return matches.fixtures()
     }
 
     override suspend fun match(id: String): MatchDetailDto {
         pause("match$id")
-        val g = synchronized(lock) { games.firstOrNull { it.matchId == id } }
-            ?: fail(404, "MATCH_NOT_FOUND", "Match not found.")
-        val goals = ArrayList<Pair<Int, String>>() // minute, team
-        for (i in 0 until g.homeScore) goals += (10 + i * 20) to g.home.id
-        for (i in 0 until g.awayScore) goals += (25 + i * 20) to g.away.id
-        goals.sortBy { it.first }
-        val events = if (g.matchId == LIVE_ID) {
-            synchronized(lock) { liveEvents.toList() }
-        } else goals.mapIndexed { idx, (minute, team) ->
-            scoreEvent(g.matchId, idx + 1, team, minute)
-        }
-        val winner = when (outcomeOf(g)) {
-            "home_win" -> g.home.id
-            "away_win" -> g.away.id
-            else -> null
-        }
-        return MatchDetailDto(
-            matchId = g.matchId,
-            sportId = "football",
-            leagueId = "league-alpha-1",
-            status = g.status,
-            outcome = outcomeOf(g),
-            winnerTeamId = winner,
-            home = TeamScoreDto(g.home.id, g.homeScore),
-            away = TeamScoreDto(g.away.id, g.awayScore),
-            version = (events.size + (postedEvents[id] ?: 0)).toLong(),
-            events = events,
-            pinnedProducts = listOf(PinnedProductDto("prod-jersey", "Alpha Lions Home Jersey", 4999)),
-        )
+        return matches.detail(id) ?: fail(404, "MATCH_NOT_FOUND", "Match not found.")
     }
-
-    private fun scoreEvent(matchId: String, seq: Int, teamId: String, minute: Int) = MatchEventDto(
-        sequence = seq,
-        eventId = "$matchId-e$seq",
-        type = "score",
-        payload = buildJsonObject {
-            put("team_id", teamId)
-            put("event_type", scoringKey)
-            put("minute", minute)
-        },
-        signature = "demo-signature",
-    )
 
     /** Appends one scoring event to the live demo match, alternating home/away. */
-    fun simulateLiveEvent() {
-        synchronized(lock) {
-            val idx = games.indexOfFirst { it.matchId == LIVE_ID }
-            if (idx < 0) return
-            val g = games[idx]
-            liveToggle = !liveToggle
-            val homeScores = liveToggle
-            games[idx] = if (homeScores) g.copy(homeScore = g.homeScore + 1) else g.copy(awayScore = g.awayScore + 1)
-            val team = if (homeScores) g.home.id else g.away.id
-            liveEvents += scoreEvent(LIVE_ID, liveEvents.size + 1, team, 10 + liveEvents.size * 5)
-        }
-    }
+    fun simulateLiveEvent() = matches.simulateLiveEvent()
 
     override suspend fun postEvent(matchId: String, body: MatchEventRequest): MatchEventResponse {
         pause("event$matchId")
-        val current = match(matchId)
-        val extra = (postedEvents[matchId] ?: 0) + 1
-        postedEvents[matchId] = extra
-        return MatchEventResponse(
-            eventId = body.eventId,
-            matchId = matchId,
-            type = body.type,
-            sequence = current.events.size + extra,
-            matchVersion = current.version + 1,
-            signature = "demo-signature",
-        )
+        return when (val o = matches.applyEvent(body.copy(matchId = matchId), null)) {
+            is MatchOutcome.Applied -> o.response
+            is MatchOutcome.Duplicate -> o.response
+            is MatchOutcome.Rejected -> when (o.code) {
+                "MATCH_NOT_FOUND" -> fail(404, o.code, "Match not found.")
+                "VALIDATION_ERROR" -> fail(400, o.code, "Invalid event.")
+                else -> fail(409, o.code, "Event rejected.")
+            }
+        }
     }
 
     override suspend fun sport(id: String): SportConfigDto {
@@ -292,7 +177,7 @@ class FakeLeagueApi(private val hasNetwork: () -> Boolean = { true }) : LeagueAp
             sportId = "football",
             scoringModel = "goals",
             scoringEvents = buildJsonObject {
-                footballScoringKeys.forEach { key -> put(key, buildJsonObject { put("points", 1) }) }
+                matches.scoringPoints.forEach { (key, pts) -> put(key, buildJsonObject { put("points", pts) }) }
             },
         )
     }
@@ -300,14 +185,14 @@ class FakeLeagueApi(private val hasNetwork: () -> Boolean = { true }) : LeagueAp
     override suspend fun standings(leagueId: String): StandingsDto {
         pause("standings$leagueId")
         requireLeague(leagueId)
-        class Row(val team: Team) {
+        class Row(val team: FakeTeam) {
             var w = 0; var d = 0; var l = 0; var gf = 0; var ga = 0
             val played get() = w + d + l
             val pts get() = w * 3 + d
             val diff get() = gf - ga
         }
         val rows = teams.associate { it.id to Row(it) }
-        for (g in synchronized(lock) { games.toList() }.filter { it.status == "completed" }) {
+        for (g in matches.games().filter { it.status == "completed" }) {
             val h = rows.getValue(g.home.id)
             val a = rows.getValue(g.away.id)
             h.gf += g.homeScore; h.ga += g.awayScore
@@ -361,16 +246,6 @@ class FakeLeagueApi(private val hasNetwork: () -> Boolean = { true }) : LeagueAp
     override suspend fun club(id: String): ClubDto {
         pause("club$id")
         if (id != "club-alpha-1") fail(404, "CLUB_NOT_FOUND", "Club not found.")
-        val names = listOf(
-            Triple("Marco Reyes", "GK", "sq-first"),
-            Triple("Liam Carter", "DEF", "sq-first"),
-            Triple("Noah Okafor", "DEF", "sq-first"),
-            Triple("Ethan Silva", "MID", "sq-first"),
-            Triple("Omar Haddad", "MID", "sq-first"),
-            Triple("Jack Turner", "MID", "sq-youth"),
-            Triple("Diego Alvarez", "FWD", "sq-first"),
-            Triple("Yusuf Khan", "FWD", "sq-youth"),
-        )
         return ClubDto(
             clubId = "club-alpha-1",
             name = "Alpha Lions FC",
@@ -387,37 +262,25 @@ class FakeLeagueApi(private val hasNetwork: () -> Boolean = { true }) : LeagueAp
                 StaffDto("Amina Rao", "Physio"),
             ),
             stats = listOf(ClubStatDto("2026", 3, 2, 0, 1, 7, 5)),
-            roster = names.mapIndexed { i, (n, pos, sq) ->
-                RosterPlayerDto(
-                    playerId = "p${i + 1}",
-                    name = n,
-                    position = pos,
-                    role = "player",
-                    squadId = sq,
-                    leagueId = "league-alpha-1",
-                    onLoan = false,
-                    auditVersion = 1,
-                )
-            },
-            squads = listOf(
-                SquadDto("sq-first", "First Team", "club-alpha-1"),
-                SquadDto("sq-youth", "Youth Squad", "club-alpha-1"),
-            ),
+            roster = rosterState.playerDtos(),
+            squads = rosterState.squadDtos(),
         )
     }
 
     override suspend fun rosterTransfer(clubId: String, body: JsonObject): RosterTransferResponse {
         pause("transfer$clubId")
         if (clubId != "club-alpha-1") fail(404, "CLUB_NOT_FOUND", "Club not found.")
-        val reqId = (body["request_id"] as? JsonPrimitive)?.takeIf { it.isString }?.content
-            ?: UUID.randomUUID().toString()
-        return RosterTransferResponse(
-            requestId = reqId,
-            status = "approved",
-            state = "completed",
-            registration = buildJsonObject { put("status", "registered") },
-            auditEntry = buildJsonObject { put("action", "roster_transfer") },
-        )
+        val withId = if (body["request_id"] is JsonPrimitive) body
+        else JsonObject(body + ("request_id" to JsonPrimitive(UUID.randomUUID().toString())))
+        return when (val o = rosterState.transfer(withId, null)) {
+            is RosterOutcome.Applied -> o.response
+            is RosterOutcome.Duplicate -> o.response
+            is RosterOutcome.Rejected -> when {
+                o.code == "VALIDATION_ERROR" -> fail(400, o.code, "Invalid transfer.")
+                o.code.endsWith("_NOT_FOUND") -> fail(404, o.code, "Not found.")
+                else -> fail(409, o.code, "Transfer rejected.")
+            }
+        }
     }
 
     // ---- commerce ----
@@ -447,21 +310,6 @@ class FakeLeagueApi(private val hasNetwork: () -> Boolean = { true }) : LeagueAp
     // ---- sync ----
     override suspend fun sync(body: SyncRequest): SyncResponse {
         pause("sync${body.deviceId}")
-        val results = body.actions.map {
-            syncOrder++
-            SyncResultDto(
-                actionId = it.actionId,
-                status = "applied",
-                resolution = "applied",
-                processedOrder = syncOrder,
-                serverVersion = it.baseVersion + 1,
-                signature = "demo-signature",
-            )
-        }
-        return SyncResponse(
-            deviceId = body.deviceId,
-            results = results,
-            summary = SyncSummaryDto(applied = results.size, rejected = 0, duplicate = 0),
-        )
+        return syncState.sync(body)
     }
 }

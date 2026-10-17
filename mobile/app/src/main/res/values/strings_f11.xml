@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="f11_sync_status_title">Sync status</string>
+    <string name="f11_sync_pending">%1$d changes waiting to sync</string>
+    <string name="f11_sync_pending_one">1 change waiting to sync</string>
+    <string name="f11_sync_none">Nothing waiting to sync</string>
+    <string name="f11_sync_open_hint">Opens the sync status screen</string>
+    <string name="f11_connection_title">Connection</string>
+    <string name="f11_connection_server">Server: %1$s</string>
+    <string name="f11_connection_server_none">Server: not set</string>
+    <string name="f11_mode_demo">Demo data (no server)</string>
+    <string name="f11_mode_live">Live server</string>
+    <string name="f11_mode_label">Mode: %1$s</string>
+    <string name="f11_device_id">Device ID: %1$s</string>
+</resources>

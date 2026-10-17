@@ -87,7 +87,30 @@ data class PendingActionEntity(
     @ColumnInfo(name = "signature") val signature: String? = null,
     @ColumnInfo(name = "created_at") val createdAt: Long,
     @ColumnInfo(name = "settled_at") val settledAt: Long? = null,
+    @ColumnInfo(name = "attempts", defaultValue = "0") val attempts: Int = 0,
+    @ColumnInfo(name = "tenant_id") val tenantId: String? = null,
 )
+
+/** Outcome of one synced action, kept for the "Last sync results" list (last 50 per owner). */
+@Entity(tableName = "sync_results", indices = [Index("owner_user_id")])
+data class SyncResultEntity(
+    @PrimaryKey @ColumnInfo(name = "action_id") val actionId: String,
+    @ColumnInfo(name = "owner_user_id") val ownerUserId: String,
+    @ColumnInfo(name = "type") val type: String,
+    @ColumnInfo(name = "label") val label: String,
+    @ColumnInfo(name = "status") val status: String,
+    @ColumnInfo(name = "resolution") val resolution: String?,
+    @ColumnInfo(name = "reason_code") val reasonCode: String?,
+    @ColumnInfo(name = "server_version") val serverVersion: Long,
+    @ColumnInfo(name = "processed_order") val processedOrder: Int,
+    @ColumnInfo(name = "synced_at") val syncedAt: Long,
+)
+
+object SyncResultStatus {
+    const val APPLIED = "applied"
+    const val REJECTED = "rejected"
+    const val DUPLICATE = "duplicate"
+}
 
 @Entity(tableName = "meta")
 data class MetaEntity(

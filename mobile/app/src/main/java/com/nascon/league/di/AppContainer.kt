@@ -30,6 +30,13 @@ import com.nascon.league.data.repo.RefreshDeduper
 import com.nascon.league.data.repo.SportRepository
 import com.nascon.league.data.repo.StandingsRepository
 import com.nascon.league.data.repo.SessionRepository
+import com.nascon.league.data.sync.AppSyncEnvironment
+import com.nascon.league.data.sync.RepositoryCacheRefresher
+import com.nascon.league.data.sync.RetrofitSyncApi
+import com.nascon.league.data.sync.RoomMatchCache
+import com.nascon.league.data.sync.RoomSyncStore
+import com.nascon.league.data.sync.SyncRepository
+import com.nascon.league.data.sync.SyncScheduler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -87,7 +94,20 @@ class AppContainer(context: Context) {
     val receiptStore = ReceiptStore(appContext, currentUserId, apiProvider)
     val pendingRepository = PendingActionRepository(database.pendingActionDao(), currentUserId)
 
-    val realtime: RealtimeClient = SwitchingRealtimeClient(
+    val syncRepository: SyncRepository = SyncRepository(
+        store = RoomSyncStore(database),
+        matches = RoomMatchCache(database.matchDao()),
+        api = RetrofitSyncApi(apiProvider),
+        env = AppSyncEnvironment(sessionRepository, tokenStore, configStore, authRepository, isOnline),
+        refresher = RepositoryCacheRefresher(
+            leaguesRepository, fixturesRepository, matchRepository, standingsRepository,
+            clubRepository, database.clubDao(),
+        ),
+        scheduler = SyncScheduler(appContext),
+        scope = scope,
+    )
+
+    val realtime: RealtimeClient =SwitchingRealtimeClient(
         useFake = { demoMode },
         real = OkHttpRealtimeClient(
             baseUrlProvider = { currentBaseUrl },
@@ -106,6 +126,20 @@ class AppContainer(context: Context) {
     val refreshSignal: SharedFlow<Unit> = _refreshSignal
 
     init {
+        // Crash safety: rows left SYNCING by a killed process go back to PENDING, then sync if online.
+        scope.launch {
+            runCatching { syncRepository.resetInterrupted() }
+            runCatching { syncRepository.onOnline() }
+        }
+        scope.launch {
+            var previous: ConnState? = null
+            connectivity.state.collect { now ->
+                if (now == ConnState.ONLINE && previous != ConnState.ONLINE) {
+                    runCatching { syncRepository.onOnline() }
+                }
+                previous = now
+            }
+        }
         scope.launch {
             configStore.config.collectLatest { cfg ->
                 demoMode = cfg.useDemoData
