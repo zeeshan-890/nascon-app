@@ -52,3 +52,39 @@ Evidence/notes:
 3. Device state: original state recorded before any change was airplane_mode_on=0, Wi-Fi enabled, mobile_data setting=0, stay_on_while_plugged_in=0. Wi-Fi, mobile data and airplane mode were never changed. stay-awake was set on then restored to 0.
 
 To complete: unlock the phone, disable its screen timeout (or keep it plugged in with stay awake) and re-run the agent.
+
+## F12. Failure modes on the real server
+
+Gap: `ApiError` has no HTTP Retry-After header. A refresh is scheduled only when the error JSON details include `retryAfterSeconds`, `retryAfter`, or `retry_after`. That refresh does not clear pending actions. `ReceiptLoadResult` has no content-type; a saved body that starts with `{` or `[` is shown as an error.
+
+### 1. Test connection
+Turn Use demo data off. Emulator address `http://10.0.2.2:8080`, or on a phone `http://<laptop LAN IP>:8080` (same Wi-Fi, port 8080). Test connection shows Connected or a plain failure. A saved address is not overwritten.
+Result: NOT RUN ON DEVICE yet — the app was not operated on a phone or emulator in this session.
+
+### 2. Wrong password
+A wrong password shows a plain message, with no stack trace and no code dump.
+Result: NOT RUN ON DEVICE yet — login was not attempted on a device.
+
+### 3. Forbidden
+A forbidden action shows "You don't have permission to do that."
+Result: NOT RUN ON DEVICE yet — no restricted action was attempted on a device.
+
+### 4. Too many requests
+A 429 shows "Too many requests — try again in a few seconds." Any scheduled retry leaves pending actions in place.
+Result: NOT RUN ON DEVICE yet — rate limiting was not triggered on a device.
+
+### 5. Server unreachable
+The existing banner says the server is unreachable and cached screens stay usable. Saved lists are not cleared.
+Result: NOT RUN ON DEVICE yet — the server was not stopped while the app was open on a device.
+
+### 6. Slow request
+A request that takes about 15 seconds shows a loading indicator, then a retry button on screens that already have loading and error states.
+Result: NOT RUN ON DEVICE yet — a delayed server was not used on a device.
+
+### 7. Checkout
+Success is unchanged. Out of stock shows "Sorry, this item just sold out." A second tap while paying does not start another checkout. Offline disables Pay and shows "Checkout needs an internet connection."
+Result: NOT RUN ON DEVICE yet — checkout was not run on a device.
+
+### 8. Receipt, images, dates, live updates
+An in-app PDF still renders and Share works. A JSON error body shows an error instead of a blank viewer. A failed image shows the existing placeholder. Instants use the device time zone. A live event already on screen is not listed twice.
+Result: NOT RUN ON DEVICE yet — receipt, image, and live-update checks were not run on a device.
