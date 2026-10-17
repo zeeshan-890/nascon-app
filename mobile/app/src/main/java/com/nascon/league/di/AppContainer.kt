@@ -24,7 +24,9 @@ import com.nascon.league.data.store.CheckoutAttemptStore
 import com.nascon.league.data.repo.FixturesRepository
 import com.nascon.league.data.repo.LeaguesRepository
 import com.nascon.league.data.repo.MatchRepository
+import com.nascon.league.data.repo.OrderRepository
 import com.nascon.league.data.repo.PendingActionRepository
+import com.nascon.league.data.repo.PlayerHistoryRepository
 import com.nascon.league.data.repo.ProductRepository
 import com.nascon.league.data.repo.RefreshDeduper
 import com.nascon.league.data.repo.SportRepository
@@ -89,6 +91,8 @@ class AppContainer(context: Context) {
     val sportRepository = SportRepository(database.sportDao(), apiProvider, deduper, isOnline)
     val productRepository = ProductRepository(database.productDao(), apiProvider, deduper, isOnline)
     val clubsListRepository = ClubsListRepository(database.cacheDao(), apiProvider, deduper, isOnline)
+    val playerHistoryRepository = PlayerHistoryRepository(database.cacheDao(), apiProvider, deduper, isOnline)
+    val orderRepository = OrderRepository(database.cacheDao(), apiProvider, deduper, isOnline)
     val cartStore = CartStore(appContext, currentUserId)
     val checkoutAttemptStore = CheckoutAttemptStore(appContext, currentUserId)
     val receiptStore = ReceiptStore(appContext, currentUserId, apiProvider)

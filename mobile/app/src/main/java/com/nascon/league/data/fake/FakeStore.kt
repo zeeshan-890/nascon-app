@@ -2,6 +2,9 @@ package com.nascon.league.data.fake
 
 import com.nascon.league.data.api.dto.CheckoutRequest
 import com.nascon.league.data.api.dto.CheckoutResponse
+import com.nascon.league.data.api.dto.OrderDetailDto
+import com.nascon.league.data.api.dto.OrderItemDto
+import com.nascon.league.data.api.dto.OrderStatusEntryDto
 import com.nascon.league.data.api.dto.ProductDto
 import com.nascon.league.data.api.dto.ReceiptDto
 import com.nascon.league.data.api.dto.VariantDto
@@ -38,6 +41,7 @@ class FakeStore(
     private val lock = Any()
     private val stock = LinkedHashMap<String, Int>()
     private val orders = HashMap<String, Stored>()
+    private val orderDetails = HashMap<String, OrderDetailDto>()
 
     private val catalogue: List<ProductDto> = listOf(
         ProductDto(
@@ -87,6 +91,12 @@ class FakeStore(
     suspend fun checkout(req: CheckoutRequest): CheckoutResponse {
         pause("checkout${req.orderId}")
         return synchronized(lock) { process(req) }
+    }
+
+    /** Order detail of a successful checkout; 404 ORDER_NOT_FOUND otherwise. */
+    suspend fun order(orderId: String): OrderDetailDto {
+        pause("order$orderId")
+        return synchronized(lock) { orderDetails[orderId] } ?: fail(404, "ORDER_NOT_FOUND", "Order not found.")
     }
 
     fun receiptPdf(orderId: String): ByteArray? {
@@ -182,6 +192,25 @@ class FakeStore(
             ),
         )
         orders[req.orderId] = Stored(req, response, 201, null, bytes)
+        val paidAt = java.time.Instant.now().toString()
+        orderDetails[req.orderId] = OrderDetailDto(
+            orderId = req.orderId,
+            status = "paid",
+            currency = "PKR",
+            items = wanted.map { (id, qty) ->
+                val (product, variant) = variantOf(id)!!
+                OrderItemDto(id, product.name, qty, variant.priceMinor)
+            },
+            subtotalMinor = subtotal,
+            discountMinor = discount,
+            totalMinor = total,
+            paidAt = paidAt,
+            createdAt = paidAt,
+            statusHistory = listOf(
+                OrderStatusEntryDto(null, "pending", paidAt),
+                OrderStatusEntryDto("pending", "paid", paidAt),
+            ),
+        )
         return response
     }
 

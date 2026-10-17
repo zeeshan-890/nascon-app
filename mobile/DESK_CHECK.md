@@ -1,7 +1,7 @@
 # Desk check (offline and sync)
 
-How this was run (fill in): [ ] demo mode  [ ] real server at ______  
-Device / emulator: ______  Build: ______  Date / tester: ______
+How this was run: ATTEMPTED, NOT EXECUTED. Intended: demo mode on a physical phone (adb Note202401005107, Android 13). No step could be run because the phone was locked (see Findings).  
+Device / emulator: physical phone Note202401005107  Build: release APK installed (com.nascon.league)  Date / tester: 2026-10-17, automated verification agent
 
 Do not record a result unless the step was actually performed. Result values: NOT VERIFIED, PASS, FAIL.
 
@@ -44,3 +44,11 @@ Evidence/notes:
 Deliberately submit an action the server rejects (transfer outside the window, or scoring on a non-live match). A readable explanation is shown.
 Result: ☐ NOT VERIFIED
 Evidence/notes:
+
+## Findings
+1. BLOCKER for this check (environment, not an app bug): when the run started (about 14:01 on 2026-10-17) the phone showed a secure lock screen (isKeyguardShowing=true, Trust manager deviceLocked=1, only an "Emergency" button visible after swiping up), although it was expected to be unlocked. Re-checked after about 45 s: still locked. The agent cannot enter a PIN/pattern, so no in-app step (login, fixtures, offline banner, scoring, roster transfer, sync, Task A, Task B) was run. All 8 steps above remain NOT VERIFIED.
+   Note: adb screencap returns an empty file while the keyguard is up, so no screenshots were saved.
+2. Crash log check (`logcat -d -b crash`): the only crash entry is com.mediatek.simprocessor (a system SIM process, "Unknown authority com.android.contacts", 10-16 20:45), unrelated to com.nascon.league. No com.nascon.league crash or AndroidRuntime entry was found. (The app was force-stopped and relaunched once behind the lock screen; no crash from that.)
+3. Device state: original state recorded before any change was airplane_mode_on=0, Wi-Fi enabled, mobile_data setting=0, stay_on_while_plugged_in=0. Wi-Fi, mobile data and airplane mode were never changed. stay-awake was set on then restored to 0.
+
+To complete: unlock the phone, disable its screen timeout (or keep it plugged in with stay awake) and re-run the agent.

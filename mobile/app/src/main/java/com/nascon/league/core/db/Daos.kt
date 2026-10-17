@@ -235,6 +235,8 @@ abstract class CacheDao {
     @Query("DELETE FROM sports") abstract suspend fun deleteSports()
     @Query("DELETE FROM products") abstract suspend fun deleteProducts()
     @Query("DELETE FROM meta WHERE `key` LIKE 'updated:%'") abstract suspend fun deleteUpdatedMeta()
+    @Query("DELETE FROM meta WHERE `key` LIKE 'player_history:%' OR `key` LIKE 'order:%'")
+    abstract suspend fun deleteDocMeta()
 
     @Query("SELECT value FROM meta WHERE `key` = :key")
     abstract fun observeMeta(key: String): Flow<String?>
@@ -258,5 +260,6 @@ abstract class CacheDao {
         deleteSports()
         deleteProducts()
         deleteUpdatedMeta()
+        deleteDocMeta()
     }
 }

@@ -12,7 +12,9 @@ import com.nascon.league.data.api.dto.LogoutRequest
 import com.nascon.league.data.api.dto.MatchDetailDto
 import com.nascon.league.data.api.dto.MatchEventRequest
 import com.nascon.league.data.api.dto.MatchEventResponse
+import com.nascon.league.data.api.dto.OrderDetailDto
 import com.nascon.league.data.api.dto.PingResponse
+import com.nascon.league.data.api.dto.PlayerHistoryDto
 import com.nascon.league.data.api.dto.ProductDto
 import com.nascon.league.data.api.dto.RefreshRequest
 import com.nascon.league.data.api.dto.RefreshResponse
@@ -27,6 +29,7 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
+import retrofit2.http.Query
 import retrofit2.http.Streaming
 
 interface LeagueApi {
@@ -74,6 +77,12 @@ interface LeagueApi {
 
     @POST("api/v1/checkout")
     suspend fun checkout(@Body body: CheckoutRequest): CheckoutResponse
+
+    @GET("api/v1/players/{id}/history")
+    suspend fun playerHistory(@Path("id") playerId: String, @Query("as_of") asOf: String? = null): PlayerHistoryDto
+
+    @GET("api/v1/orders/{id}")
+    suspend fun order(@Path("id") orderId: String): OrderDetailDto
 
     @Streaming
     @GET("api/v1/orders/{id}/receipt.pdf")

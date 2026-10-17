@@ -21,6 +21,8 @@ import com.nascon.league.data.api.dto.ProductDto
 import com.nascon.league.data.api.dto.ReceiptDto
 import com.nascon.league.data.api.dto.RefreshRequest
 import com.nascon.league.data.api.dto.RefreshResponse
+import com.nascon.league.data.api.dto.OrderDetailDto
+import com.nascon.league.data.api.dto.PlayerHistoryDto
 import com.nascon.league.data.api.dto.RosterPlayerDto
 import com.nascon.league.data.api.dto.RosterTransferResponse
 import com.nascon.league.data.api.dto.SportConfigDto
@@ -305,6 +307,17 @@ class FakeLeagueApi(private val hasNetwork: () -> Boolean = { true }) : LeagueAp
         delay(300L)
         val bytes = fakeStore.receiptPdf(orderId) ?: fail(404, "ORDER_NOT_FOUND", "Order not found.")
         return bytes.toResponseBody("application/pdf".toMediaType())
+    }
+
+    // ---- player history / order detail ----
+    override suspend fun playerHistory(playerId: String, asOf: String?): PlayerHistoryDto {
+        pause("history$playerId")
+        return rosterState.history(playerId, asOf) ?: fail(404, "PLAYER_NOT_FOUND", "Player not found.")
+    }
+
+    override suspend fun order(orderId: String): OrderDetailDto {
+        requireNetwork()
+        return fakeStore.order(orderId)
     }
 
     // ---- sync ----

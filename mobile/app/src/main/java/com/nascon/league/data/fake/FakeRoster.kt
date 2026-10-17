@@ -1,5 +1,7 @@
 package com.nascon.league.data.fake
 
+import com.nascon.league.data.api.dto.HistoryEntryDto
+import com.nascon.league.data.api.dto.PlayerHistoryDto
 import com.nascon.league.data.api.dto.RosterPlayerDto
 import com.nascon.league.data.api.dto.RosterTransferResponse
 import com.nascon.league.data.api.dto.SquadDto
@@ -63,6 +65,55 @@ class FakeRoster {
     )
     private val requests = HashMap<String, Pair<JsonObject, RosterTransferResponse>>()
     private var auditSeq = 1
+
+    private class Hist(
+        val playerId: String,
+        val dto: HistoryEntryDto,
+    )
+
+    private val log = ArrayList<Hist>().also { l ->
+        players.forEach { p ->
+            val initial = p.parentSquadId ?: p.squadId
+            l.add(
+                Hist(
+                    p.id,
+                    HistoryEntryDto(
+                        auditId = "au-seed-${p.id}", action = "registration", toSquadId = initial,
+                        effectiveDate = "2026-07-15", state = "active", who = "admin@alpha",
+                        why = "Initial registration", whenAt = "2026-07-15T09:00:00Z",
+                    ),
+                ),
+            )
+            if (p.onLoan) {
+                l.add(
+                    Hist(
+                        p.id,
+                        HistoryEntryDto(
+                            auditId = "au-seed-${p.id}-loan", action = "loan", fromSquadId = p.parentSquadId,
+                            toSquadId = p.squadId, effectiveDate = "2026-08-10", state = "active",
+                            who = "manager@alpha", why = "Match fitness on loan to youth squad",
+                            whenAt = "2026-08-10T10:30:00Z", loanEndDate = p.loanEnd?.toString(),
+                        ),
+                    ),
+                )
+            }
+        }
+    }
+
+    /** Audit trail of a player, oldest first; null when the player is unknown. asOf = yyyy-MM-dd cut-off on effective_date. */
+    fun history(playerId: String, asOf: String?): PlayerHistoryDto? = synchronized(lock) {
+        val p = players.firstOrNull { it.id == playerId } ?: return null
+        val cutoff = asOf?.take(10)?.takeIf { it.isNotBlank() }
+        val entries = log.filter { it.playerId == playerId }.map { it.dto }
+            .filter { cutoff == null || (it.effectiveDate ?: "") <= cutoff }
+        PlayerHistoryDto(
+            playerId = p.id,
+            leagueId = leagueId,
+            currentSquadId = p.squadId,
+            parentSquadId = p.parentSquadId,
+            history = entries,
+        )
+    }
 
     fun playerDtos(): List<RosterPlayerDto> = synchronized(lock) {
         players.map {
@@ -130,6 +181,17 @@ class FakeRoster {
         // 4. loan return then membership
         val le = player.loanEnd
         if (player.onLoan && le != null && le.isBefore(effective)) {
+            log.add(
+                Hist(
+                    player.id,
+                    HistoryEntryDto(
+                        auditId = "au-%04d".format(auditSeq++), action = "loan_return",
+                        fromSquadId = player.squadId, toSquadId = player.parentSquadId,
+                        effectiveDate = le.toString(), state = "active", who = "system",
+                        why = "Loan ended", whenAt = java.time.Instant.now().toString(),
+                    ),
+                ),
+            )
             player.squadId = player.parentSquadId
             player.parentSquadId = null
             player.onLoan = false
@@ -164,8 +226,21 @@ class FakeRoster {
             else -> player.squadId = null
         }
         player.audits++
+        val auditId = "au-%04d".format(auditSeq++)
+        log.add(
+            Hist(
+                player.id,
+                HistoryEntryDto(
+                    auditId = auditId, action = type!!, fromSquadId = from, toSquadId = to,
+                    effectiveDate = effective.toString(), state = "active",
+                    who = body.str("requested_by").orEmpty(), why = body.str("reason").orEmpty(),
+                    whenAt = java.time.Instant.now().toString(),
+                    loanEndDate = if (type == "loan") loanEnd?.toString() else null,
+                ),
+            ),
+        )
         val audit = buildJsonObject {
-            put("audit_id", "au-%04d".format(auditSeq++))
+            put("audit_id", auditId)
             put("player_id", player.id)
             put("action", type!!)
             put("from_squad_id", from)

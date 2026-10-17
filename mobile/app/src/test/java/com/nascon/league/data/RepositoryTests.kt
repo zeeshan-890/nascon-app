@@ -125,6 +125,7 @@ class FakeCacheDao(private val fixtures: FakeFixtureDao) : CacheDao() {
     override suspend fun deleteSports() {}
     override suspend fun deleteProducts() {}
     override suspend fun deleteUpdatedMeta() { fixtures.meta.value = emptyMap() }
+    override suspend fun deleteDocMeta() { meta.keys.removeAll { it.startsWith("player_history:") || it.startsWith("order:") || it.startsWith("updated:") } }
     override suspend fun getMeta(key: String): String? = meta[key]
     override fun observeMeta(key: String): kotlinx.coroutines.flow.Flow<String?> = kotlinx.coroutines.flow.flowOf(meta[key])
     override suspend fun putMeta(meta: MetaEntity) { this.meta[meta.key] = meta.value }
@@ -156,6 +157,8 @@ class FakeApi : LeagueApi {
     override suspend fun checkout(body: CheckoutRequest): CheckoutResponse = error("unused")
     override suspend fun receiptPdf(orderId: String): ResponseBody = error("unused")
     override suspend fun sync(body: SyncRequest): SyncResponse = error("unused")
+    override suspend fun playerHistory(playerId: String, asOf: String?): com.nascon.league.data.api.dto.PlayerHistoryDto = error("unused")
+    override suspend fun order(orderId: String): com.nascon.league.data.api.dto.OrderDetailDto = error("unused")
 }
 
 fun matchDto(id: String) = MatchDetailDto(
