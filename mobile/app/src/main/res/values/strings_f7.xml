@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="f7_hint_manage">Tap a player to transfer, loan or release them.</string>
+    <string name="f7_read_only">You can view this roster but not change it.</string>
+    <string name="f7_squad_header">%1$s (%2$d)</string>
+    <string name="f7_squad_empty">No players in this squad</string>
+
+    <string name="f7_action_transfer">Transfer</string>
+    <string name="f7_action_loan">Loan</string>
+    <string name="f7_action_release">Release</string>
+    <string name="f7_on_loan_warning">This player is on loan and may not be movable.</string>
+
+    <string name="f7_form_title_transfer">Transfer %1$s</string>
+    <string name="f7_form_title_loan">Loan %1$s</string>
+    <string name="f7_form_title_release">Release %1$s</string>
+    <string name="f7_current_squad">Current squad: %1$s</string>
+    <string name="f7_field_squad">Destination squad</string>
+    <string name="f7_no_squads">There is no other squad to move this player to.</string>
+    <string name="f7_squad_option">%1$s · %2$d in squad</string>
+    <string name="f7_field_effective">Effective date</string>
+    <string name="f7_field_loan_end">Loan end date</string>
+    <string name="f7_field_reason">Reason</string>
+    <string name="f7_reason_hint">Required</string>
+    <string name="f7_reason_counter">%1$d/%2$d</string>
+    <string name="f7_date_unset">Choose a date</string>
+    <string name="f7_date_cd">%1$s: %2$s. Double tap to change.</string>
+    <string name="f7_date_ok">OK</string>
+    <string name="f7_cancel">Cancel</string>
+    <string name="f7_review">Review and submit</string>
+    <string name="f7_back">Back</string>
+
+    <string name="f7_err_required">This field is required</string>
+    <string name="f7_err_loan_end">Must be after the effective date</string>
+    <string name="f7_err_reason_long">Keep the reason to 200 characters or fewer</string>
+    <string name="f7_err_same_squad">Choose a different squad</string>
+    <string name="f7_err_invalid_date">Choose a valid date</string>
+
+    <string name="f7_confirm_title_transfer">Confirm transfer</string>
+    <string name="f7_confirm_title_loan">Confirm loan</string>
+    <string name="f7_confirm_title_release">Confirm release</string>
+    <string name="f7_confirm_yes">Confirm</string>
+    <string name="f7_confirm_transfer">Transfer %1$s from %2$s to %3$s on %4$s?</string>
+    <string name="f7_confirm_transfer_nofrom">Transfer %1$s to %2$s on %3$s?</string>
+    <string name="f7_confirm_loan">Loan %1$s from %2$s to %3$s from %4$s until %5$s?</string>
+    <string name="f7_confirm_loan_nofrom">Loan %1$s to %2$s from %3$s until %4$s?</string>
+    <string name="f7_confirm_release">Release %1$s from %2$s on %3$s?</string>
+    <string name="f7_confirm_release_nofrom">Release %1$s on %2$s?</string>
+
+    <string name="f7_saved_transfer">Transfer saved</string>
+    <string name="f7_saved_loan">Loan saved</string>
+    <string name="f7_saved_release">Release saved</string>
+    <string name="f7_saved_offline">Saved on this device — will sync when you\'re online</string>
+    <string name="f7_save_failed">We couldn\'t save that change. Please try again.</string>
+</resources>

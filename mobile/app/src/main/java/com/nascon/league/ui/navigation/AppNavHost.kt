@@ -46,6 +46,10 @@ import com.nascon.league.ui.components.ConnectivityBanner
 import com.nascon.league.ui.home.HomeScreen
 import com.nascon.league.ui.login.LoginScreen
 import com.nascon.league.ui.placeholder.ComingSoonScreen
+import com.nascon.league.ui.roster.RosterScreen
+import com.nascon.league.ui.scoring.ScoringScreen
+import com.nascon.league.ui.sync.SyncSnackbarEffect
+import com.nascon.league.ui.sync.SyncStatusScreen
 import com.nascon.league.ui.standings.StandingsScreen
 import com.nascon.league.ui.club.ClubProfileScreen
 import com.nascon.league.ui.club.ClubTabScreen
@@ -151,6 +155,7 @@ private fun AppShell(session: Session?) {
     }
 
     CompositionLocalProvider(LocalSnackbarHostState provides snackbar) {
+        if (loggedIn) SyncSnackbarEffect()
         Scaffold(
             snackbarHost = { SnackbarHost(snackbar) },
             bottomBar = {
@@ -199,7 +204,10 @@ private fun AppShell(session: Session?) {
                         HomeScreen(onNavigate = ::navigateFromHome)
                     }
                     composable(Destinations.SETTINGS) {
-                        SettingsScreen(onSignedOut = { navController.clearAndGoToLogin() })
+                        SettingsScreen(
+                            onSignedOut = { navController.clearAndGoToLogin() },
+                            onOpenSync = { navController.navigate(Destinations.SYNC) { launchSingleTop = true } },
+                        )
                     }
                     composable(
                         Destinations.FIXTURES_ROUTE,
@@ -301,9 +309,21 @@ private fun AppShell(session: Session?) {
                     ) { entry ->
                         ReceiptScreen(orderId = entry.arguments?.getString("orderId").orEmpty())
                     }
-                    listOf(
+                    composable(
                         Destinations.ROSTER,
-                        Destinations.SCORING, Destinations.SYNC, Destinations.ADMIN,
+                        arguments = listOf(navArgument("clubId") { type = NavType.StringType }),
+                    ) { entry ->
+                        RosterScreen(clubId = entry.arguments?.getString("clubId").orEmpty())
+                    }
+                    composable(
+                        Destinations.SCORING,
+                        arguments = listOf(navArgument("matchId") { type = NavType.StringType }),
+                    ) { entry ->
+                        ScoringScreen(matchId = entry.arguments?.getString("matchId").orEmpty())
+                    }
+                    composable(Destinations.SYNC) { SyncStatusScreen() }
+                    listOf(
+                        Destinations.ADMIN,
                     ).forEach { r ->
                         composable(r) { ComingSoonScreen(title = titleFor(r)) }
                     }
