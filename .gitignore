@@ -9,3 +9,5 @@ local.properties
 *.iml
 .env
 node_modules/
+coverage
+*.log

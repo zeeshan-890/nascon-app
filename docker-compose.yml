@@ -1,0 +1,67 @@
+x-backend-env: &backend-env
+  DAY1_SALT: ${DAY1_SALT}
+  DATABASE_URL: ${DATABASE_URL:-postgres://nascon:nascon@postgres:5432/nascon}
+  REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+  MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio}
+  MINIO_PORT: ${MINIO_PORT:-9000}
+  MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+  MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+  MINIO_BUCKET: ${MINIO_BUCKET:-receipts}
+  PORT: 8080
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: nascon
+      POSTGRES_PASSWORD: nascon
+      POSTGRES_DB: nascon
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nascon"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  # Receipt storage (used from the store module onwards). The pinned upstream tag is
+  # no longer published on Docker Hub, so the service is opt-in: `--profile storage`.
+  # The api and worker never depend on it; the worker tolerates its absence.
+  minio:
+    image: minio/minio:RELEASE.2024-09-22T00-33-43Z
+    command: server /data --console-address :9001
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+    profiles: ["storage"]
+
+  api:
+    build: ./backend
+    command: node src/server.js
+    ports:
+      - "8080:8080"
+    environment: *backend-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  worker:
+    build: ./backend
+    command: node src/worker.js
+    environment: *backend-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
