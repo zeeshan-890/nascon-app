@@ -184,6 +184,79 @@ async function transfer(body) {
   return out;
 }
 
+// Registers a player that was not part of the league setup (rules: spec order, see DESIGN.md).
+async function addPlayer(body) {
+  const { fields } = roster.validateAdd(body);
+  if (fields.length) throw invalid(fields);
+  const canon = canonical(roster.addFingerprint(body));
+  const early = await repo.getRequest(pool, body.request_id);
+  if (early) return replayOf(early, canon);
+
+  const out = await withTransaction(async (client) => {
+    await repo.lockLeague(client, body.league_id);
+    const stored = await repo.getRequest(client, body.request_id);
+    if (stored) return replayOf(stored, canon);
+
+    const league = await repo.getLeague(client, body.league_id);
+    if (!league) throw notFound('LEAGUE_NOT_FOUND', 'League not found');
+    const squads = new Map((await repo.listSquads(client, body.league_id)).map((s) => [s.squad_id, s]));
+    const squad = squads.get(body.squad_id);
+    if (!squad) throw notFound('SQUAD_NOT_FOUND', 'Squad not found in this league');
+    if (squad.tenant_id !== league.tenant_id) {
+      throw new AppError(409, 'CROSS_TENANT_TRANSFER', 'Squad belongs to a different tenant than the league');
+    }
+
+    const date = body.effective_date;
+    const setupRows = await repo.listInitial(client, body.league_id);
+    const audit = await repo.listAudit(client, body.league_id);
+    const before = roster.snapshot(setupRows, audit, date).get(body.player_id);
+    if (before && before.squad_id !== null) {
+      throw new AppError(409, 'PLAYER_ALREADY_REGISTERED', 'Player already has a registration in this league');
+    }
+    if (date < league.window_open || date > league.window_close) {
+      throw new AppError(409, 'TRANSFER_WINDOW_CLOSED', 'Effective date is outside the transfer window');
+    }
+    if (roster.squadMembers(roster.snapshot(setupRows, audit, date), body.squad_id).length + 1 > league.max_squad_size) {
+      throw new AppError(409, 'SQUAD_FULL', 'Destination squad is full');
+    }
+
+    await repo.addInitialPlayer(client, body.league_id, {
+      player_id: body.player_id, name: body.name, position: body.position, role: body.role,
+      club_id: squad.club_id, tenant_id: squad.tenant_id,
+    });
+    const entry = await repo.insertAudit(client, {
+      league_id: body.league_id, player_id: body.player_id, action: 'add', from_squad_id: null, to_squad_id: body.squad_id,
+      effective_date: date, loan_end_date: null, who: body.requested_by, why: body.reason, at: clock(), state: 'active',
+      role: body.role, position: body.position,
+    });
+    audit.push(entry);
+    const after = roster.snapshot([...setupRows, { player_id: body.player_id, squad_id: null, role: body.role, position: body.position }], audit, date)
+      .get(body.player_id);
+    const response = {
+      request_id: body.request_id,
+      status: 'accepted',
+      state: entry.state,
+      blocking_match_id: null,
+      registration: roster.buildRegistration({ type: 'add', player_id: body.player_id }, body.league_id, after),
+      audit_entry: entryView(entry),
+    };
+    const allSetup = [...setupRows, { player_id: body.player_id, squad_id: null, role: body.role, position: body.position }];
+    await repo.writeRegistrations(client, body.league_id, roster.snapshot(allSetup, audit, roster.todayUtc()));
+    await repo.insertRequest(client, {
+      request_id: body.request_id, league_id: body.league_id, request_canonical: canon, response, status: 201,
+    });
+    await outbox.enqueue(client, {
+      aggregate_type: 'roster',
+      aggregate_id: body.league_id,
+      event_type: 'roster.changed',
+      payload: { league_id: body.league_id, player_id: body.player_id, audit_id: entry.audit_id, action: 'add' },
+    });
+    return { status: 201, body: response };
+  });
+  if (out.status === 201) await require('../db/cache').invalidate('clubs-roster');
+  return out;
+}
+
 // Number of audit entries of the player (the base_version clients queue), after due loan returns.
 async function playerVersion(client, leagueId, playerId, date) {
   await repo.lockLeague(client, leagueId);
@@ -227,4 +300,4 @@ async function history(playerId, asOf) {
   });
 }
 
-module.exports = { setup, transfer, transferIn, playerVersion, history };
+module.exports = { setup, transfer, transferIn, addPlayer, playerVersion, history };

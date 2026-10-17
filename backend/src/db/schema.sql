@@ -422,6 +422,8 @@ ALTER TABLE roster_initial ALTER COLUMN squad_id DROP NOT NULL;
 ALTER TABLE roster_initial ADD COLUMN IF NOT EXISTS position text;
 ALTER TABLE roster_audit ADD COLUMN IF NOT EXISTS loan_end_date date;
 ALTER TABLE roster_audit ADD COLUMN IF NOT EXISTS state text;
+ALTER TABLE roster_audit ADD COLUMN IF NOT EXISTS role text;
+ALTER TABLE roster_audit ADD COLUMN IF NOT EXISTS position text;
 ALTER TABLE roster_requests ADD COLUMN IF NOT EXISTS league_id text;
 CREATE INDEX IF NOT EXISTS idx_roster_audit_league ON roster_audit (league_id, audit_seq);
 CREATE INDEX IF NOT EXISTS idx_roster_initial_player ON roster_initial (player_id);

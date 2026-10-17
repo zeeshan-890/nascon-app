@@ -119,6 +119,27 @@ function validateTransfer(body) {
   return { fields };
 }
 
+function validateAdd(body) {
+  const { fields, bad } = collector();
+  if (!isObj(body)) return { fields: ['body'] };
+  for (const k of ['request_id', 'league_id', 'player_id', 'squad_id']) if (!isId(body[k])) bad(k);
+  if (!isText(body.name)) bad('name');
+  if (!isText(body.position)) bad('position');
+  if (!ROLES.includes(body.role)) bad('role');
+  if (!isRealDate(body.effective_date)) bad('effective_date');
+  if (!isText(body.reason)) bad('reason');
+  if (!isText(body.requested_by)) bad('requested_by');
+  return { fields };
+}
+
+function addFingerprint(b) {
+  return {
+    request_id: b.request_id, league_id: b.league_id, player_id: b.player_id, type: 'add', name: b.name,
+    position: b.position, squad_id: b.squad_id, role: b.role, effective_date: b.effective_date, reason: b.reason,
+    requested_by: b.requested_by,
+  };
+}
+
 // The body the idempotency check compares: known fields only, absent values as null.
 function transferFingerprint(b) {
   const f = (v) => (v === undefined ? null : v);
@@ -129,4 +150,4 @@ function transferFingerprint(b) {
   };
 }
 
-module.exports = { validateSetup, validateTransfer, transferFingerprint, ID_RE, ROLES, TYPES };
+module.exports = { validateSetup, validateTransfer, validateAdd, addFingerprint, transferFingerprint, ID_RE, ROLES, TYPES };

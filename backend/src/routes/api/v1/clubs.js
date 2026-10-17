@@ -43,4 +43,17 @@ router.post('/clubs/:id/roster/transfer', authenticate, guard('club.roster.write
   send(res, out.status, out.body);
 }));
 
+// Registers a new player into one of the club's squads (one registration per league season).
+router.post('/clubs/:id/roster/add', authenticate, guard('club.roster.write', clubResolver()), wrap(async (req, res) => {
+  if (!isPlainObject(req.body)) throw new AppError(400, 'VALIDATION_ERROR', 'Request validation failed', { fields: ['body'] });
+  const body = { ...req.body, requested_by: req.body.requested_by === undefined ? req.principal.user_id : req.body.requested_by };
+  const { fields } = roster.validateAdd(body);
+  if (fields.length) throw new AppError(400, 'VALIDATION_ERROR', 'Request validation failed', { fields });
+  // 404 for a missing league or squad comes from the service; a squad of another club is 403.
+  const found = await pool.query('SELECT club_id FROM roster_squads WHERE league_id = $1 AND squad_id = $2', [body.league_id, body.squad_id]);
+  if (found.rows[0] && found.rows[0].club_id !== req.params.id) throw forbidden();
+  const out = await rosterService.addPlayer(body);
+  send(res, out.status, out.body);
+}));
+
 module.exports = router;

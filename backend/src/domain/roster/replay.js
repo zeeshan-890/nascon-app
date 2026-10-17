@@ -51,6 +51,15 @@ function apply(s, e) {
       s.start_date = e.effective_date;
       s.loan_end_date = null;
       break;
+    case 'add':
+      s.squad_id = e.to_squad_id;
+      s.parent_squad_id = null;
+      s.role = e.role || 'substitute';
+      s.position = e.position || s.position;
+      s.registration_type = 'add';
+      s.start_date = e.effective_date;
+      s.loan_end_date = null;
+      break;
     case 'release':
       s.squad_id = null;
       s.parent_squad_id = null;

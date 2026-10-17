@@ -1,5 +1,5 @@
 const AUDIT_COLS = `audit_id, audit_seq, league_id, player_id, action, from_squad_id, to_squad_id,
-  effective_date::text AS effective_date, loan_end_date::text AS loan_end_date, loan_audit_id, who, why, at, state`;
+  effective_date::text AS effective_date, loan_end_date::text AS loan_end_date, loan_audit_id, who, why, at, state, role, position`;
 
 // All roster work for a league is serialised on this transaction-scoped advisory lock.
 async function lockLeague(client, leagueId) {
@@ -116,6 +116,20 @@ async function listAudit(db, leagueId) {
   return rows;
 }
 
+// Players added after setup join the initial list without a squad; their `add` entry places them.
+async function addInitialPlayer(client, leagueId, p) {
+  await client.query(
+    `INSERT INTO roster_initial (league_id, squad_id, player_id, role, position) VALUES ($1, NULL, $2, $3, $4)
+     ON CONFLICT (league_id, player_id) DO NOTHING`,
+    [leagueId, p.player_id, p.role, p.position],
+  );
+  await client.query(
+    `INSERT INTO players (player_id, name, position, club_id, tenant_id) VALUES ($1, $2, $3, $4, $5)
+     ON CONFLICT (player_id) DO UPDATE SET name = EXCLUDED.name, position = EXCLUDED.position`,
+    [p.player_id, p.name, p.position, p.club_id, p.tenant_id],
+  );
+}
+
 async function hasPlayer(db, leagueId, playerId) {
   const { rows } = await db.query('SELECT 1 FROM roster_initial WHERE league_id = $1 AND player_id = $2', [leagueId, playerId]);
   return rows.length > 0;
@@ -142,11 +156,11 @@ async function insertAudit(client, e) {
   const auditId = `au-${String(n).padStart(4, '0')}`;
   const { rowCount } = await client.query(
     `INSERT INTO roster_audit (audit_id, audit_seq, league_id, player_id, action, from_squad_id, to_squad_id,
-       effective_date, loan_end_date, loan_audit_id, who, why, at, state)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+       effective_date, loan_end_date, loan_audit_id, who, why, at, state, role, position)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
      ON CONFLICT DO NOTHING`,
     [auditId, n, e.league_id, e.player_id, e.action, e.from_squad_id, e.to_squad_id, e.effective_date,
-      e.loan_end_date || null, e.loan_audit_id || null, e.who, e.why, e.at, e.state]
+      e.loan_end_date || null, e.loan_audit_id || null, e.who, e.why, e.at, e.state, e.role || null, e.position || null]
   );
   return rowCount ? { ...e, audit_id: auditId, audit_seq: n } : null;
 }
@@ -179,6 +193,6 @@ async function insertRequest(client, { request_id, league_id, request_canonical,
 
 module.exports = {
   lockLeague, getLeague, wipeLeague, insertLeague, insertSquads, insertInitial, insertMatches, listSquads,
-  listInitial, listLiveMatches, listAudit, hasPlayer, latestLeagueOfPlayer, insertAudit,
+  listInitial, listLiveMatches, listAudit, addInitialPlayer, hasPlayer, latestLeagueOfPlayer, insertAudit,
   writeRegistrations, getRequest, insertRequest,
 };

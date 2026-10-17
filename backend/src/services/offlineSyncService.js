@@ -67,22 +67,24 @@ async function authorizeOrReject(authorize, ctx) {
 
 async function applyScoreEvent(client, action, authorize) {
   const req = eventService.parseEventRequest(action.payload);
+  // Authorization comes before duplicate detection so a caller cannot probe events it may not write.
+  const known = await matches.get(client, req.match_id);
+  if (known || req.type === 'match_init') {
+    const leagueId = known ? known.league_id : req.payload.league_id || null;
+    const league = leagueId ? await leagues.get(client, leagueId) : null;
+    await authorizeOrReject(authorize, { type: 'score_event', league_id: leagueId, tenant_id: league ? league.tenant_id : null, match_id: req.match_id });
+  }
   const existing = await events.findById(client, req.event_id);
   if (existing && existing.request_canonical === eventService.canonicalOf(req)) {
-    const known = await matches.get(client, req.match_id);
     return { dup: true, version: known ? known.version : 0 };
   }
-  const match = await matches.get(client, req.match_id);
-  let leagueId = match ? match.league_id : null;
+  const match = known;
   if (req.type === 'match_init') {
     if (!(await sports.get(client, req.payload.sport_id))) throw new Rejection('SPORT_NOT_FOUND');
     if (req.payload.league_id && !(await leagues.get(client, req.payload.league_id))) throw new Rejection('LEAGUE_NOT_FOUND');
-    leagueId = req.payload.league_id || null;
   } else if (!match) {
     throw new Rejection('MATCH_NOT_FOUND');
   }
-  const league = leagueId ? await leagues.get(client, leagueId) : null;
-  await authorizeOrReject(authorize, { type: 'score_event', league_id: leagueId, tenant_id: league ? league.tenant_id : null, match_id: req.match_id });
   const resolution = checkBase(action, match ? match.version : 0);
   const out = await eventService.appendEventIn(client, req);
   if (out.status === 200) return { dup: true, version: out.body.match_version };
@@ -97,6 +99,11 @@ async function applyRosterTransfer(client, action, authorize) {
   await rosterRepo.lockLeague(client, body.league_id);
 
   const version = () => rosterService.playerVersion(client, body.league_id, body.player_id, body.effective_date);
+  if (authorize) {
+    const lg = await rosterRepo.getLeague(client, body.league_id);
+    const sq = lg ? (await rosterRepo.listSquads(client, body.league_id)).find((x) => x.squad_id === body.from_squad_id) : null;
+    if (sq) await authorizeOrReject(authorize, { type: 'roster_transfer', league_id: body.league_id, club_id: sq.club_id, tenant_id: sq.tenant_id });
+  }
   const stored = await rosterRepo.getRequest(client, body.request_id);
   if (stored && stored.request_canonical === canon) return { dup: true, version: await readVersion(client, action) };
 
@@ -105,7 +112,6 @@ async function applyRosterTransfer(client, action, authorize) {
   const squads = new Map((await rosterRepo.listSquads(client, body.league_id)).map((s) => [s.squad_id, s]));
   const from = squads.get(body.from_squad_id);
   if (!from || (body.type !== 'release' && !squads.get(body.to_squad_id))) throw new Rejection('SQUAD_NOT_FOUND');
-  await authorizeOrReject(authorize, { type: 'roster_transfer', league_id: body.league_id, club_id: from.club_id, tenant_id: from.tenant_id });
 
   const resolution = checkBase(action, await version());
   const out = await rosterService.transferIn(client, body, canon);
