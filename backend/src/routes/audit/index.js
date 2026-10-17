@@ -9,5 +9,7 @@ router.use(require('./score'));
 router.use(require('./checkout'));
 router.use(require('./inventory'));
 router.use(require('./rbac'));
+router.use(require('./roster'));
+router.use(require('./fixtures'));
 
 module.exports = router;

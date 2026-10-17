@@ -9,6 +9,7 @@ if (!config.hasSalt()) {
 const pool = require('./db/pool');
 const { migrate, waitForDb } = require('./db/migrate');
 const createApp = require('./app');
+const { createHttpServer } = require('./httpServer');
 
 async function main() {
   await waitForDb();
@@ -18,9 +19,11 @@ async function main() {
     const { reset } = require('./services/resetService');
     await reset({});
   }
+  await require('./services/rbacService').refreshPolicies();
   config.state.ready = true;
 
-  const server = createApp().listen(config.port, '0.0.0.0', () => logger.info(`api listening on ${config.port}`));
+  const server = createHttpServer(createApp());
+  server.listen(config.port, '0.0.0.0', () => logger.info(`api listening on ${config.port}`));
   const shutdown = () => {
     server.close(() => pool.end().finally(() => process.exit(0)));
     setTimeout(() => process.exit(0), 5000).unref();

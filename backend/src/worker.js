@@ -10,6 +10,9 @@ const pool = require('./db/pool');
 const { migrate, waitForDb } = require('./db/migrate');
 const { getRedis } = require('./db/redis');
 
+const { sweepOnce } = require('./services/sweeperService');
+const { uploadWithRetry } = require('./services/receiptUploader');
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // Publishes committed outbox rows to the Redis stream and pub/sub channel.
@@ -70,6 +73,50 @@ async function ensureBucket() {
   }
 }
 
+const STREAM = 'domain-events';
+const GROUP = 'workers';
+
+// Consumer group reader; Redis being down only delays receipt uploads.
+async function consumeLoop(isRunning) {
+  const consumer = 'w-' + process.pid;
+  while (isRunning()) {
+    try {
+      const redis = getRedis();
+      if (redis.status === 'wait') await redis.connect();
+      try {
+        await redis.xgroup('CREATE', STREAM, GROUP, '0', 'MKSTREAM');
+      } catch (e) {
+        if (!/BUSYGROUP/.test(e.message)) throw e;
+      }
+      const res = await redis.xreadgroup('GROUP', GROUP, consumer, 'COUNT', 10, 'BLOCK', 2000, 'STREAMS', STREAM, '>');
+      for (const [, entries] of res || []) {
+        for (const [id, fields] of entries) {
+          const map = {};
+          for (let i = 0; i < fields.length; i += 2) map[fields[i]] = fields[i + 1];
+          if (map.type === 'receipt.generated') {
+            await uploadWithRetry(map.aggregate_id);
+          }
+          await redis.xack(STREAM, GROUP, id);
+        }
+      }
+    } catch (err) {
+      logger.warn({ err: err.message }, 'event consumer unavailable; retrying');
+      await sleep(3000);
+    }
+  }
+}
+
+async function sweepLoop(isRunning) {
+  while (isRunning()) {
+    try {
+      await sweepOnce();
+    } catch (err) {
+      logger.warn({ err: err.message }, 'reservation sweep failed');
+    }
+    await sleep(5000);
+  }
+}
+
 async function main() {
   await waitForDb();
   await migrate();
@@ -81,6 +128,8 @@ async function main() {
   };
   process.on('SIGTERM', stop);
   process.on('SIGINT', stop);
+  consumeLoop(() => running);
+  sweepLoop(() => running);
   while (running) {
     try {
       const n = await relayOnce();

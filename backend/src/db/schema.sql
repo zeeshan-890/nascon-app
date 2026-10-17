@@ -352,3 +352,61 @@ CREATE TRIGGER trg_match_events_append_only BEFORE UPDATE OR DELETE ON match_eve
 DROP TRIGGER IF EXISTS trg_roster_audit_append_only ON roster_audit;
 CREATE TRIGGER trg_roster_audit_append_only BEFORE UPDATE OR DELETE ON roster_audit
   FOR EACH ROW EXECUTE FUNCTION forbid_mutation();
+
+-- Store additions (idempotent).
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS receipt_canonical text;
+CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items (order_id);
+CREATE INDEX IF NOT EXISTS idx_payments_order ON payments (order_id);
+CREATE INDEX IF NOT EXISTS idx_order_history_order ON order_status_history (order_id);
+
+-- Roster additions (idempotent). Scenario ids are arbitrary strings, so no foreign keys here.
+CREATE TABLE IF NOT EXISTS roster_leagues (
+  league_id text PRIMARY KEY,
+  tenant_id text NOT NULL,
+  sport_id text NOT NULL,
+  window_open date NOT NULL,
+  window_close date NOT NULL,
+  max_squad_size int NOT NULL,
+  required_positions jsonb NOT NULL DEFAULT '{}'::jsonb,
+  setup_no bigserial
+);
+CREATE TABLE IF NOT EXISTS roster_squads (
+  league_id text NOT NULL,
+  squad_id text NOT NULL,
+  club_id text NOT NULL,
+  tenant_id text NOT NULL,
+  name text NOT NULL,
+  PRIMARY KEY (league_id, squad_id)
+);
+CREATE TABLE IF NOT EXISTS roster_matches (
+  league_id text NOT NULL,
+  match_id text NOT NULL,
+  home_squad_id text NOT NULL,
+  away_squad_id text NOT NULL,
+  PRIMARY KEY (league_id, match_id)
+);
+ALTER TABLE registrations ALTER COLUMN squad_id DROP NOT NULL;
+ALTER TABLE registrations ADD COLUMN IF NOT EXISTS parent_squad_id text;
+ALTER TABLE registrations ADD COLUMN IF NOT EXISTS registration_type text;
+ALTER TABLE registrations ADD COLUMN IF NOT EXISTS start_date date;
+ALTER TABLE registrations ADD COLUMN IF NOT EXISTS loan_end_date date;
+ALTER TABLE roster_initial ALTER COLUMN squad_id DROP NOT NULL;
+ALTER TABLE roster_initial ADD COLUMN IF NOT EXISTS position text;
+ALTER TABLE roster_audit ADD COLUMN IF NOT EXISTS loan_end_date date;
+ALTER TABLE roster_audit ADD COLUMN IF NOT EXISTS state text;
+ALTER TABLE roster_requests ADD COLUMN IF NOT EXISTS league_id text;
+CREATE INDEX IF NOT EXISTS idx_roster_audit_league ON roster_audit (league_id, audit_seq);
+CREATE INDEX IF NOT EXISTS idx_roster_initial_player ON roster_initial (player_id);
+
+-- roster_audit stays append-only except for the per-league wipe done by roster setup.
+CREATE OR REPLACE FUNCTION forbid_roster_audit_mutation() RETURNS trigger AS $$
+BEGIN
+  IF TG_OP = 'DELETE' AND current_setting('app.roster_reset', true) = 'on' THEN
+    RETURN OLD;
+  END IF;
+  RAISE EXCEPTION 'append-only';
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS trg_roster_audit_append_only ON roster_audit;
+CREATE TRIGGER trg_roster_audit_append_only BEFORE UPDATE OR DELETE ON roster_audit
+  FOR EACH ROW EXECUTE FUNCTION forbid_roster_audit_mutation();

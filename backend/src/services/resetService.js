@@ -11,6 +11,7 @@ const sports = require('../repos/sports');
 const settings = require('../repos/settings');
 const { DEFAULT_POLICIES } = require('../domain/rbac/defaultPolicies');
 const { getRedis } = require('../db/redis');
+const { refreshPolicies } = require('./rbacService');
 
 const DEFAULT_SEED = 42;
 const DEFAULT_STOCK = { 'var-jersey-001-M': 1, 'var-jersey-001-L': 5 };
@@ -120,12 +121,14 @@ async function clearCache() {
     const redis = getRedis();
     const work = (async () => {
       if (redis.status === 'wait') await redis.connect();
-      let cursor = '0';
-      do {
-        const [next, keys] = await redis.scan(cursor, 'MATCH', 'cache:*', 'COUNT', 200);
-        cursor = next;
-        if (keys.length) await redis.del(...keys);
-      } while (cursor !== '0');
+      for (const pattern of ['cache:*', 'lt:*']) {
+        let cursor = '0';
+        do {
+          const [next, keys] = await redis.scan(cursor, 'MATCH', pattern, 'COUNT', 200);
+          cursor = next;
+          if (keys.length) await redis.del(...keys);
+        } while (cursor !== '0');
+      }
     })();
     await Promise.race([work, new Promise((r) => setTimeout(r, 1500))]);
   } catch (e) {
@@ -167,6 +170,8 @@ async function runReset(parsed) {
 async function reset(body) {
   const parsed = parseBody(body);
   const sportIds = await runReset(parsed);
+  await refreshPolicies();
+  require('./authService').resetThrottles();
   await clearCache();
   return {
     status: 'reset_complete',

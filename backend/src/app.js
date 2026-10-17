@@ -4,8 +4,10 @@ const logger = require('./logger');
 const { jsonBody } = require('./middleware/bodyParser');
 const notFound = require('./middleware/notFound');
 const errorHandler = require('./middleware/errorHandler');
+const hardening = require('./middleware/hardening');
+const { createLimiter } = require('./middleware/rateLimit');
 
-function createApp() {
+function createApp(opts = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.use(helmet());
@@ -17,9 +19,13 @@ function createApp() {
     });
     next();
   });
+  // Only /api/v1 is rate limited; /audit/v1, /health are exempt.
+  app.use('/api/v1', opts.limiter || createLimiter());
   app.use(jsonBody);
+  app.use(hardening);
   app.use(require('./routes/health'));
   app.use('/audit/v1', require('./routes/audit'));
+  app.use('/api/v1', require('./routes/api/v1'));
   app.use(notFound);
   app.use(errorHandler);
   return app;
