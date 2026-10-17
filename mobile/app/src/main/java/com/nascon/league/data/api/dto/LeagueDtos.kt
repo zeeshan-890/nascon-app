@@ -183,6 +183,13 @@ data class ClubDto(
 )
 
 @Serializable
+data class ClubSummaryDto(
+    @SerialName("club_id") val clubId: String,
+    @SerialName("name") val name: String,
+    @SerialName("logo_url") val logoUrl: String? = null,
+)
+
+@Serializable
 data class RosterTransferResponse(
     @SerialName("request_id") val requestId: String,
     @SerialName("status") val status: String = "",

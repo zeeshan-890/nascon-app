@@ -168,6 +168,9 @@ abstract class CacheDao {
     @Query("DELETE FROM meta WHERE `key` LIKE 'updated:%'") abstract suspend fun deleteUpdatedMeta()
 
     @Query("SELECT value FROM meta WHERE `key` = :key")
+    abstract fun observeMeta(key: String): Flow<String?>
+
+    @Query("SELECT value FROM meta WHERE `key` = :key")
     abstract suspend fun getMeta(key: String): String?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

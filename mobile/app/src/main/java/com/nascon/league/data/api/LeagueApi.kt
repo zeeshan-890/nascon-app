@@ -3,6 +3,7 @@ package com.nascon.league.data.api
 import com.nascon.league.data.api.dto.CheckoutRequest
 import com.nascon.league.data.api.dto.CheckoutResponse
 import com.nascon.league.data.api.dto.ClubDto
+import com.nascon.league.data.api.dto.ClubSummaryDto
 import com.nascon.league.data.api.dto.FixtureDto
 import com.nascon.league.data.api.dto.LeagueDto
 import com.nascon.league.data.api.dto.LoginRequest
@@ -58,6 +59,9 @@ interface LeagueApi {
 
     @GET("api/v1/leagues/{id}/standings")
     suspend fun standings(@Path("id") leagueId: String): StandingsDto
+
+    @GET("api/v1/clubs")
+    suspend fun clubs(): List<ClubSummaryDto>
 
     @GET("api/v1/clubs/{id}")
     suspend fun club(@Path("id") id: String): ClubDto

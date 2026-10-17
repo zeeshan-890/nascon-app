@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="f5_no_club_title">No club is linked to your account</string>
+    <string name="f5_no_club_message">Ask your league organizer to link you to a club.</string>
+
+    <string name="f5_clubs_empty_title">No clubs yet</string>
+    <string name="f5_clubs_empty_message">Clubs will appear here once they are added.</string>
+    <string name="f5_clubs_open_cd">Open %1$s</string>
+    <string name="f5_clubs_open_label">Open club</string>
+
+    <string name="f5_gone_title">This club is no longer available</string>
+    <string name="f5_gone_message">It may have been removed. Go back and pick another club.</string>
+    <string name="f5_forbidden_title">You can\'t view this club</string>
+    <string name="f5_forbidden_message">Your account doesn\'t have access to this club.</string>
+    <string name="f5_back">Back</string>
+    <string name="f5_try_again">Try again</string>
+    <string name="f5_refresh_failed_saved">We couldn\'t refresh just now, so this is saved data.</string>
+    <string name="f5_loading_cd">Loading</string>
+
+    <string name="f5_logo_cd">%1$s logo</string>
+    <string name="f5_tenant_line">%1$s</string>
+
+    <string name="f5_venue_title">Venue</string>
+    <string name="f5_venue_none">Venue not listed</string>
+    <string name="f5_venue_coordinates_cd">Coordinates %1$s</string>
+    <string name="f5_open_maps">Open in Maps</string>
+    <string name="f5_open_maps_cd">Open %1$s in Maps</string>
+    <string name="f5_no_maps_app">No maps app found</string>
+
+    <string name="f5_socials_title">Social links</string>
+    <string name="f5_social_open_label">Open link</string>
+    <string name="f5_social_open_failed">Couldn\'t open that link</string>
+    <string name="f5_social_cd">%1$s: %2$s</string>
+
+    <string name="f5_staff_title">Staff</string>
+    <string name="f5_staff_empty">No staff listed</string>
+    <string name="f5_staff_coach">Coach</string>
+    <string name="f5_staff_manager">Manager</string>
+    <string name="f5_staff_physio">Physio</string>
+
+    <string name="f5_stats_title">Season statistics</string>
+    <string name="f5_stats_caption">Historical statistics across seasons</string>
+    <string name="f5_stats_empty">No season statistics yet</string>
+    <string name="f5_col_season">Season</string>
+    <string name="f5_col_played">P</string>
+    <string name="f5_col_won">W</string>
+    <string name="f5_col_drawn">D</string>
+    <string name="f5_col_lost">L</string>
+    <string name="f5_col_for">For</string>
+    <string name="f5_col_against">Against</string>
+    <string name="f5_stats_row_cd">Season %1$s, played %2$d, won %3$d, drawn %4$d, lost %5$d, scored %6$d, conceded %7$d</string>
+
+    <string name="f5_roster_title">Active roster</string>
+    <string name="f5_roster_empty">No players registered yet</string>
+    <string name="f5_roster_none_in_squad">No players in this squad</string>
+    <string name="f5_squad_all">All</string>
+    <string name="f5_squad_selected_cd">%1$s, selected</string>
+    <string name="f5_position_unknown">Position not set</string>
+    <string name="f5_role_captain">Captain</string>
+    <string name="f5_role_vice_captain">Vice-captain</string>
+    <string name="f5_role_starter">Starter</string>
+    <string name="f5_role_substitute">Substitute</string>
+    <string name="f5_on_loan">On loan</string>
+    <string name="f5_pending">Pending</string>
+    <string name="f5_pending_cd">Change waiting to sync</string>
+    <string name="f5_manage_roster">Manage roster</string>
+</resources>
