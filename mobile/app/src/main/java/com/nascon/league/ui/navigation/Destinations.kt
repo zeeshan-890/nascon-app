@@ -1,0 +1,28 @@
+package com.nascon.league.ui.navigation
+
+object Destinations {
+    const val LOGIN = "login"
+    const val HOME = "home"
+    const val SETTINGS = "settings"
+    const val FIXTURES = "fixtures"
+    const val MATCH = "match/{matchId}"
+    const val STANDINGS = "standings"
+    const val CLUB = "club/{clubId}"
+    const val STORE = "store"
+    const val PRODUCT = "product/{productId}"
+    const val CART = "cart"
+    const val RECEIPT = "receipt/{orderId}"
+    const val ROSTER = "roster/{clubId}"
+    const val SCORING = "scoring/{matchId}"
+    const val SYNC = "sync"
+    const val ADMIN = "admin"
+
+    const val DEFAULT_CLUB_ID = "club-alpha-1"
+
+    fun club(id: String) = "club/$id"
+    fun match(id: String) = "match/$id"
+    fun roster(id: String) = "roster/$id"
+    fun scoring(id: String) = "scoring/$id"
+    fun product(id: String) = "product/$id"
+    fun receipt(id: String) = "receipt/$id"
+}
