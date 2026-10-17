@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
@@ -218,7 +219,15 @@ private fun StockLine(stock: Int) {
         is StockText.OnlyLeft -> stringResource(R.string.f6_only_left, t.n)
         is StockText.SoldOut -> stringResource(R.string.f6_sold_out)
     }
-    Text(text, style = MaterialTheme.typography.bodyLarge)
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+        val low = StoreLogic.stockText(stock) !is StockText.InStock
+        Icon(
+            if (low) Icons.Default.Info else Icons.Default.Check,
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+        )
+        Text(text, style = MaterialTheme.typography.bodyLarge)
+    }
 }
 
 @Composable

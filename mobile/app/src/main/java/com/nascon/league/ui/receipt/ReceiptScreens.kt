@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
@@ -46,6 +48,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -157,7 +160,7 @@ private fun LoadingBox(label: String) {
 @Composable
 private fun CorruptState(onDownloadAgain: () -> Unit) {
     Column(
-        Modifier.fillMaxSize().padding(Spacing.lg),
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Spacing.lg),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(Spacing.md, Alignment.CenterVertically),
     ) {
@@ -170,6 +173,7 @@ private fun CorruptState(onDownloadAgain: () -> Unit) {
         Text(
             stringResource(R.string.f6r_corrupt_title),
             style = MaterialTheme.typography.titleLarge,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
         )
         PrimaryButton(text = stringResource(R.string.f6r_download_again), onClick = onDownloadAgain)
     }
@@ -190,7 +194,7 @@ private fun ReceiptHeader(orderId: String, entry: ReceiptEntry?) {
             .semantics(mergeDescendants = true) {},
         verticalArrangement = Arrangement.spacedBy(Spacing.xs),
     ) {
-        Text(refText, style = MaterialTheme.typography.titleLarge)
+        Text(refText, style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { heading() })
         if (totalText != null) Text(totalText, style = MaterialTheme.typography.bodyLarge)
         if (dateText != null) Text(dateText, style = MaterialTheme.typography.bodyLarge)
     }

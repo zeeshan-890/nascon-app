@@ -572,7 +572,9 @@ private fun StatsTable(stats: List<ClubStatDto>) {
 @Composable
 private fun StatsRow(cells: List<String>, header: Boolean, cd: String?) {
     val style = if (header) MaterialTheme.typography.labelLarge else MaterialTheme.typography.bodyLarge
+    val fontScale = androidx.compose.ui.platform.LocalDensity.current.fontScale.coerceIn(1f, 2f)
     val widths = listOf(SeasonWidth, NumWidth, NumWidth, NumWidth, NumWidth, WideNumWidth, WideNumWidth)
+        .map { it * fontScale }
     Row(
         Modifier
             .heightIn(min = 48.dp)

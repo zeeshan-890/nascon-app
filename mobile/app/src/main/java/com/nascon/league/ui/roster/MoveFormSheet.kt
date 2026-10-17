@@ -39,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
@@ -101,7 +102,7 @@ fun MoveFormSheet(
                 MoveType.LOAN -> stringResource(R.string.f7_form_title_loan, player.name)
                 MoveType.RELEASE -> stringResource(R.string.f7_form_title_release, player.name)
             }
-            Text(title, style = MaterialTheme.typography.titleLarge)
+            Text(title, style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { heading() })
             if (!fromSquadName.isNullOrBlank()) {
                 Text(
                     stringResource(R.string.f7_current_squad, fromSquadName),
@@ -121,6 +122,7 @@ fun MoveFormSheet(
                 Text(
                     stringResource(R.string.f7_field_squad),
                     style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.semantics { heading() },
                 )
                 if (destinations.isEmpty()) {
                     Text(stringResource(R.string.f7_no_squads), style = MaterialTheme.typography.bodyLarge)
@@ -256,7 +258,7 @@ private fun DateField(label: String, value: String?, error: String?, onClick: ()
     val shown = value ?: stringResource(R.string.f7_date_unset)
     val cd = stringResource(R.string.f7_date_cd, label, shown)
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-        Text(label, style = MaterialTheme.typography.titleMedium)
+        Text(label, style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
         OutlinedButton(
             onClick = onClick,
             modifier = Modifier

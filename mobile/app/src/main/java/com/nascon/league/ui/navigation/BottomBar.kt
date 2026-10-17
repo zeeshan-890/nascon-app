@@ -43,7 +43,7 @@ fun BottomBar(
                 selected = baseRoute(currentRoute) == tab.route,
                 onClick = { onTabClick(tab) },
                 icon = { Icon(tab.icon, contentDescription = null) },
-                label = { Text(tab.label) },
+                label = { Text(tab.label, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) },
                 modifier = Modifier.heightIn(min = 48.dp),
             )
         }

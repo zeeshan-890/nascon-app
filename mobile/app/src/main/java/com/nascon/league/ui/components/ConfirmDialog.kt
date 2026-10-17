@@ -1,6 +1,8 @@
 package com.nascon.league.ui.components
 
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -23,7 +25,13 @@ fun ConfirmDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
-        text = { Text(message, style = MaterialTheme.typography.bodyLarge) },
+        text = {
+            Text(
+                message,
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+            )
+        },
         confirmButton = {
             TextButton(
                 onClick = onConfirm,

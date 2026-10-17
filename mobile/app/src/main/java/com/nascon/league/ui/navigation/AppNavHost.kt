@@ -123,6 +123,8 @@ private fun AppShell(session: Session?) {
     val pendingFlow = remember(container) { container.pendingRepository.observePendingCount() }
     val pendingCount by pendingFlow.collectAsStateWithLifecycle(initialValue = 0)
     val isTab = isTabRoute(route)
+    val unsyncedFlow = remember(container) { container.syncRepository.observePendingCount() }
+    val unsynced by unsyncedFlow.collectAsStateWithLifecycle(initialValue = 0)
 
     LaunchedEffect(Unit) {
         container.sessionRepository.events.collect { event ->
@@ -334,7 +336,11 @@ private fun AppShell(session: Session?) {
         if (confirmSignOut) {
             ConfirmDialog(
                 title = "Sign out?",
-                message = "Sign out? Pending offline actions stay on this device.",
+                message = when {
+                    unsynced <= 0 -> androidx.compose.ui.res.stringResource(com.nascon.league.R.string.f10a_signout_message)
+                    unsynced == 1 -> androidx.compose.ui.res.stringResource(com.nascon.league.R.string.f10a_unsynced_one)
+                    else -> androidx.compose.ui.res.stringResource(com.nascon.league.R.string.f10a_unsynced_many, unsynced)
+                },
                 confirmLabel = "Sign out",
                 onConfirm = {
                     confirmSignOut = false

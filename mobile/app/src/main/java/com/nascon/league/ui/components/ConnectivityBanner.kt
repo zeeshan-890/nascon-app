@@ -108,7 +108,7 @@ fun ConnectivityBanner(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClickLabel = openLabel, onClick = onClick),
+            .clickable(onClickLabel = openLabel, role = androidx.compose.ui.semantics.Role.Button, onClick = onClick),
         color = container,
         contentColor = content,
     ) {

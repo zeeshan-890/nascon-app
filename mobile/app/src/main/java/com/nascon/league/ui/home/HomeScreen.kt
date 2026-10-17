@@ -23,6 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -64,10 +65,11 @@ fun HomeScreen(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 TenantLogo(tenant = s.tenant, size = 48.dp)
                 Spacer(Modifier.width(Spacing.md))
-                Column {
+                Column(Modifier.weight(1f).semantics(mergeDescendants = true) {}) {
                     Text(
                         s.tenant?.name ?: "NaSCon League",
                         style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.semantics { heading() },
                     )
                     Text(
                         "Signed in as ${s.user.email} · ${s.user.role.label}",
@@ -81,7 +83,7 @@ fun HomeScreen(
                 HomeCardRow(
                     HomeCard(
                         "pending", "Pending actions",
-                        "$pending change(s) waiting to sync",
+                        if (pending == 1) "1 change waiting to sync" else "$pending changes waiting to sync",
                         Icons.Default.CloudSync,
                         com.nascon.league.ui.navigation.Destinations.SYNC,
                     ),
@@ -99,7 +101,7 @@ private fun HomeCardRow(card: HomeCard, onNavigate: (String) -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 72.dp)
-            .semantics { role = Role.Button }
+            .semantics(mergeDescendants = true) { role = Role.Button }
             .clickable { onNavigate(card.route) },
     ) {
         Row(

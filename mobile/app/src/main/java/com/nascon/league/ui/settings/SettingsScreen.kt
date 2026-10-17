@@ -39,6 +39,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -104,6 +106,7 @@ fun SettingsScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(min = 56.dp)
+                        .semantics(mergeDescendants = true) {}
                         .clickable(role = Role.Button, onClick = onOpenSync)
                         .padding(Spacing.md),
                     verticalAlignment = Alignment.CenterVertically,
@@ -123,7 +126,7 @@ fun SettingsScreen(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
             ) {
                 Column(Modifier.padding(Spacing.md), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                    Text(stringResource(R.string.f11_connection_title), style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.f11_connection_title), style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                         Icon(
                             if (state.useDemo) Icons.Default.CloudOff else Icons.Default.Cloud,
@@ -149,7 +152,7 @@ fun SettingsScreen(
                 }
             }
 
-            Text("Server", style = MaterialTheme.typography.titleMedium)
+            Text("Server", style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
             OutlinedTextField(
                 value = state.address,
                 onValueChange = vm::onAddressChange,
@@ -200,7 +203,7 @@ fun SettingsScreen(
                 Switch(checked = state.useDemo, onCheckedChange = null)
             }
 
-            Text("About", style = MaterialTheme.typography.titleMedium)
+            Text("About", style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
             Column {
                 Text("Device ID", style = MaterialTheme.typography.bodyMedium)
                 Text(
@@ -250,9 +253,15 @@ fun SettingsScreen(
     }
 
     if (confirmSignOut) {
+        val signOutPendingFlow = remember(container) { container.syncRepository.observePendingCount() }
+        val signOutPending by signOutPendingFlow.collectAsStateWithLifecycle(initialValue = 0)
         ConfirmDialog(
             title = "Sign out?",
-            message = "Sign out? Pending offline actions stay on this device.",
+            message = when {
+                signOutPending <= 0 -> stringResource(R.string.f10a_signout_message)
+                signOutPending == 1 -> stringResource(R.string.f10a_unsynced_one)
+                else -> stringResource(R.string.f10a_unsynced_many, signOutPending)
+            },
             confirmLabel = "Sign out",
             onConfirm = {
                 confirmSignOut = false

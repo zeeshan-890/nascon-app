@@ -42,6 +42,9 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
@@ -66,6 +69,8 @@ fun LoginScreen(
     val container = LocalAppContainer.current
     val vm: LoginViewModel = viewModel(factory = LoginViewModel.factory(container))
     val state by vm.state.collectAsStateWithLifecycle()
+    val demoMode by remember(container) { container.configStore.useDemoData }
+        .collectAsStateWithLifecycle(initialValue = true)
     val focusManager = LocalFocusManager.current
     val emailFocus = remember { FocusRequester() }
     val passwordFocus = remember { FocusRequester() }
@@ -112,7 +117,7 @@ fun LoginScreen(
                     )
                 }
                 Column {
-                    Text("NaSCon League", style = MaterialTheme.typography.headlineSmall)
+                    Text("NaSCon League", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.semantics { heading() })
                     Text("Sign in to continue", style = MaterialTheme.typography.bodyLarge)
                 }
             }
@@ -159,7 +164,10 @@ fun LoginScreen(
             )
 
             state.errorMessage?.let { msg ->
-                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
+                Card(
+                    modifier = Modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Assertive },
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                ) {
                     Column(Modifier.padding(Spacing.md), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                             Icon(
@@ -171,6 +179,7 @@ fun LoginScreen(
                                 msg,
                                 color = MaterialTheme.colorScheme.onErrorContainer,
                                 style = MaterialTheme.typography.bodyLarge,
+                                modifier = Modifier.weight(1f),
                             )
                         }
                         if (state.serverUnreachable) {
@@ -190,7 +199,7 @@ fun LoginScreen(
                 loading = state.loading,
             )
 
-            Card(modifier = Modifier.fillMaxWidth()) {
+            if (demoMode) Card(modifier = Modifier.fillMaxWidth()) {
                 Column {
                     Row(
                         modifier = Modifier
@@ -227,9 +236,14 @@ fun LoginScreen(
                             }
                         }
                         Text(
+                            androidx.compose.ui.res.stringResource(com.nascon.league.R.string.f10a_demo_password_hint, DemoAccounts.PASSWORD),
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(horizontal = Spacing.md, vertical = Spacing.sm),
+                        )
+                        Text(
                             "Tap an account to fill the form.",
                             style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(Spacing.md),
+                            modifier = Modifier.padding(start = Spacing.md, end = Spacing.md, bottom = Spacing.md),
                         )
                     }
                 }

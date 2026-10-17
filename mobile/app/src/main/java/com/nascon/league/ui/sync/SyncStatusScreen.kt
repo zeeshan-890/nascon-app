@@ -68,7 +68,7 @@ fun SyncStatusScreen(modifier: Modifier = Modifier) {
             }
         } else {
             items(s.pending, key = { "p_" + it.actionId }) { p ->
-                Column(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                Column(Modifier.fillMaxWidth().heightIn(min = 48.dp).semantics(mergeDescendants = true) {}, verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
                     Text(p.label, style = MaterialTheme.typography.bodyLarge)
                     val whenText = formatQueuedAt(p.queuedAtIso)
                     if (whenText != null) {
@@ -132,7 +132,7 @@ fun SyncStatusScreen(modifier: Modifier = Modifier) {
             }
         } else {
             items(s.results, key = { "r_" + it.actionId }) { r ->
-                Column(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                Column(Modifier.fillMaxWidth().heightIn(min = 48.dp).semantics(mergeDescendants = true) {}, verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
                     Text(r.label, style = MaterialTheme.typography.bodyLarge)
                     when (r.kind) {
                         ResultKind.APPLIED -> IconText(
@@ -153,7 +153,7 @@ fun SyncStatusScreen(modifier: Modifier = Modifier) {
                     }
                     Text(
                         stringResource(R.string.f9_result_synced_at, formatSyncedAt(r.syncedAt)),
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     HorizontalDivider(Modifier.padding(top = Spacing.sm))
