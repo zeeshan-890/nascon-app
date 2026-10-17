@@ -21,6 +21,15 @@ object Destinations {
     const val SCORING = "scoring/{matchId}"
     const val SYNC = "sync"
     const val ADMIN = "admin"
+    const val PROFILE = "profile"
+    const val ORDERS = "orders"
+    const val ORDER_DETAIL = "orders/{orderId}"
+    const val NOTIFICATIONS = "notifications"
+    const val PLAYER_BASE = "player/{playerId}"
+    const val PLAYER = "player/{playerId}?clubId={clubId}"
+    const val PLAYER_HISTORY = "player/{playerId}/history"
+    const val SQUAD = "squad/{clubId}"
+    const val MY_HISTORY = "myhistory"
 
     const val DEFAULT_CLUB_ID = "club-alpha-1"
 
@@ -32,4 +41,8 @@ object Destinations {
     fun product(id: String) = "product/$id"
     fun receipt(id: String) = "receipt/$id"
     fun orderSuccess(id: String) = "order/$id"
+    fun orderDetail(id: String) = "orders/$id"
+    fun player(id: String, clubId: String?) = if (clubId.isNullOrBlank()) "player/$id" else "player/$id?clubId=$clubId"
+    fun playerHistory(id: String) = "player/$id/history"
+    fun squad(id: String) = "squad/$id"
 }

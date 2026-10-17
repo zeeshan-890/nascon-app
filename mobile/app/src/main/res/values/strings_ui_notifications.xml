@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notif_title">Notifications</string>
+    <string name="notif_empty_title">No notifications yet</string>
+    <string name="notif_empty_message">Saved changes and paid orders will show up here.</string>
+    <string name="notif_saved_title">Change saved</string>
+    <string name="notif_rejected_title">Change not applied</string>
+    <string name="notif_duplicate_title">Already saved</string>
+    <string name="notif_duplicate_detail">%1$s was already saved earlier.</string>
+    <string name="notif_order_title">Order paid</string>
+    <string name="notif_order_detail">Order %1$s receipt ready</string>
+    <string name="notif_order_detail_amount">Order %1$s receipt ready · %2$s</string>
+    <string name="notif_chip_saved">Saved</string>
+    <string name="notif_chip_not_applied">Not applied</string>
+    <string name="notif_chip_already">Already saved</string>
+    <string name="notif_chip_paid">Paid</string>
+    <string name="notif_icon_saved">Saved</string>
+    <string name="notif_icon_not_applied">Not applied</string>
+    <string name="notif_icon_info">Information</string>
+    <string name="notif_icon_order">Order</string>
+    <string name="notif_rejected_outcome">This change was not applied. The app shows the latest official data instead.</string>
+</resources>

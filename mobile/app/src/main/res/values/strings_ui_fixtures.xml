@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ui_scoring_offline_note">No internet. Your scores are saved on this device and shown as pending. They sync automatically.</string>
+    <plurals name="ui_pending_changes_count">
+        <item quantity="one">%d change pending</item>
+        <item quantity="other">%d changes pending</item>
+    </plurals>
+    <string name="ui_pinned_product">Pinned product</string>
+    <string name="ui_live_updates">Live updates</string>
+</resources>

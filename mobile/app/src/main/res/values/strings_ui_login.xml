@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ui_login_brand">ARENA360</string>
+    <string name="ui_login_welcome">Welcome</string>
+    <string name="ui_login_back">back</string>
+    <string name="ui_login_no_account">No account yet? Ask your league organizer or club manager to create one for you.</string>
+    <string name="ui_login_server_settings">Server settings</string>
+    <string name="ui_login_show">Show</string>
+    <string name="ui_login_hide">Hide</string>
+    <string name="ui_login_show_pw_desc">Show password</string>
+    <string name="ui_login_hide_pw_desc">Hide password</string>
+    <string name="ui_settings_server_hint">Use your laptop\'s address on the same Wi-Fi. On the emulator use 10.0.2.2.</string>
+    <string name="ui_settings_demo_desc">Practice mode that works without a server.</string>
+</resources>

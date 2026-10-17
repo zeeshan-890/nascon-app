@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="st_loading_default">Loading…</string>
+    <string name="st_loading_desc">Loading</string>
+    <string name="st_empty_refresh">Refresh</string>
+    <string name="st_try_again">Try again</string>
+    <string name="st_error_title">Couldn\'t load this</string>
+    <string name="st_error_message">Something went wrong. Check your connection and try again.</string>
+    <string name="st_rate_title">Too many attempts</string>
+    <string name="st_rate_message">Please wait before trying again.</string>
+    <string name="st_try_again_in">Try again in %1$s</string>
+    <string name="st_server_title">Server problem</string>
+    <string name="st_server_message">The server had a problem. Your work is saved on this device and will sync later.</string>
+    <string name="st_work_offline">Work offline</string>
+    <string name="st_alert_error">Error</string>
+    <string name="st_alert_warning">Warning</string>
+    <string name="st_alert_info">Notice</string>
+    <string name="st_alert_success">Success</string>
+    <string name="st_login_sign_in">Sign in</string>
+    <string name="st_login_attempts_one">1 attempt left.</string>
+    <string name="st_login_attempts_many">%1$d attempts left.</string>
+    <string name="st_login_server_settings">Server settings</string>
+    <string name="st_session_title">Session expired</string>
+    <string name="st_session_message">For your safety you were signed out. Your unsynced changes are kept on this device.</string>
+    <string name="st_session_sign_in_again">Sign in again</string>
+    <string name="st_banner_syncing_count">Syncing %1$d changes…</string>
+    <string name="st_banner_syncing_one">Syncing 1 change…</string>
+    <string name="st_banner_synced">All changes synced</string>
+</resources>

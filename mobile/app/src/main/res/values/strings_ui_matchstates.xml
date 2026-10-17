@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fixtures empty states -->
+    <string name="ms_empty_all_message">Matches appear here once an organizer schedules them.</string>
+    <string name="ms_pull_hint">Pull down to refresh</string>
+    <string name="ms_empty_live_message">Live matches show up here while they are being played.</string>
+    <string name="ms_empty_upcoming_message">Scheduled matches appear here before they start.</string>
+    <string name="ms_empty_completed_message">Final results appear here after matches end.</string>
+    <string name="ms_day_done">Done · %1$s</string>
+
+    <!-- League picker -->
+    <string name="ms_league_title">Choose league</string>
+    <string name="ms_league_selected_cd">Selected</string>
+    <string name="ms_league_option_cd">%1$s, selected</string>
+
+    <!-- Match header variants -->
+    <string name="ms_vs">vs</string>
+    <string name="ms_upcoming_cd">%1$s versus %2$s. %3$s</string>
+    <string name="ms_starts_soon">Starting soon</string>
+    <plurals name="ms_starts_days">
+        <item quantity="one">Starts in %1$d day</item>
+        <item quantity="other">Starts in %1$d days</item>
+    </plurals>
+    <plurals name="ms_starts_hours">
+        <item quantity="one">Starts in %1$d hour</item>
+        <item quantity="other">Starts in %1$d hours</item>
+    </plurals>
+    <plurals name="ms_starts_minutes">
+        <item quantity="one">Starts in %1$d minute</item>
+        <item quantity="other">Starts in %1$d minutes</item>
+    </plurals>
+    <string name="ms_kickoff">Kick-off</string>
+    <string name="ms_venue">Venue</string>
+    <string name="ms_timeline_starts_live">The timeline starts when the match goes live.</string>
+    <string name="ms_offline_banner">You\'re offline. Showing the last saved timeline.</string>
+
+    <!-- Event detail sheet -->
+    <string name="ms_event_detail_title">Event detail</string>
+    <string name="ms_event_open_cd">%1$s. Opens event details.</string>
+    <string name="ms_event_field_event">Event</string>
+    <string name="ms_event_field_team">Team</string>
+    <string name="ms_event_field_minute">Minute</string>
+    <string name="ms_event_field_order">Event number</string>
+    <string name="ms_event_field_status">Status</string>
+    <string name="ms_event_minute_value">%1$s\'</string>
+    <string name="ms_event_status_pending">Waiting to sync</string>
+    <string name="ms_event_status_corrected">Corrected</string>
+    <string name="ms_event_status_recorded">Recorded</string>
+    <string name="ms_event_close">Close</string>
+</resources>

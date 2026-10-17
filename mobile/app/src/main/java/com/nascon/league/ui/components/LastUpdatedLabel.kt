@@ -15,6 +15,7 @@ import androidx.compose.ui.semantics.semantics
 import com.nascon.league.R
 import com.nascon.league.core.time.RelativeTime
 import com.nascon.league.core.time.UpdatedAge
+import com.nascon.league.ui.theme.Arena
 import kotlinx.coroutines.delay
 import java.time.Instant
 
@@ -37,7 +38,7 @@ fun LastUpdatedLabel(instant: Instant?, modifier: Modifier = Modifier) {
     Text(
         text = text,
         style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        color = Arena.colors.inkSoft,
         modifier = modifier.semantics { contentDescription = text },
     )
 }

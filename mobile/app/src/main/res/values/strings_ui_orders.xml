@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ord_title">My orders</string>
+    <string name="ord_empty_title">No orders yet</string>
+    <string name="ord_empty_message">Orders you pay for will appear here.</string>
+    <string name="ord_browse">Browse the store</string>
+    <string name="ord_ref">Order %1$s</string>
+    <string name="ord_paid_on">Paid on %1$s</string>
+    <string name="ord_open_cd">Open order %1$s, %2$s, total %3$s</string>
+    <string name="ord_status_paid">Paid</string>
+    <string name="ord_status_packed">Packed</string>
+    <string name="ord_status_shipped">Shipped</string>
+    <string name="ord_status_delivered">Delivered</string>
+    <string name="ord_status_refunded">Refunded</string>
+    <string name="ord_status_cancelled">Cancelled</string>
+    <string name="ord_status_unknown">Status unavailable</string>
+    <string name="ord_items">Items</string>
+    <string name="ord_qty_each">%1$d × %2$s</string>
+    <string name="ord_item_fallback">Item</string>
+    <string name="ord_subtotal">Subtotal</string>
+    <string name="ord_discount">Discount</string>
+    <string name="ord_total">Total</string>
+    <string name="ord_view_receipt">View receipt</string>
+    <string name="ord_saved_copy">Showing the saved summary. Item details need an internet connection.</string>
+    <string name="ord_loading">Loading order…</string>
+</resources>

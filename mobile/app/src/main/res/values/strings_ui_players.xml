@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="np_search_clubs">Search clubs</string>
+    <string name="np_search_clear">Clear search</string>
+    <string name="np_no_club_match_title">No matching clubs</string>
+    <string name="np_no_club_match_message">No club matches \"%1$s\". Check the spelling or clear the search.</string>
+
+    <string name="np_player_title">Player profile</string>
+    <string name="np_avatar_cd">%1$s, initials %2$s</string>
+    <string name="np_label_club">Club</string>
+    <string name="np_label_squad">Squad</string>
+    <string name="np_label_position">Position</string>
+    <string name="np_position_unknown">Not set</string>
+    <string name="np_on_loan">On loan</string>
+    <string name="np_view_history">View history</string>
+    <string name="np_view_history_cd">View squad history for %1$s</string>
+    <string name="np_player_gone_title">Player not found</string>
+    <string name="np_player_gone_message">This player is not in the saved club squad. Refresh the club and try again.</string>
+    <string name="np_player_no_club_title">Player details unavailable</string>
+    <string name="np_player_no_club_message">Open this player from a club squad to see their details. You can still view their history.</string>
+    <string name="np_squad_unknown">a squad</string>
+
+    <string name="np_history_title">Player history</string>
+    <string name="np_my_clubs_title">My clubs</string>
+    <string name="np_history_empty_title">No squad moves yet</string>
+    <string name="np_history_empty_message">Transfers, loans and releases will appear here once they happen.</string>
+    <string name="np_my_history_no_player_title">No player profile</string>
+    <string name="np_my_history_no_player_message">Your account is not linked to a player, so there is no club history to show.</string>
+    <string name="np_hist_loan_to">Loan to %1$s</string>
+    <string name="np_hist_joined">Joined %1$s</string>
+    <string name="np_hist_released">Released by %1$s</string>
+    <string name="np_hist_recalled">Recalled to %1$s</string>
+    <string name="np_kind_loan">Loan</string>
+    <string name="np_kind_transfer">Transfer</string>
+    <string name="np_kind_release">Release</string>
+    <string name="np_kind_recall">Recall</string>
+    <string name="np_state_pending">Pending</string>
+    <string name="np_state_rejected">Rejected</string>
+    <string name="np_current">Current</string>
+    <string name="np_meta_by">By %1$s</string>
+    <string name="np_meta_reason">Reason: %1$s</string>
+    <string name="np_meta_loan_ends">Loan ends %1$s</string>
+    <string name="np_meta_sep"> · </string>
+
+    <string name="np_squad_title">Squad</string>
+    <string name="np_squad_empty_title">No players yet</string>
+    <string name="np_squad_empty_message">This club has no players on its roster.</string>
+    <string name="np_squad_open_cd">Open profile for %1$s</string>
+    <plurals name="np_squad_count">
+        <item quantity="one">%1$d player</item>
+        <item quantity="other">%1$d players</item>
+    </plurals>
+
+    <string name="np_profile_title">Profile</string>
+    <string name="np_profile_email">Email</string>
+    <string name="np_profile_org">Organization</string>
+    <string name="np_profile_notifications">Notifications</string>
+    <string name="np_profile_orders">My orders</string>
+    <string name="np_profile_sync">Sync status</string>
+    <string name="np_profile_settings">Server settings</string>
+    <string name="np_profile_sign_out">Sign out</string>
+</resources>

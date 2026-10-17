@@ -28,6 +28,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -40,12 +41,28 @@ import com.nascon.league.ui.match.MatchDetailScreen
 import com.nascon.league.core.network.ConnState
 import com.nascon.league.di.LocalAppContainer
 import com.nascon.league.domain.model.Session
-import com.nascon.league.ui.components.AppTopBar
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.graphics.Color
+import com.nascon.league.ui.components.ArenaHeader
+import com.nascon.league.ui.components.ConnectionPill
+import com.nascon.league.ui.theme.Arena
 import com.nascon.league.ui.components.ConfirmDialog
 import com.nascon.league.ui.components.ConnectivityBanner
 import com.nascon.league.ui.home.HomeScreen
 import com.nascon.league.ui.login.LoginScreen
 import com.nascon.league.ui.placeholder.ComingSoonScreen
+import com.nascon.league.ui.notifications.NotificationsScreen
+import com.nascon.league.ui.orders.OrderDetailScreen
+import com.nascon.league.ui.orders.OrdersScreen
+import com.nascon.league.ui.player.MyHistoryScreen
+import com.nascon.league.ui.player.PlayerHistoryScreen
+import com.nascon.league.ui.player.PlayerProfileScreen
+import com.nascon.league.ui.player.SquadScreen
+import com.nascon.league.ui.profile.ProfileScreen
 import com.nascon.league.ui.roster.RosterScreen
 import com.nascon.league.ui.scoring.ScoringScreen
 import com.nascon.league.ui.sync.SyncSnackbarEffect
@@ -87,7 +104,15 @@ private fun titleFor(route: String?): String = when (baseRoute(route)) {
     Destinations.SCORING -> "Scoring"
     Destinations.SYNC -> "Sync status"
     Destinations.ADMIN -> "Admin overview"
-    else -> "NaSCon League"
+    Destinations.PROFILE -> "Profile"
+    Destinations.ORDERS -> "My orders"
+    Destinations.ORDER_DETAIL -> "Order"
+    Destinations.NOTIFICATIONS -> "Notifications"
+    Destinations.PLAYER_BASE -> "Player"
+    Destinations.PLAYER_HISTORY -> "Player history"
+    Destinations.SQUAD -> "Squad"
+    Destinations.MY_HISTORY -> "My history"
+    else -> "Arena360"
 }
 
 private fun NavHostController.clearAndGoToLogin() {
@@ -119,6 +144,7 @@ private fun AppShell(session: Session?) {
     val route = backStackEntry?.destination?.route
     val connState by container.connectivity.state.collectAsStateWithLifecycle(initialValue = ConnState.ONLINE)
     var confirmSignOut by rememberSaveable { mutableStateOf(false) }
+    var sessionExpired by rememberSaveable { mutableStateOf(false) }
     val loggedIn = session != null
     val pendingFlow = remember(container) { container.pendingRepository.observePendingCount() }
     val pendingCount by pendingFlow.collectAsStateWithLifecycle(initialValue = 0)
@@ -129,8 +155,8 @@ private fun AppShell(session: Session?) {
     LaunchedEffect(Unit) {
         container.sessionRepository.events.collect { event ->
             if (event is SessionEvent.Expired) {
+                sessionExpired = true
                 navController.clearAndGoToLogin()
-                snackbar.showSnackbar("Your session expired. Please sign in again.")
             }
         }
     }
@@ -156,12 +182,27 @@ private fun AppShell(session: Session?) {
         else navController.navigate(target) { launchSingleTop = true }
     }
 
-    CompositionLocalProvider(LocalSnackbarHostState provides snackbar) {
+    val headerController = remember { HeaderController() }
+    DisposableEffect(navController) {
+        val l = NavController.OnDestinationChangedListener { _, _, _ -> headerController.reset() }
+        navController.addOnDestinationChangedListener(l)
+        onDispose { navController.removeOnDestinationChangedListener(l) }
+    }
+    val isLogin = baseRoute(route) == Destinations.LOGIN
+    val showHeader = !isLogin && !headerController.hidden && route != null
+    val showBottomBar = loggedIn && isTab
+
+    CompositionLocalProvider(
+        LocalSnackbarHostState provides snackbar,
+        LocalHeaderController provides headerController,
+    ) {
         if (loggedIn) SyncSnackbarEffect()
         Scaffold(
+            containerColor = Arena.colors.bg,
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
             snackbarHost = { SnackbarHost(snackbar) },
             bottomBar = {
-                if (loggedIn && isTab) {
+                if (showBottomBar) {
                     BottomBar(
                         currentRoute = route,
                         onTabClick = { tab ->
@@ -171,28 +212,52 @@ private fun AppShell(session: Session?) {
                 }
             },
         ) { padding ->
-            Column(Modifier.padding(padding)) {
-                AppTopBar(
-                    title = titleFor(route),
-                    showBack = route != null && route != Destinations.LOGIN && !isTab,
-                    onBack = { navController.navigateUp() },
-                    tenant = if (route == Destinations.LOGIN) null else session?.tenant,
-                    actions = { TopBarActions(route, ::openSettings) { confirmSignOut = true } },
-                )
-                ConnectivityBanner(
-                    state = connState,
-                    pendingCount = pendingCount,
-                    onClick = { navController.navigate(Destinations.SYNC) { launchSingleTop = true } },
-                    onOpenSettings = ::openSettings,
-                )
+            Column(Modifier.padding(padding).background(Arena.colors.bg)) {
+                if (showHeader) {
+                    ArenaHeader(
+                        title = titleFor(route),
+                        subtitle = headerController.subtitle,
+                        onBack = if (route != null && !isTab) ({ navController.navigateUp() }) else null,
+                        tenant = session?.tenant,
+                        trailing = {
+                            TopBarActions(
+                                route = route,
+                                onSettings = ::openSettings,
+                                session = session,
+                                onNavigate = { target -> navController.navigate(target) { launchSingleTop = true } },
+                                onSignOut = { confirmSignOut = true },
+                            )
+                            ConnectionPill(
+                                state = connState,
+                                pendingCount = pendingCount,
+                                onClick = { navController.navigate(Destinations.SYNC) { launchSingleTop = true } },
+                            )
+                        },
+                        extra = headerController.extra,
+                        expanded = headerController.expanded,
+                    )
+                    ConnectivityBanner(
+                        state = connState,
+                        pendingCount = pendingCount,
+                        onClick = { navController.navigate(Destinations.SYNC) { launchSingleTop = true } },
+                        onOpenSettings = ::openSettings,
+                    )
+                }
                 NavHost(
                     navController = navController,
                     startDestination = startDestination,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .then(
+                            if (showBottomBar || isLogin) Modifier
+                            else Modifier.windowInsetsPadding(WindowInsets.navigationBars),
+                        ),
                 ) {
                     composable(Destinations.LOGIN) {
                         LoginScreen(
+                            sessionExpired = sessionExpired,
                             onLoggedIn = { roleLabel ->
+                                sessionExpired = false
                                 navController.navigate(Destinations.HOME) {
                                     popUpTo(Destinations.LOGIN) { inclusive = true }
                                     launchSingleTop = true
@@ -240,6 +305,65 @@ private fun AppShell(session: Session?) {
                             },
                         )
                     }
+                    composable(Destinations.PROFILE) {
+                        ProfileScreen(
+                            onOpenSettings = ::openSettings,
+                            onOpenSync = { navController.navigate(Destinations.SYNC) { launchSingleTop = true } },
+                            onOpenOrders = { navController.navigate(Destinations.ORDERS) { launchSingleTop = true } },
+                            onOpenNotifications = { navController.navigate(Destinations.NOTIFICATIONS) { launchSingleTop = true } },
+                            onSignOut = { confirmSignOut = true },
+                        )
+                    }
+                    composable(Destinations.ORDERS) {
+                        OrdersScreen(
+                            onOpenOrder = { id -> navController.navigate(Destinations.orderDetail(id)) { launchSingleTop = true } },
+                            onBrowseStore = { navigateTab(Destinations.STORE) },
+                        )
+                    }
+                    composable(
+                        Destinations.ORDER_DETAIL,
+                        arguments = listOf(navArgument("orderId") { type = NavType.StringType }),
+                    ) { entry ->
+                        OrderDetailScreen(
+                            orderId = entry.arguments?.getString("orderId").orEmpty(),
+                            onOpenReceipt = { id -> navController.navigate(Destinations.receipt(id)) { launchSingleTop = true } },
+                        )
+                    }
+                    composable(Destinations.NOTIFICATIONS) { NotificationsScreen() }
+                    composable(
+                        Destinations.PLAYER,
+                        arguments = listOf(
+                            navArgument("playerId") { type = NavType.StringType },
+                            navArgument("clubId") {
+                                type = NavType.StringType
+                                nullable = true
+                                defaultValue = null
+                            },
+                        ),
+                    ) { entry ->
+                        PlayerProfileScreen(
+                            playerId = entry.arguments?.getString("playerId").orEmpty(),
+                            clubId = entry.arguments?.getString("clubId"),
+                            onOpenHistory = { id -> navController.navigate(Destinations.playerHistory(id)) { launchSingleTop = true } },
+                        )
+                    }
+                    composable(
+                        Destinations.PLAYER_HISTORY,
+                        arguments = listOf(navArgument("playerId") { type = NavType.StringType }),
+                    ) { entry ->
+                        PlayerHistoryScreen(playerId = entry.arguments?.getString("playerId").orEmpty())
+                    }
+                    composable(
+                        Destinations.SQUAD,
+                        arguments = listOf(navArgument("clubId") { type = NavType.StringType }),
+                    ) { entry ->
+                        val cid = entry.arguments?.getString("clubId").orEmpty()
+                        SquadScreen(
+                            clubId = cid,
+                            onOpenPlayer = { pid -> navController.navigate(Destinations.player(pid, cid)) { launchSingleTop = true } },
+                        )
+                    }
+                    composable(Destinations.MY_HISTORY) { MyHistoryScreen() }
                     composable(Destinations.STANDINGS) {
                         StandingsScreen(onViewFixtures = { navigateTab(Destinations.FIXTURES) })
                     }
@@ -247,6 +371,7 @@ private fun AppShell(session: Session?) {
                         ClubTabScreen(
                             onOpenClub = { id -> navController.navigate(Destinations.club(id)) { launchSingleTop = true } },
                             onManageRoster = { id -> navController.navigate(Destinations.roster(id)) { launchSingleTop = true } },
+                            onOpenPlayer = { pid, cid -> navController.navigate(Destinations.player(pid, cid)) { launchSingleTop = true } },
                         )
                     }
                     composable(
@@ -256,6 +381,7 @@ private fun AppShell(session: Session?) {
                         ClubProfileScreen(
                             clubId = entry.arguments?.getString("clubId").orEmpty(),
                             onManageRoster = { id -> navController.navigate(Destinations.roster(id)) { launchSingleTop = true } },
+                            onOpenPlayer = { pid, cid -> navController.navigate(Destinations.player(pid, cid)) { launchSingleTop = true } },
                         )
                     }
                     composable(Destinations.STORE) {
@@ -360,21 +486,42 @@ private fun AppShell(session: Session?) {
 private fun RowScope.TopBarActions(
     route: String?,
     onSettings: () -> Unit,
+    session: Session?,
+    onNavigate: (String) -> Unit,
     onSignOut: () -> Unit,
 ) {
     when (route) {
-        Destinations.LOGIN -> IconButton(onClick = onSettings) {
-            Icon(Icons.Default.Settings, contentDescription = "Server settings")
+        Destinations.LOGIN -> IconButton(onClick = onSettings, modifier = Modifier.size(48.dp)) {
+            Icon(Icons.Default.Settings, contentDescription = "Server settings", tint = Color.White)
         }
         Destinations.HOME -> {
             var menuOpen by remember { mutableStateOf(false) }
-            IconButton(onClick = onSettings) {
-                Icon(Icons.Default.Settings, contentDescription = "Settings")
+            IconButton(onClick = onSettings, modifier = Modifier.size(48.dp)) {
+                Icon(Icons.Default.Settings, contentDescription = "Settings", tint = Color.White)
             }
-            IconButton(onClick = { menuOpen = true }) {
-                Icon(Icons.Default.MoreVert, contentDescription = "More options")
+            IconButton(onClick = { menuOpen = true }, modifier = Modifier.size(48.dp)) {
+                Icon(Icons.Default.MoreVert, contentDescription = "More options", tint = Color.White)
             }
             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                val clubId = session?.user?.clubId
+                val menuItems = buildList {
+                    add("Profile" to Destinations.PROFILE)
+                    add("My orders" to Destinations.ORDERS)
+                    add("Notifications" to Destinations.NOTIFICATIONS)
+                    if (session?.user?.role == com.nascon.league.domain.model.Role.PLAYER) {
+                        if (clubId != null) add("Squad" to Destinations.squad(clubId))
+                        add("My history" to Destinations.MY_HISTORY)
+                    }
+                }
+                menuItems.forEach { (label, target) ->
+                    DropdownMenuItem(
+                        text = { Text(label) },
+                        onClick = {
+                            menuOpen = false
+                            onNavigate(target)
+                        },
+                    )
+                }
                 DropdownMenuItem(
                     text = { Text("Sign out") },
                     onClick = {

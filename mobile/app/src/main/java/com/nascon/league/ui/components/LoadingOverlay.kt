@@ -20,6 +20,10 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.dp
+import com.nascon.league.ui.theme.Arena
 import com.nascon.league.ui.theme.Spacing
 
 @Composable
@@ -40,13 +44,17 @@ fun LoadingOverlay(modifier: Modifier = Modifier, message: String? = null) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(Spacing.md),
-            modifier = Modifier.padding(Spacing.lg),
+            modifier = Modifier
+                .padding(Spacing.lg)
+                .clip(RoundedCornerShape(22.dp))
+                .background(Color.White)
+                .padding(24.dp),
         ) {
-            CircularProgressIndicator(color = Color.White)
+            CircularProgressIndicator(color = Arena.colors.brand)
             Text(
                 label,
                 style = MaterialTheme.typography.bodyLarge,
-                color = Color.White,
+                color = Arena.colors.ink,
                 textAlign = TextAlign.Center,
             )
         }
