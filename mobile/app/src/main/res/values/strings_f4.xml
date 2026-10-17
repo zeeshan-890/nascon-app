@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="f4_league_selector_cd">League: %1$s. Tap to change.</string>
+    <string name="f4_loading_cd">Loading standings</string>
+    <string name="f4_no_leagues_title">No leagues yet</string>
+    <string name="f4_no_leagues_message">Leagues will appear here once they are set up.</string>
+    <string name="f4_refresh">Refresh</string>
+    <string name="f4_not_saved_title">Not saved for offline yet</string>
+    <string name="f4_not_saved_message">Not saved for offline yet — connect to the internet to load this.</string>
+    <string name="f4_try_again">Try again</string>
+    <string name="f4_refresh_failed_saved">Couldn\'t refresh — showing saved data.</string>
+    <string name="f4_empty_title">No standings yet</string>
+    <string name="f4_empty_message">The table will appear here once matches have been played.</string>
+    <string name="f4_view_fixtures">View fixtures</string>
+
+    <string name="f4_col_rank">Rank</string>
+    <string name="f4_col_rank_short">#</string>
+    <string name="f4_col_team">Team</string>
+    <string name="f4_col_played">P</string>
+    <string name="f4_col_won">W</string>
+    <string name="f4_col_drawn">D</string>
+    <string name="f4_col_lost">L</string>
+    <string name="f4_col_diff">Diff</string>
+    <string name="f4_col_points">Pts</string>
+    <string name="f4_col_played_cd">Played</string>
+    <string name="f4_col_won_cd">Won</string>
+    <string name="f4_col_drawn_cd">Drawn</string>
+    <string name="f4_col_lost_cd">Lost</string>
+    <string name="f4_col_diff_cd">Difference</string>
+    <string name="f4_col_points_cd">Points</string>
+
+    <string name="f4_status_qualified">Qualified</string>
+    <string name="f4_status_out">Out</string>
+    <string name="f4_status_in_contention">In contention</string>
+    <string name="f4_status_unavailable">Status unavailable</string>
+
+    <string name="f4_qualification_line">Qualification line</string>
+    <string name="f4_qualification_line_cd">Qualification line. Teams above it qualify.</string>
+
+    <string name="f4_tb_h2h_points">Decided by points in matches between the tied teams</string>
+    <string name="f4_tb_h2h_diff">Decided by difference in matches between the tied teams</string>
+    <string name="f4_tb_overall_diff">Decided by overall difference</string>
+    <string name="f4_tb_scored">Decided by most scored</string>
+    <string name="f4_tb_fair_play">Decided by fair play</string>
+    <string name="f4_tb_draw_lots">Decided by drawing of lots</string>
+
+    <string name="f4_row_cd">Rank %1$d, %2$s, played %3$d, won %4$d, drawn %5$d, lost %6$d, difference %7$s, %8$d points, %9$s</string>
+    <string name="f4_plus">plus</string>
+    <string name="f4_minus">minus</string>
+    <string name="f4_row_open_h2h">Show head to head</string>
+
+    <string name="f4_h2h_title">Head to head</string>
+    <string name="f4_h2h_subtitle">%1$s against each other team</string>
+    <string name="f4_h2h_not_played">Not played yet</string>
+    <string name="f4_h2h_line">Played %1$d, %2$d points, scored %3$d, conceded %4$d</string>
+    <string name="f4_h2h_none">There are no other teams to compare.</string>
+    <string name="f4_h2h_close">Close</string>
+    <string name="f4_h2h_row_cd">%1$s: %2$s</string>
+</resources>
