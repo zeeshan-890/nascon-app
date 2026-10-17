@@ -5,6 +5,7 @@ object Destinations {
     const val HOME = "home"
     const val SETTINGS = "settings"
     const val FIXTURES = "fixtures"
+    const val FIXTURES_ROUTE = "fixtures?filter={filter}"
     const val MATCH = "match/{matchId}"
     const val STANDINGS = "standings"
     const val CLUB = "club/{clubId}"
@@ -21,6 +22,7 @@ object Destinations {
 
     fun club(id: String) = "club/$id"
     fun match(id: String) = "match/$id"
+    fun fixtures(filter: String) = "fixtures?filter=$filter"
     fun roster(id: String) = "roster/$id"
     fun scoring(id: String) = "scoring/$id"
     fun product(id: String) = "product/$id"

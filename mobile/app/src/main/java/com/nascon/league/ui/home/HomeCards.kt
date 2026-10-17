@@ -35,7 +35,7 @@ fun homeCards(session: Session): List<HomeCard> {
             HomeCard("admin", "Admin overview", "Leagues, users and system status", Icons.Default.AdminPanelSettings, Destinations.ADMIN),
         )
         Role.LEAGUE_ORGANIZER -> listOf(
-            HomeCard("score", "Score a live match", "Pick a match and record goals", Icons.Default.Stadium, Destinations.FIXTURES),
+            HomeCard("score", "Score a live match", "Pick a match and record goals", Icons.Default.Stadium, Destinations.fixtures("live")),
             HomeCard("standings", "My league standings", "Current table for your league", Icons.Default.Leaderboard, Destinations.STANDINGS),
             fixtures,
             store,

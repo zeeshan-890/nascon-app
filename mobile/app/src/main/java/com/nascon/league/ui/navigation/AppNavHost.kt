@@ -33,6 +33,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+import com.nascon.league.ui.fixtures.FixturesScreen
+import com.nascon.league.ui.match.MatchDetailScreen
 import com.nascon.league.core.network.ConnState
 import com.nascon.league.di.LocalAppContainer
 import com.nascon.league.domain.model.Session
@@ -49,12 +53,12 @@ import kotlinx.coroutines.launch
 
 val LocalSnackbarHostState = staticCompositionLocalOf<SnackbarHostState> { error("none") }
 
-private fun titleFor(route: String?): String = when (route) {
+private fun titleFor(route: String?): String = when (baseRoute(route)) {
     Destinations.LOGIN -> "Sign in"
     Destinations.HOME -> "Home"
     Destinations.SETTINGS -> "Settings"
     Destinations.FIXTURES -> "Fixtures"
-    Destinations.MATCH -> "Match"
+    Destinations.MATCH -> "Match details"
     Destinations.STANDINGS -> "Standings"
     Destinations.CLUB -> "Club"
     Destinations.STORE -> "Store"
@@ -98,6 +102,8 @@ private fun AppShell(session: Session?) {
     val connState by container.connectivity.state.collectAsStateWithLifecycle(initialValue = ConnState.ONLINE)
     var confirmSignOut by rememberSaveable { mutableStateOf(false) }
     val loggedIn = session != null
+    val pendingFlow = remember(container) { container.pendingRepository.observePendingCount() }
+    val pendingCount by pendingFlow.collectAsStateWithLifecycle(initialValue = 0)
     val isTab = isTabRoute(route)
 
     LaunchedEffect(Unit) {
@@ -154,7 +160,7 @@ private fun AppShell(session: Session?) {
                 )
                 ConnectivityBanner(
                     state = connState,
-                    pendingCount = 0,
+                    pendingCount = pendingCount,
                     onClick = { navController.navigate(Destinations.SYNC) { launchSingleTop = true } },
                     onOpenSettings = ::openSettings,
                 )
@@ -181,8 +187,37 @@ private fun AppShell(session: Session?) {
                     composable(Destinations.SETTINGS) {
                         SettingsScreen(onSignedOut = { navController.clearAndGoToLogin() })
                     }
+                    composable(
+                        Destinations.FIXTURES_ROUTE,
+                        arguments = listOf(
+                            navArgument("filter") {
+                                type = NavType.StringType
+                                defaultValue = "all"
+                            },
+                        ),
+                    ) {
+                        FixturesScreen(
+                            onOpenMatch = { id ->
+                                navController.navigate(Destinations.match(id)) { launchSingleTop = true }
+                            },
+                        )
+                    }
+                    composable(
+                        Destinations.MATCH,
+                        arguments = listOf(navArgument("matchId") { type = NavType.StringType }),
+                    ) {
+                        MatchDetailScreen(
+                            onBack = { navController.navigateUp() },
+                            onOpenProduct = { id ->
+                                navController.navigate(Destinations.product(id)) { launchSingleTop = true }
+                            },
+                            onScore = { id ->
+                                navController.navigate(Destinations.scoring(id)) { launchSingleTop = true }
+                            },
+                        )
+                    }
                     listOf(
-                        Destinations.FIXTURES, Destinations.MATCH, Destinations.STANDINGS,
+                        Destinations.STANDINGS,
                         Destinations.CLUB, Destinations.STORE, Destinations.PRODUCT,
                         Destinations.CART, Destinations.RECEIPT, Destinations.ROSTER,
                         Destinations.SCORING, Destinations.SYNC, Destinations.ADMIN,

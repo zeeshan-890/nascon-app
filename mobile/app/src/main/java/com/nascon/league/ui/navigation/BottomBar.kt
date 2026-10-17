@@ -26,7 +26,10 @@ val tabItems = listOf(
     TabItem(Destinations.CLUB, "Club", Icons.Default.Groups),
 )
 
-fun isTabRoute(route: String?): Boolean = tabItems.any { it.route == route }
+/** Route without query part, so "fixtures?filter={filter}" counts as the Fixtures tab. */
+fun baseRoute(route: String?): String? = route?.substringBefore('?')
+
+fun isTabRoute(route: String?): Boolean = baseRoute(route).let { r -> tabItems.any { it.route == r } }
 
 @Composable
 fun BottomBar(
@@ -37,7 +40,7 @@ fun BottomBar(
     NavigationBar(modifier = modifier) {
         tabItems.forEach { tab ->
             NavigationBarItem(
-                selected = currentRoute == tab.route,
+                selected = baseRoute(currentRoute) == tab.route,
                 onClick = { onTabClick(tab) },
                 icon = { Icon(tab.icon, contentDescription = null) },
                 label = { Text(tab.label) },

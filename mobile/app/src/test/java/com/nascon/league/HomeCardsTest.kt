@@ -20,6 +20,12 @@ class HomeCardsTest {
 
     @Test fun organizer() = assertTrue("Score a live match" in titles(Role.LEAGUE_ORGANIZER))
 
+    @Test fun scoreCardOpensLiveFixtures() {
+        val cards = homeCards(Session(User("u", "a@b.c", Role.LEAGUE_ORGANIZER)))
+        assertEquals("fixtures?filter=live", cards.first { it.title == "Score a live match" }.route)
+        assertEquals("fixtures", cards.first { it.title == "Fixtures" }.route)
+    }
+
     @Test fun clubManagerRosterRoute() {
         val cards = homeCards(Session(User("u", "a@b.c", Role.CLUB_MANAGER, clubId = "c9")))
         assertEquals("roster/c9", cards.first { it.title == "Manage roster" }.route)
