@@ -329,13 +329,26 @@ CREATE TABLE IF NOT EXISTS outbox (
 );
 CREATE INDEX IF NOT EXISTS idx_outbox_unpublished ON outbox (id) WHERE published_at IS NULL;
 
+DO $$
+BEGIN
+  IF to_regclass('public.offline_actions') IS NOT NULL THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_constraint
+      WHERE conrelid = 'public.offline_actions'::regclass AND contype = 'p' AND array_length(conkey, 1) = 2
+    ) THEN
+      DROP TABLE public.offline_actions;
+    END IF;
+  END IF;
+END $$;
+
 CREATE TABLE IF NOT EXISTS offline_actions (
-  action_id text PRIMARY KEY,
-  device_id text,
+  device_id text NOT NULL,
+  action_id text NOT NULL,
   type text,
   payload jsonb,
   result jsonb,
-  created_at timestamptz NOT NULL DEFAULT now()
+  created_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (device_id, action_id)
 );
 
 -- Append-only enforcement. TRUNCATE (used by reset) is not blocked by row triggers.

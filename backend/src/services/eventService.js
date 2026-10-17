@@ -103,9 +103,33 @@ async function doAppend(client, req, requestCanonical) {
   return { created: response };
 }
 
+function mapUniqueViolation(err) {
+  if (err.code !== '23505') return err;
+  if (/compensates/.test(err.constraint || '')) {
+    return new AppError(409, 'INVALID_COMPENSATION', 'Event was already compensated');
+  }
+  if (/matches_pkey/.test(err.constraint || '')) return new AppError(409, 'MATCH_EXISTS', 'A match with this match_id already exists');
+  return new AppError(409, 'DUPLICATE_EVENT_ID', 'event_id already used');
+}
+
+const canonicalOf = (req) => canonical({ event_id: req.event_id, match_id: req.match_id, type: req.type, payload: req.payload });
+
+// Appends inside a transaction owned by the caller (used by offline sync). Throws AppError.
+async function appendEventIn(client, req) {
+  const requestCanonical = canonicalOf(req);
+  const existing = await events.findById(client, req.event_id);
+  if (existing) return replay(existing, requestCanonical);
+  try {
+    const result = await doAppend(client, req, requestCanonical);
+    return result.replay || { status: 201, body: result.created };
+  } catch (err) {
+    throw mapUniqueViolation(err);
+  }
+}
+
 async function appendEvent(body) {
   const req = parseRequest(body);
-  const requestCanonical = canonical({ event_id: req.event_id, match_id: req.match_id, type: req.type, payload: req.payload });
+  const requestCanonical = canonicalOf(req);
 
   const existing = await events.findById(pool, req.event_id);
   if (existing) return replay(existing, requestCanonical);
@@ -119,15 +143,8 @@ async function appendEvent(body) {
       const raced = await events.findById(pool, req.event_id);
       if (raced) return replay(raced, requestCanonical);
     }
-    if (err.code === '23505') {
-      if (/compensates/.test(err.constraint || '')) {
-        throw new AppError(409, 'INVALID_COMPENSATION', 'Event was already compensated');
-      }
-      if (/matches_pkey/.test(err.constraint || '')) throw new AppError(409, 'MATCH_EXISTS', 'A match with this match_id already exists');
-      throw new AppError(409, 'DUPLICATE_EVENT_ID', 'event_id already used');
-    }
-    throw err;
+    throw mapUniqueViolation(err);
   }
 }
 
-module.exports = { appendEvent };
+module.exports = { appendEvent, appendEventIn, parseEventRequest: parseRequest, canonicalOf };

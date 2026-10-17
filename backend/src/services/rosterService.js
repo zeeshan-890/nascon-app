@@ -99,6 +99,78 @@ function replayOf(stored, canon) {
   return { status: 200, body: stored.response };
 }
 
+async function transferIn(client, body, canon) {
+  const date = body.effective_date;
+  await repo.lockLeague(client, body.league_id);
+  // A parallel identical request may have finished while this one waited for the lock.
+  const stored = await repo.getRequest(client, body.request_id);
+  if (stored) return replayOf(stored, canon);
+
+  const league = await repo.getLeague(client, body.league_id);
+  if (!league) throw notFound('LEAGUE_NOT_FOUND', 'League not found');
+  if (!(await repo.hasPlayer(client, body.league_id, body.player_id))) {
+    throw notFound('PLAYER_NOT_FOUND', 'Player not found in this league');
+  }
+  const squads = new Map((await repo.listSquads(client, body.league_id)).map((s) => [s.squad_id, s]));
+  const fromSquad = squads.get(body.from_squad_id);
+  if (!fromSquad) throw notFound('SQUAD_NOT_FOUND', 'Squad not found in this league');
+  const isRelease = body.type === 'release';
+  const toSquad = isRelease ? null : squads.get(body.to_squad_id);
+  if (!isRelease && !toSquad) throw notFound('SQUAD_NOT_FOUND', 'Squad not found in this league');
+
+  const crossTenant = roster.checkCrossTenant(league, fromSquad, toSquad, body.type);
+  if (crossTenant) throw new AppError(crossTenant.status, crossTenant.code, crossTenant.message);
+
+  const setupRows = await repo.listInitial(client, body.league_id);
+  const audit = await repo.listAudit(client, body.league_id);
+  await materialiseReturns(client, body.league_id, body.player_id, date, audit);
+
+  const req = { ...body, to_squad_id: isRelease ? null : body.to_squad_id };
+  const rule = roster.checkRules({
+    league: { ...league, required_positions: league.required_positions || {} },
+    req,
+    state: roster.snapshot(setupRows, audit, date),
+  });
+  if (rule) throw new AppError(rule.status, rule.code, rule.message);
+
+  const blocking = roster.blockingMatch(await repo.listLiveMatches(client, body.league_id), body.from_squad_id);
+  const entry = await repo.insertAudit(client, {
+    league_id: body.league_id,
+    player_id: body.player_id,
+    action: body.type,
+    from_squad_id: body.from_squad_id,
+    to_squad_id: req.to_squad_id,
+    effective_date: date,
+    loan_end_date: body.type === 'loan' ? body.loan_end_date : null,
+    who: body.requested_by,
+    why: body.reason,
+    at: clock(),
+    state: blocking ? 'deferred_until_match_end' : 'active',
+  });
+  audit.push(entry);
+
+  const after = roster.snapshot(setupRows, audit, date).get(body.player_id);
+  const response = {
+    request_id: body.request_id,
+    status: 'accepted',
+    state: entry.state,
+    blocking_match_id: blocking,
+    registration: roster.buildRegistration(req, body.league_id, after),
+    audit_entry: entryView(entry),
+  };
+  await repo.writeRegistrations(client, body.league_id, roster.snapshot(setupRows, audit, roster.todayUtc()));
+  await repo.insertRequest(client, {
+    request_id: body.request_id, league_id: body.league_id, request_canonical: canon, response, status: 201,
+  });
+  await outbox.enqueue(client, {
+    aggregate_type: 'roster',
+    aggregate_id: body.league_id,
+    event_type: 'roster.changed',
+    payload: { league_id: body.league_id, player_id: body.player_id, audit_id: entry.audit_id, action: body.type },
+  });
+  return { status: 201, body: response };
+}
+
 async function transfer(body) {
   const { fields } = roster.validateTransfer(body);
   if (fields.length) throw invalid(fields);
@@ -107,77 +179,15 @@ async function transfer(body) {
   const early = await repo.getRequest(pool, body.request_id);
   if (early) return replayOf(early, canon);
 
-  const date = body.effective_date;
-  return withTransaction(async (client) => {
-    await repo.lockLeague(client, body.league_id);
-    // A parallel identical request may have finished while this one waited for the lock.
-    const stored = await repo.getRequest(client, body.request_id);
-    if (stored) return replayOf(stored, canon);
+  return withTransaction((client) => transferIn(client, body, canon));
+}
 
-    const league = await repo.getLeague(client, body.league_id);
-    if (!league) throw notFound('LEAGUE_NOT_FOUND', 'League not found');
-    if (!(await repo.hasPlayer(client, body.league_id, body.player_id))) {
-      throw notFound('PLAYER_NOT_FOUND', 'Player not found in this league');
-    }
-    const squads = new Map((await repo.listSquads(client, body.league_id)).map((s) => [s.squad_id, s]));
-    const fromSquad = squads.get(body.from_squad_id);
-    if (!fromSquad) throw notFound('SQUAD_NOT_FOUND', 'Squad not found in this league');
-    const isRelease = body.type === 'release';
-    const toSquad = isRelease ? null : squads.get(body.to_squad_id);
-    if (!isRelease && !toSquad) throw notFound('SQUAD_NOT_FOUND', 'Squad not found in this league');
-
-    const crossTenant = roster.checkCrossTenant(league, fromSquad, toSquad, body.type);
-    if (crossTenant) throw new AppError(crossTenant.status, crossTenant.code, crossTenant.message);
-
-    const setupRows = await repo.listInitial(client, body.league_id);
-    const audit = await repo.listAudit(client, body.league_id);
-    await materialiseReturns(client, body.league_id, body.player_id, date, audit);
-
-    const req = { ...body, to_squad_id: isRelease ? null : body.to_squad_id };
-    const rule = roster.checkRules({
-      league: { ...league, required_positions: league.required_positions || {} },
-      req,
-      state: roster.snapshot(setupRows, audit, date),
-    });
-    if (rule) throw new AppError(rule.status, rule.code, rule.message);
-
-    const blocking = roster.blockingMatch(await repo.listLiveMatches(client, body.league_id), body.from_squad_id);
-    const entry = await repo.insertAudit(client, {
-      league_id: body.league_id,
-      player_id: body.player_id,
-      action: body.type,
-      from_squad_id: body.from_squad_id,
-      to_squad_id: req.to_squad_id,
-      effective_date: date,
-      loan_end_date: body.type === 'loan' ? body.loan_end_date : null,
-      who: body.requested_by,
-      why: body.reason,
-      at: clock(),
-      state: blocking ? 'deferred_until_match_end' : 'active',
-    });
-    audit.push(entry);
-
-    const after = roster.snapshot(setupRows, audit, date).get(body.player_id);
-    const response = {
-      request_id: body.request_id,
-      status: 'accepted',
-      state: entry.state,
-      blocking_match_id: blocking,
-      registration: roster.buildRegistration(req, body.league_id, after),
-      audit_entry: entryView(entry),
-    };
-    await repo.writeRegistrations(client, body.league_id, roster.snapshot(setupRows, audit, roster.todayUtc()));
-    await repo.insertRequest(client, {
-      request_id: body.request_id, league_id: body.league_id, request_canonical: canon, response, status: 201,
-    });
-    await outbox.enqueue(client, {
-      aggregate_type: 'roster',
-      aggregate_id: body.league_id,
-      event_type: 'roster.changed',
-      payload: { league_id: body.league_id, player_id: body.player_id, audit_id: entry.audit_id, action: body.type },
-    });
-    return { status: 201, body: response };
-  });
+// Number of audit entries of the player (the base_version clients queue), after due loan returns.
+async function playerVersion(client, leagueId, playerId, date) {
+  await repo.lockLeague(client, leagueId);
+  const audit = await repo.listAudit(client, leagueId);
+  await materialiseReturns(client, leagueId, playerId, date, audit);
+  return audit.filter((e) => e.player_id === playerId).length;
 }
 
 function parseHistoryParams(playerId, asOf) {
@@ -215,4 +225,4 @@ async function history(playerId, asOf) {
   });
 }
 
-module.exports = { setup, transfer, history };
+module.exports = { setup, transfer, transferIn, playerVersion, history };
