@@ -38,6 +38,10 @@ private fun JsonObject.str(key: String): String? {
 
 fun eventTeamId(payload: JsonObject): String? = payload.str("team_id")
 
+/** Minute only if the server payload carries a plain numeric "minute"; never derived. */
+fun eventMinute(payload: JsonObject): String? =
+    payload.str("minute")?.takeIf { m -> m.isNotEmpty() && m.length <= 3 && m.all { it.isDigit() } }
+
 fun eventLabel(type: String, payload: JsonObject, teamName: (String?) -> String?): EventLabel {
     val team = teamName(eventTeamId(payload))
     return when (type) {

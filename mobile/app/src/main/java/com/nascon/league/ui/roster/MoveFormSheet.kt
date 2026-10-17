@@ -47,6 +47,13 @@ import androidx.compose.ui.unit.dp
 import com.nascon.league.R
 import com.nascon.league.data.api.dto.RosterPlayerDto
 import com.nascon.league.data.api.dto.SquadDto
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Surface
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material.icons.filled.ErrorOutline
+import com.nascon.league.ui.components.ArenaTextField
+import com.nascon.league.ui.theme.Arena
 import com.nascon.league.ui.components.PrimaryButton
 import com.nascon.league.ui.components.SecondaryButton
 import com.nascon.league.ui.theme.Spacing
@@ -87,7 +94,12 @@ fun MoveFormSheet(
     var reasonTouched by rememberSaveable { mutableStateOf(false) }
     val type = draft.type
 
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = Color.White,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+    ) {
         Column(
             Modifier
                 .fillMaxWidth()
@@ -111,9 +123,24 @@ fun MoveFormSheet(
                 )
             }
             if (RosterLogic.showsOnLoanWarning(player)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
-                    Text(stringResource(R.string.f7_on_loan_warning), style = MaterialTheme.typography.bodyLarge)
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = Arena.colors.warnBg,
+                    border = BorderStroke(1.dp, Arena.colors.warnBorder),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Row(
+                        Modifier.padding(Spacing.md),
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(Icons.Default.Warning, contentDescription = null, tint = Arena.colors.warnFg)
+                        Text(
+                            stringResource(R.string.f7_on_loan_warning),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Arena.colors.warnFg,
+                        )
+                    }
                 }
             }
 
@@ -127,34 +154,45 @@ fun MoveFormSheet(
                 if (destinations.isEmpty()) {
                     Text(stringResource(R.string.f7_no_squads), style = MaterialTheme.typography.bodyLarge)
                 } else {
-                    Column(Modifier.selectableGroup()) {
+                    Column(Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                         destinations.forEach { opt ->
                             val selected = draft.toSquadId == opt.squad.squadId
-                            Row(
-                                Modifier
+                            Surface(
+                                shape = RoundedCornerShape(14.dp),
+                                color = if (selected) Arena.colors.chipBg else Color.White,
+                                border = BorderStroke(
+                                    if (selected) 2.dp else 1.dp,
+                                    if (selected) Arena.colors.fieldBorder else Arena.colors.cardBorder,
+                                ),
+                                modifier = Modifier
                                     .fillMaxWidth()
-                                    .heightIn(min = 48.dp)
+                                    .heightIn(min = 56.dp)
                                     .selectable(
                                         selected = selected,
                                         role = Role.RadioButton,
                                         onClick = { onEdit { RosterDraftReducer.withToSquad(it, opt.squad.squadId) } },
                                     ),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
                             ) {
-                                RadioButton(selected = selected, onClick = null)
-                                Text(
-                                    stringResource(R.string.f7_squad_option, opt.squad.name, opt.size),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
+                                Row(
+                                    Modifier.padding(horizontal = Spacing.md, vertical = Spacing.xs),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                                ) {
+                                    RadioButton(selected = selected, onClick = null)
+                                    Text(
+                                        stringResource(R.string.f7_squad_option, opt.squad.name, opt.size),
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = Arena.colors.ink,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
                             }
                         }
                     }
                 }
                 errors.toSquad?.takeIf { it != RosterError.REQUIRED }?.let {
-                    Text(errorText(it), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+                    ErrorLine(errorText(it))
                 }
             }
 
@@ -178,26 +216,20 @@ fun MoveFormSheet(
 
             // ---- reason ----
             val reasonError = errors.reason?.takeIf { reasonTouched || draft.reason.isNotEmpty() }
-            OutlinedTextField(
+            ArenaTextField(
                 value = draft.reason,
                 onValueChange = {
                     reasonTouched = true
                     onEdit { d -> RosterDraftReducer.withReason(d, it) }
                 },
-                label = { Text(stringResource(R.string.f7_field_reason)) },
+                label = stringResource(R.string.f7_field_reason),
                 isError = reasonError != null,
-                supportingText = {
-                    Row(Modifier.fillMaxWidth()) {
-                        Text(
-                            reasonError?.let { errorText(it) } ?: stringResource(R.string.f7_reason_hint),
-                            modifier = Modifier.weight(1f),
-                        )
-                        Text(stringResource(R.string.f7_reason_counter, draft.reason.length, ROSTER_REASON_MAX))
-                    }
-                },
+                errorText = reasonError?.let { errorText(it) },
+                supportingText = stringResource(R.string.f7_reason_hint) + "  " +
+                    stringResource(R.string.f7_reason_counter, draft.reason.length, ROSTER_REASON_MAX),
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                singleLine = false,
                 minLines = 2,
-                maxLines = 4,
                 modifier = Modifier.fillMaxWidth(),
             )
 
@@ -259,22 +291,25 @@ private fun DateField(label: String, value: String?, error: String?, onClick: ()
     val cd = stringResource(R.string.f7_date_cd, label, shown)
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
         Text(label, style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
-        OutlinedButton(
+        SecondaryButton(
+            text = shown,
             onClick = onClick,
+            icon = Icons.Default.CalendarMonth,
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 56.dp)
                 .semantics { contentDescription = cd },
-        ) {
-            Icon(Icons.Default.CalendarMonth, contentDescription = null, modifier = Modifier.size(20.dp))
-            Text(
-                shown,
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.weight(1f).padding(start = Spacing.sm),
-            )
-        }
+        )
         if (error != null) {
-            Text(error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+            ErrorLine(error)
         }
+    }
+}
+
+@Composable
+private fun ErrorLine(text: String) {
+    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.xs), verticalAlignment = Alignment.Top) {
+        Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = Arena.colors.liveFg, modifier = Modifier.size(20.dp))
+        Text(text, color = Arena.colors.liveFg, style = MaterialTheme.typography.bodyMedium)
     }
 }

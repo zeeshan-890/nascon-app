@@ -52,6 +52,9 @@ data class MatchUiState(
     val offline: Boolean = false,
     val realtimeConnected: Boolean = false,
     val canScore: Boolean = false,
+    /** From the cached fixture row; used by the upcoming header. */
+    val scheduledAt: String? = null,
+    val venueName: String? = null,
 ) {
     val isLive: Boolean get() = match?.let { statusKind(it.status) == StatusKind.LIVE } == true
     val notFound: Boolean get() = refreshError.isNotFound()
@@ -152,6 +155,8 @@ class MatchDetailViewModel(
             updatedAt = b.cached?.updatedAt,
             homeName = homeName,
             awayName = awayName,
+            scheduledAt = b.fixture?.scheduledAt,
+            venueName = b.fixture?.venueName?.takeIf { it.isNotBlank() },
             timeline = if (m == null) emptyList() else buildTimeline(m.events, pendingEvents, teamName),
             refreshing = b.refresh.refreshing,
             refreshError = b.refresh.error,

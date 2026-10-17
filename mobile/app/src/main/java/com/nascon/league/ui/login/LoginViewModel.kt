@@ -32,7 +32,18 @@ data class LoginUiState(
     val serverUnreachable: Boolean = false,
     val demoExpanded: Boolean = false,
     val focusRequest: LoginField? = null,
+    val failureKind: LoginFailureKind? = null,
+    val attemptsLeft: Int? = null,
+    /** Seconds the account is locked for, when the server said; null = locked without a known countdown. */
+    val lockedForSeconds: Int? = null,
+    /** Changes on each new lock so the countdown restarts. */
+    val lockId: Int = 0,
 )
+
+/** Editing a field clears a stale credentials error but keeps an active lock message. */
+private fun LoginUiState.clearedError(): LoginUiState =
+    if (failureKind == LoginFailureKind.LOCKED && lockedForSeconds != null) this
+    else copy(errorMessage = null, failureKind = null, attemptsLeft = null)
 
 class LoginViewModel(private val container: AppContainer) : ViewModel() {
     private val _state = MutableStateFlow(LoginUiState())
@@ -42,10 +53,14 @@ class LoginViewModel(private val container: AppContainer) : ViewModel() {
     val loggedIn = _loggedIn.receiveAsFlow()
 
     fun onEmailChange(v: String) =
-        _state.update { it.copy(email = v, emailError = null, errorMessage = null, serverUnreachable = false) }
+        _state.update { it.copy(email = v, emailError = null, serverUnreachable = false).clearedError() }
 
     fun onPasswordChange(v: String) =
-        _state.update { it.copy(password = v, passwordError = null, errorMessage = null, serverUnreachable = false) }
+        _state.update { it.copy(password = v, passwordError = null, serverUnreachable = false).clearedError() }
+
+    fun lockExpired() = _state.update {
+        if (it.failureKind == LoginFailureKind.LOCKED) it.copy(errorMessage = null, failureKind = null, lockedForSeconds = null) else it
+    }
 
     fun togglePasswordVisible() = _state.update { it.copy(passwordVisible = !it.passwordVisible) }
     fun toggleDemo() = _state.update { it.copy(demoExpanded = !it.demoExpanded) }
@@ -78,7 +93,7 @@ class LoginViewModel(private val container: AppContainer) : ViewModel() {
             }
             return
         }
-        _state.update { it.copy(loading = true, errorMessage = null, serverUnreachable = false) }
+        _state.update { it.copy(loading = true, errorMessage = null, serverUnreachable = false, failureKind = null, attemptsLeft = null, lockedForSeconds = null) }
         viewModelScope.launch {
             when (val r = container.authRepository.login(email, s.password)) {
                 is NetworkResult.Success -> {
@@ -90,6 +105,10 @@ class LoginViewModel(private val container: AppContainer) : ViewModel() {
                         loading = false,
                         errorMessage = ErrorMapper.message(r.error, ErrorContext.Login),
                         serverUnreachable = r.error is ApiError.ServerUnreachable,
+                        failureKind = loginFailureKind(r.error),
+                        attemptsLeft = attemptsLeft(r.error),
+                        lockedForSeconds = lockedForSeconds(r.error),
+                        lockId = it.lockId + 1,
                     )
                 }
             }

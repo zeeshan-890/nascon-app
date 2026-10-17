@@ -3,6 +3,7 @@ package com.nascon.league.ui.scoring
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,6 +21,17 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.text.font.FontWeight
+import com.nascon.league.ui.components.ChipTone
+import com.nascon.league.ui.components.StatusChip
+import com.nascon.league.ui.theme.Arena
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -64,28 +76,64 @@ fun ScoringScreen(matchId: String, modifier: Modifier = Modifier) {
     }
 
     val surface = surfaceFor(s.showPanel, s.mode, embedded = false)
+    val shown = if (s.hasPending) {
+        m.copy(home = m.home.copy(score = s.homeScore), away = m.away.copy(score = s.awayScore))
+    } else {
+        m
+    }
+    Scoreboard(MatchUiState(homeName = s.homeName, awayName = s.awayName), shown, pendingScore = s.hasPending)
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(vertical = Spacing.md),
         verticalArrangement = Arrangement.spacedBy(Spacing.sm),
     ) {
-        item(key = "scoreboard") {
-            val shown = if (s.hasPending) {
-                m.copy(home = m.home.copy(score = s.homeScore), away = m.away.copy(score = s.awayScore))
-            } else {
-                m
+        if (s.hasPending || (s.offline && s.hasPending)) {
+            item(key = "pending-info") {
+                Column(
+                    Modifier.fillMaxWidth().padding(horizontal = Spacing.md),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+                ) {
+                    StatusChip(
+                        text = pluralStringResource(R.plurals.ui_pending_changes_count, s.pendingCount, s.pendingCount),
+                        icon = Icons.Default.Schedule,
+                        tone = ChipTone.Warning,
+                    )
+                    if (s.offline) {
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(Arena.colors.warnBg)
+                                .border(1.dp, Arena.colors.warnBorder, RoundedCornerShape(14.dp))
+                                .padding(Spacing.md),
+                            verticalAlignment = Alignment.Top,
+                        ) {
+                            Icon(
+                                Icons.Default.CloudOff,
+                                contentDescription = null,
+                                tint = Arena.colors.warnFg,
+                                modifier = Modifier.size(24.dp),
+                            )
+                            Text(
+                                stringResource(R.string.ui_scoring_offline_note),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = Arena.colors.warnFg,
+                                modifier = Modifier.padding(start = Spacing.sm),
+                            )
+                        }
+                    }
+                }
             }
-            Scoreboard(
-                MatchUiState(homeName = s.homeName, awayName = s.awayName),
-                shown,
-                Modifier.padding(horizontal = Spacing.md),
-                pendingScore = s.hasPending,
-            )
         }
         if (surface == ScoringSurface.NOTICE) {
             item(key = "notice") {
                 Row(
-                    Modifier.fillMaxWidth().padding(horizontal = Spacing.md),
+                    Modifier
+                        .padding(horizontal = Spacing.md)
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Arena.colors.chipBg)
+                        .padding(Spacing.md),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(24.dp))
@@ -102,7 +150,8 @@ fun ScoringScreen(matchId: String, modifier: Modifier = Modifier) {
         item(key = "timeline-title") {
             Text(
                 stringResource(R.string.f3_timeline_title),
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
+                color = Arena.colors.ink,
                 modifier = Modifier.padding(horizontal = Spacing.md).semantics { heading() },
             )
         }

@@ -1,6 +1,9 @@
 package com.nascon.league.ui.store
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,13 +21,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.LocalOffer
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,10 +51,13 @@ import com.nascon.league.R
 import com.nascon.league.data.store.PaymentMethod
 import com.nascon.league.data.store.formatPkr
 import com.nascon.league.di.LocalAppContainer
+import com.nascon.league.ui.components.ArenaCard
+import com.nascon.league.ui.components.ArenaTextField
 import com.nascon.league.ui.components.ConfirmDialog
 import com.nascon.league.ui.components.EmptyState
 import com.nascon.league.ui.components.PrimaryButton
 import com.nascon.league.ui.components.SecondaryButton
+import com.nascon.league.ui.theme.Arena
 import com.nascon.league.ui.theme.Spacing
 
 @Composable
@@ -135,12 +142,12 @@ private fun CheckoutContent(
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.semantics { heading() },
             )
-            OutlinedCard(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(Spacing.md), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+            ArenaCard(Modifier.fillMaxWidth()) {
+                Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                     s.lines.forEach { line ->
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                             Column(Modifier.weight(1f)) {
-                                Text(line.name, style = MaterialTheme.typography.bodyLarge)
+                                Text(line.name, style = MaterialTheme.typography.titleMedium, color = Arena.colors.ink)
                                 Text(
                                     stringResource(R.string.f6_summary_detail, line.variantLabel, line.quantity),
                                     style = MaterialTheme.typography.bodyLarge,
@@ -150,35 +157,33 @@ private fun CheckoutContent(
                             Text(
                                 formatPkr(line.unitPriceMinor * line.quantity),
                                 style = MaterialTheme.typography.bodyLarge,
+                                color = Arena.colors.ink,
                             )
                         }
                     }
-                    HorizontalDivider()
+                    HorizontalDivider(color = Arena.colors.cardBorder)
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             stringResource(R.string.f6_subtotal),
                             style = MaterialTheme.typography.titleMedium,
                             modifier = Modifier.weight(1f),
                         )
-                        Text(formatPkr(s.subtotalMinor), style = MaterialTheme.typography.titleMedium)
+                        Text(formatPkr(s.subtotalMinor), style = MaterialTheme.typography.titleMedium, color = Arena.colors.brand)
                     }
                 }
             }
 
             // Discount
-            OutlinedTextField(
+            ArenaTextField(
                 value = s.discountCode,
                 onValueChange = onDiscount,
+                label = stringResource(R.string.f6_discount_label),
+                leadingIcon = Icons.Default.LocalOffer,
                 enabled = !s.inFlight,
                 singleLine = true,
-                label = { Text(stringResource(R.string.f6_discount_label)) },
                 isError = s.discountError,
-                supportingText = {
-                    Text(
-                        stringResource(if (s.discountError) R.string.f6_discount_invalid else R.string.f6_discount_helper),
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
-                },
+                errorText = if (s.discountError) stringResource(R.string.f6_discount_invalid) else null,
+                supportingText = if (s.discountError) null else stringResource(R.string.f6_discount_helper),
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None),
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -189,39 +194,52 @@ private fun CheckoutContent(
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.semantics { heading() },
             )
-            Column(Modifier.selectableGroup()) {
+            Column(Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 PaymentMethod.entries.forEach { m ->
-                    Row(
-                        Modifier
+                    val selected = s.method == m
+                    Surface(
+                        shape = RoundedCornerShape(18.dp),
+                        color = if (selected) Arena.colors.chipBg else Color.White,
+                        border = BorderStroke(if (selected) 2.dp else 1.dp, if (selected) Arena.colors.fieldBorder else Arena.colors.cardBorder),
+                        modifier = Modifier
                             .fillMaxWidth()
-                            .heightIn(min = 56.dp)
                             .selectable(
-                                selected = s.method == m,
+                                selected = selected,
                                 enabled = !s.inFlight,
                                 role = Role.RadioButton,
                                 onClick = { onMethod(m) },
                             ),
-                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        RadioButton(selected = s.method == m, onClick = null, enabled = !s.inFlight)
-                        Text(
-                            stringResource(methodLabel(m)),
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.padding(start = Spacing.md),
-                        )
+                        Row(
+                            Modifier.heightIn(min = 56.dp).padding(horizontal = Spacing.md, vertical = Spacing.sm),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(
+                                if (selected) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                                contentDescription = null,
+                                tint = if (selected) Arena.colors.brand else Arena.colors.inkSoft,
+                                modifier = Modifier.size(24.dp),
+                            )
+                            Text(
+                                stringResource(methodLabel(m)),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = Arena.colors.ink,
+                                modifier = Modifier.padding(start = Spacing.md),
+                            )
+                        }
                     }
                 }
             }
             Text(
                 stringResource(R.string.f6_demo_note),
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = Arena.colors.inkSoft,
             )
 
             s.banner?.let { PayBanner(it, s.bannerMessage) }
         }
 
-        Surface(tonalElevation = 3.dp, modifier = Modifier.fillMaxWidth()) {
+        Surface(color = Color.White, shadowElevation = 6.dp, modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(Spacing.md), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(
@@ -229,14 +247,21 @@ private fun CheckoutContent(
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.weight(1f),
                     )
-                    Text(formatPkr(s.subtotalMinor), style = MaterialTheme.typography.titleLarge)
+                    Text(formatPkr(s.subtotalMinor), style = MaterialTheme.typography.titleLarge, color = Arena.colors.brand)
                 }
                 when (s.hint) {
-                    PayHint.Offline -> Text(
-                        stringResource(R.string.f6_pay_offline),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.error,
-                    )
+                    PayHint.Offline -> Surface(
+                        color = Arena.colors.warnBg,
+                        contentColor = Arena.colors.warnFg,
+                        shape = RoundedCornerShape(14.dp),
+                        border = BorderStroke(1.dp, Arena.colors.warnBorder),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Row(Modifier.padding(Spacing.md), horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                            Icon(Icons.Default.CloudOff, contentDescription = null, modifier = Modifier.size(24.dp))
+                            Text(stringResource(R.string.f6_pay_offline), style = MaterialTheme.typography.bodyLarge)
+                        }
+                    }
                     PayHint.Problems -> {
                         Text(
                             stringResource(R.string.f6_checkout_blocked),

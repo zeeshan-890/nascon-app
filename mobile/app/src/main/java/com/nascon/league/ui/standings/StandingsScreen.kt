@@ -48,6 +48,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -71,7 +72,11 @@ import com.nascon.league.ui.components.ErrorState
 import com.nascon.league.ui.components.LastUpdatedLabel
 import com.nascon.league.ui.components.RefreshableList
 import com.nascon.league.ui.components.SavedDataBadge
+import com.nascon.league.ui.components.ChipTone
 import com.nascon.league.ui.components.StatusChip
+import com.nascon.league.ui.theme.Arena
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.shape.RoundedCornerShape
 import com.nascon.league.ui.match.isConnectivity
 import com.nascon.league.ui.theme.Spacing
 
@@ -303,7 +308,12 @@ private fun StandingsTable(standings: StandingsDto, onOpenSheet: (String?) -> Un
     val tableItems = remember(standings) { buildItems(standings) }
     val hScroll = rememberScrollState()
     val listState = rememberLazyListState()
-    LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
+    LazyColumn(
+        state = listState,
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = Spacing.md, vertical = Spacing.sm),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
         stickyHeader(key = "header") { HeaderRow(hScroll) }
         items(
             tableItems,
@@ -336,7 +346,11 @@ private fun HeaderCell(text: String, cd: String, width: Dp) {
 
 @Composable
 private fun HeaderRow(hScroll: ScrollState) {
-    Surface(color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.fillMaxWidth()) {
+    Surface(
+        color = Arena.colors.chipBg,
+        shape = RoundedCornerShape(12.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
         Row(
             Modifier.fillMaxWidth().heightIn(min = 48.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -363,13 +377,13 @@ private fun HeaderRow(hScroll: ScrollState) {
     }
 }
 
-private data class StatusUi(val text: Int, val icon: ImageVector)
+private data class StatusUi(val text: Int, val icon: ImageVector, val tone: ChipTone)
 
 private fun statusUi(status: QualStatus): StatusUi = when (status) {
-    QualStatus.QUALIFIED -> StatusUi(R.string.f4_status_qualified, Icons.Default.Check)
-    QualStatus.OUT -> StatusUi(R.string.f4_status_out, Icons.Default.Close)
-    QualStatus.IN_CONTENTION -> StatusUi(R.string.f4_status_in_contention, Icons.Default.HourglassEmpty)
-    QualStatus.UNKNOWN -> StatusUi(R.string.f4_status_unavailable, Icons.Default.Info)
+    QualStatus.QUALIFIED -> StatusUi(R.string.f4_status_qualified, Icons.Default.Check, ChipTone.Success)
+    QualStatus.OUT -> StatusUi(R.string.f4_status_out, Icons.Default.Close, ChipTone.Error)
+    QualStatus.IN_CONTENTION -> StatusUi(R.string.f4_status_in_contention, Icons.Default.HourglassEmpty, ChipTone.Warning)
+    QualStatus.UNKNOWN -> StatusUi(R.string.f4_status_unavailable, Icons.Default.Info, ChipTone.Neutral)
 }
 
 private fun tieBreakRes(t: TieBreak): Int = when (t) {
@@ -418,8 +432,11 @@ private fun TeamRow(
     val full = if (tieBreak != null) cd + ". " + stringResource(tieBreakRes(tieBreak)) else cd
     val openLabel = stringResource(R.string.f4_row_open_h2h)
 
-    Column(
-        Modifier
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = Color.White,
+        border = BorderStroke(1.dp, Arena.colors.cardBorder),
+        modifier = Modifier
             .fillMaxWidth()
             .clickable(onClickLabel = openLabel, onClick = onClick)
             .semantics(mergeDescendants = true) { contentDescription = full },
@@ -439,7 +456,7 @@ private fun TeamRow(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
-                StatusChip(text = statusText, icon = status.icon)
+                StatusChip(text = statusText, icon = status.icon, tone = status.tone)
                 if (tieBreak != null) {
                     Text(
                         stringResource(tieBreakRes(tieBreak)),
@@ -460,7 +477,6 @@ private fun TeamRow(
                 NumCell(row.points.toString(), PtsW, bold = true)
             }
         }
-        HorizontalDivider()
     }
 }
 
@@ -468,7 +484,7 @@ private fun TeamRow(
 private fun QualificationLine() {
     val label = stringResource(R.string.f4_qualification_line)
     val cd = stringResource(R.string.f4_qualification_line_cd)
-    val color = MaterialTheme.colorScheme.primary
+    val color = Arena.colors.brand
     Row(
         Modifier
             .fillMaxWidth()
@@ -495,7 +511,12 @@ private fun H2hSheet(standings: StandingsDto, teamId: String, onDismiss: () -> U
     val others = remember(standings, teamId) { standings.table.sortedBy { it.rank }.map { it.teamId } }
     val entries = remember(standings, teamId) { parseH2h(standings.h2h, teamId, others) }
     val teamName = teamDisplayName(standings.teamNames, teamId)
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = Color.White,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+    ) {
         Column(Modifier.fillMaxWidth().padding(horizontal = Spacing.md)) {
             Text(
                 stringResource(R.string.f4_h2h_title),
@@ -547,10 +568,11 @@ private fun H2hSheet(standings: StandingsDto, teamId: String, onDismiss: () -> U
                     }
                 }
             }
-            TextButton(
+            com.nascon.league.ui.components.SecondaryButton(
+                text = stringResource(R.string.f4_h2h_close),
                 onClick = onDismiss,
-                modifier = Modifier.align(Alignment.End).heightIn(min = 48.dp),
-            ) { Text(stringResource(R.string.f4_h2h_close), style = MaterialTheme.typography.bodyLarge) }
+                modifier = Modifier.fillMaxWidth(),
+            )
             Spacer(Modifier.height(Spacing.md))
         }
     }

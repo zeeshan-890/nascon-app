@@ -1,6 +1,11 @@
 package com.nascon.league.ui.store
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -10,7 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -27,6 +32,7 @@ import com.nascon.league.R
 import com.nascon.league.data.store.formatPkr
 import com.nascon.league.ui.components.PrimaryButton
 import com.nascon.league.ui.components.SecondaryButton
+import com.nascon.league.ui.theme.Arena
 import com.nascon.league.ui.theme.Spacing
 
 @Composable
@@ -45,15 +51,21 @@ fun OrderSuccessScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(Spacing.md, Alignment.CenterVertically),
     ) {
-        Icon(
-            Icons.Default.CheckCircle,
-            contentDescription = null,
-            modifier = Modifier.size(80.dp),
-            tint = MaterialTheme.colorScheme.primary,
-        )
+        Box(
+            Modifier.size(104.dp).clip(CircleShape).background(Arena.colors.headerBrush),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                Icons.Default.Check,
+                contentDescription = null,
+                modifier = Modifier.size(56.dp),
+                tint = Color.White,
+            )
+        }
         Text(
             stringResource(R.string.f6_order_placed),
             style = MaterialTheme.typography.headlineMedium,
+            color = Arena.colors.ink,
             textAlign = TextAlign.Center,
             modifier = Modifier.semantics { heading() },
         )
@@ -66,13 +78,14 @@ fun OrderSuccessScreen(
             Text(
                 stringResource(R.string.f6_order_total, formatPkr(total)),
                 style = MaterialTheme.typography.titleLarge,
+                color = Arena.colors.brand,
                 textAlign = TextAlign.Center,
             )
         }
         Text(
             stringResource(R.string.f6_order_thanks),
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = Arena.colors.inkSoft,
             textAlign = TextAlign.Center,
         )
         PrimaryButton(

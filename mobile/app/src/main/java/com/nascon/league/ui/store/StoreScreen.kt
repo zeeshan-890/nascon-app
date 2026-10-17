@@ -1,6 +1,5 @@
 package com.nascon.league.ui.store
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -24,11 +24,9 @@ import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -49,12 +47,16 @@ import com.nascon.league.data.api.dto.ProductDto
 import com.nascon.league.data.store.StoreLogic
 import com.nascon.league.data.store.formatPkr
 import com.nascon.league.di.LocalAppContainer
+import com.nascon.league.ui.components.ArenaCard
+import com.nascon.league.ui.components.ChipTone
+import com.nascon.league.ui.components.FilterPill
 import com.nascon.league.ui.components.EmptyState
 import com.nascon.league.ui.components.ErrorState
 import com.nascon.league.ui.components.LastUpdatedLabel
 import com.nascon.league.ui.components.RefreshableList
 import com.nascon.league.ui.components.SavedDataBadge
 import com.nascon.league.ui.components.StatusChip
+import com.nascon.league.ui.theme.Arena
 import com.nascon.league.ui.theme.Spacing
 
 @Composable
@@ -143,13 +145,10 @@ private fun CategoryRow(keys: List<String>, selected: String?, onSelect: (String
 @Composable
 private fun CategoryChip(label: String, isSelected: Boolean, onClick: () -> Unit) {
     val cd = if (isSelected) stringResource(R.string.f6_selected_cd, label) else label
-    FilterChip(
+    FilterPill(
+        text = label,
         selected = isSelected,
         onClick = onClick,
-        label = { Text(label, style = MaterialTheme.typography.bodyLarge) },
-        leadingIcon = if (isSelected) {
-            { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
-        } else null,
         modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = cd },
     )
 }
@@ -231,25 +230,26 @@ private fun ProductCard(p: ProductDto, onClick: () -> Unit) {
     ).joinToString(", ")
     val openLabel = stringResource(R.string.f6_open_product)
 
-    OutlinedCard(
+    ArenaCard(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClickLabel = openLabel, onClick = onClick)
             .semantics(mergeDescendants = true) { contentDescription = cd },
+        onClick = onClick,
     ) {
-        Column(Modifier.padding(Spacing.sm), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-            ProductImage(p.imageUrl, p.name, Modifier.fillMaxWidth().height(120.dp))
-            Text(
-                p.name,
-                style = MaterialTheme.typography.bodyLarge,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-            if (soldOut) {
-                StatusChip(stringResource(R.string.f6_out_of_stock), Icons.Default.Block)
-            } else if (priceText != null) {
-                Text(priceText, style = MaterialTheme.typography.titleMedium)
-            }
+        ProductImage(p.imageUrl, p.name, Modifier.fillMaxWidth().height(120.dp))
+        Spacer(Modifier.height(Spacing.xs))
+        Text(
+            p.name,
+            style = MaterialTheme.typography.titleMedium,
+            color = Arena.colors.ink,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(Modifier.height(Spacing.xs))
+        if (soldOut) {
+            StatusChip(stringResource(R.string.f6_out_of_stock), Icons.Default.Block, tone = ChipTone.Error)
+        } else if (priceText != null) {
+            Text(priceText, style = MaterialTheme.typography.titleMedium, color = Arena.colors.brand)
         }
     }
 }

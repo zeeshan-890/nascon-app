@@ -1,7 +1,11 @@
 package com.nascon.league.ui.match
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -27,18 +31,29 @@ import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.filled.ShoppingBag
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.res.pluralStringResource
+import com.nascon.league.ui.fixtures.StatusKind
+import com.nascon.league.ui.fixtures.FixtureTime
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import com.nascon.league.ui.components.ArenaCard
+import com.nascon.league.ui.components.ChipTone
+import com.nascon.league.ui.navigation.HeaderExtra
+import com.nascon.league.ui.theme.Arena
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.painter.ColorPainter
@@ -170,6 +185,13 @@ private fun MatchDetailContent(
         return
     }
 
+    // Optimistic score: server score plus queued score events, marked "Pending".
+    val shown = if (sc.hasPending) {
+        m.copy(home = m.home.copy(score = sc.homeScore), away = m.away.copy(score = sc.awayScore))
+    } else {
+        m
+    }
+    Scoreboard(s, shown, pendingScore = sc.hasPending)
     Column(modifier.fillMaxSize()) {
         if (s.refreshing) LinearProgressIndicator(Modifier.fillMaxWidth())
         Box(Modifier.weight(1f).fillMaxWidth()) {
@@ -202,37 +224,49 @@ private fun MatchBody(
     scoring: ScoringViewModel,
     sc: ScoringUiState,
 ) {
+    val upcoming = statusKind(m.status) == StatusKind.UPCOMING
+    var openKey by rememberSaveable { mutableStateOf<String?>(null) }
+    openKey?.let { k ->
+        s.timeline.firstOrNull { it.key == k }?.let { EventDetailSheet(it) { openKey = null } }
+    }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = Spacing.md),
+        contentPadding = PaddingValues(top = Spacing.sm, bottom = Spacing.md),
         verticalArrangement = Arrangement.spacedBy(Spacing.sm),
     ) {
-        item(key = "scoreboard") {
-            // Optimistic score: server score plus queued score events, marked "Pending".
-            val shown = if (sc.hasPending) {
-                m.copy(home = m.home.copy(score = sc.homeScore), away = m.away.copy(score = sc.awayScore))
-            } else {
-                m
-            }
-            Scoreboard(s, shown, Modifier.padding(horizontal = Spacing.md, vertical = Spacing.sm), pendingScore = sc.hasPending)
-        }
         item(key = "strip") { StatusStrip(s) }
+        if (upcoming) {
+            item(key = "upcoming-info") { UpcomingInfo(s) }
+        }
         if (surfaceFor(sc.showPanel, sc.mode, embedded = true) != ScoringSurface.NONE) {
             item(key = "scoring-panel") { ScoringPanel(scoring) }
         }
         if (m.pinnedProducts.isNotEmpty()) {
             item(key = "products") { ProductsRow(m.pinnedProducts, onOpenProduct) }
         }
-        item(key = "timeline-title") {
+        if (upcoming && s.timeline.isEmpty()) {
+            item(key = "timeline-later") {
+                Text(
+                    stringResource(R.string.ms_timeline_starts_live),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Arena.colors.inkSoft,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.md),
+                )
+            }
+        } else item(key = "timeline-title") {
             Text(
                 stringResource(R.string.f3_timeline_title),
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
+                color = Arena.colors.ink,
                 modifier = Modifier
                     .padding(horizontal = Spacing.md)
                     .semantics { heading() },
             )
         }
-        if (s.timeline.isEmpty()) {
+        if (upcoming && s.timeline.isEmpty()) {
+            // explained by the "timeline starts when live" note above
+        } else if (s.timeline.isEmpty()) {
             item(key = "no-events") {
                 Text(
                     stringResource(R.string.f3_no_events),
@@ -247,6 +281,7 @@ private fun MatchBody(
                 TimelineRow(
                     item,
                     Modifier.padding(horizontal = Spacing.md),
+                    onClick = { openKey = item.key },
                     onUndo = if (eventId != null && eventId in sc.undoableEventIds) {
                         { scoring.requestUndo(eventId) }
                     } else {
@@ -258,6 +293,10 @@ private fun MatchBody(
     }
 }
 
+/**
+ * Hero scoreboard. It is injected into the gradient app-shell header (white text on the gradient) and
+ * emits nothing into the screen body.
+ */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun Scoreboard(
@@ -283,34 +322,78 @@ internal fun Scoreboard(
         team?.let { stringResource(R.string.f3_tiebreak_won, it) }
     }
     val statusText = stringResource(kind.labelRes())
+    val upcoming = kind == StatusKind.UPCOMING
+    val scoreText = if (upcoming) stringResource(R.string.ms_vs) else "${home.main} – ${away.main}"
+    val countdown = if (upcoming) {
+        val start = remember(s.scheduledAt) { FixtureTime.parse(s.scheduledAt) }
+        remember(start) { countdownTo(java.time.Instant.now(), start) }
+    } else null
+    val countdownStr = when (countdown) {
+        null -> null
+        Countdown.Soon -> stringResource(R.string.ms_starts_soon)
+        is Countdown.Days -> pluralStringResource(R.plurals.ms_starts_days, countdown.n, countdown.n)
+        is Countdown.Hours -> pluralStringResource(R.plurals.ms_starts_hours, countdown.n, countdown.n)
+        is Countdown.Minutes -> pluralStringResource(R.plurals.ms_starts_minutes, countdown.n, countdown.n)
+    }
     val cd = buildString {
-        append(stringResource(R.string.f3_score_cd, homeName, home.main, awayName, away.main, statusText))
+        if (upcoming) {
+            append(stringResource(R.string.ms_upcoming_cd, homeName, awayName, statusText))
+            if (countdownStr != null) append(". ").append(countdownStr)
+        } else {
+            append(stringResource(R.string.f3_score_cd, homeName, home.main, awayName, away.main, statusText))
+        }
         if (outcomeStr != null) append(". ").append(outcomeStr)
         if (tiebreakStr != null) append(". ").append(tiebreakStr)
     }
-    Card(modifier = modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = cd }) {
+    val pendingText = stringResource(R.string.f3_chip_pending)
+    HeaderExtra {
         Column(
-            Modifier.fillMaxWidth().padding(Spacing.md),
+            Modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = cd },
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         ) {
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                FixtureStatusChip(kind)
-                if (pendingScore) StatusChip(stringResource(R.string.f3_chip_pending), Icons.Default.Schedule)
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                HeroTeam(homeName, home, Modifier.weight(1f))
+                Text(
+                    scoreText,
+                    style = if (scoreText.length > 9) ScoreTextStyle.copy(fontSize = 26.sp) else ScoreTextStyle,
+                    color = Color.White,
+                    maxLines = 1,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = Spacing.sm),
+                )
+                HeroTeam(awayName, away, Modifier.weight(1f))
             }
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-                TeamColumn(homeName, home, Modifier.weight(1f))
-                TeamColumn(awayName, away, Modifier.weight(1f))
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(Spacing.sm, Alignment.CenterHorizontally),
+                verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+            ) {
+                FixtureStatusChip(kind)
+                if (pendingScore) StatusChip(pendingText, Icons.Default.Schedule, tone = ChipTone.Warning)
+            }
+            if (countdownStr != null) {
+                Text(
+                    countdownStr,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.White,
+                    textAlign = TextAlign.Center,
+                )
             }
             if (outcomeStr != null) {
                 Text(
                     outcomeStr,
                     style = MaterialTheme.typography.titleMedium,
+                    color = Color.White,
                     textAlign = TextAlign.Center,
                 )
             }
             if (tiebreakStr != null) {
-                Text(tiebreakStr, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
+                Text(
+                    tiebreakStr,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.White,
+                    textAlign = TextAlign.Center,
+                )
             }
         }
     }
@@ -327,34 +410,32 @@ private fun OutcomeText.asString(): String? = when (this) {
 }
 
 @Composable
-private fun TeamColumn(name: String, score: ScoreText, modifier: Modifier = Modifier) {
+private fun HeroTeam(name: String, score: ScoreText, modifier: Modifier = Modifier) {
     Column(
-        modifier.padding(horizontal = Spacing.xs),
+        modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(Spacing.xs),
     ) {
         Text(
             name,
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 15.sp, fontWeight = FontWeight.Bold),
+            color = Color.White,
             textAlign = TextAlign.Center,
-        )
-        Text(
-            score.main,
-            style = if (score.main.length > 4) ScoreTextStyle.copy(fontSize = 36.sp) else ScoreTextStyle,
-            textAlign = TextAlign.Center,
-            maxLines = 1,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis,
         )
         if (score.overs != null) {
             Text(
                 stringResource(R.string.f3_overs, score.overs),
                 style = MaterialTheme.typography.bodyLarge,
+                color = Color.White,
             )
         }
         if (score.fairPlay != 0) {
             Text(
                 stringResource(R.string.f3_fair_play, score.fairPlay),
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = Color.White,
             )
         }
     }
@@ -377,6 +458,25 @@ private fun StatusStrip(s: MatchUiState) {
             if (showBadge) SavedDataBadge()
             LastUpdatedLabel(s.updatedAt)
         }
+        if (s.offline) {
+            val a = Arena.colors
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(14.dp))
+                    .background(a.warnBg)
+                    .padding(Spacing.sm),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(Icons.Default.CloudOff, contentDescription = null, tint = a.warnFg, modifier = Modifier.size(20.dp))
+                Text(
+                    stringResource(R.string.ms_offline_banner),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = a.warnFg,
+                    modifier = Modifier.padding(start = Spacing.sm),
+                )
+            }
+        }
         if (paused) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.CloudOff, contentDescription = null, modifier = Modifier.size(20.dp))
@@ -395,7 +495,8 @@ private fun ProductsRow(products: List<PinnedProductDto>, onOpenProduct: (String
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
         Text(
             stringResource(R.string.f3_products_title),
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
+            color = Arena.colors.ink,
             modifier = Modifier
                 .padding(horizontal = Spacing.md)
                 .semantics { heading() },
@@ -411,8 +512,8 @@ private fun ProductsRow(products: List<PinnedProductDto>, onOpenProduct: (String
 
 @Composable
 private fun ProductCard(p: PinnedProductDto, onOpenProduct: (String) -> Unit) {
-    OutlinedCard(Modifier.width(180.dp)) {
-        Column(Modifier.padding(Spacing.sm), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+    ArenaCard(Modifier.width(180.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
             val placeholder = ColorPainter(MaterialTheme.colorScheme.surfaceVariant)
             if (p.imageUrl.isNullOrBlank()) {
                 Box(
@@ -447,7 +548,8 @@ private fun ProductCard(p: PinnedProductDto, onOpenProduct: (String) -> Unit) {
             )
             Text(
                 stringResource(R.string.f3_price, formatPriceMinor(p.priceMinor)),
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
+                color = Arena.colors.brandDeep,
             )
             val buyCd = stringResource(R.string.f3_buy_cd, p.name)
             PrimaryButton(
@@ -483,7 +585,12 @@ internal fun EventLabel.asString(): String = when (this) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun TimelineRow(item: TimelineItem, modifier: Modifier = Modifier, onUndo: (() -> Unit)? = null) {
+internal fun TimelineRow(
+    item: TimelineItem,
+    modifier: Modifier = Modifier,
+    onUndo: (() -> Unit)? = null,
+    onClick: (() -> Unit)? = null,
+) {
     val label = item.label.asString()
     val seq = item.sequence?.let { stringResource(R.string.f3_event_seq, it) }
     val pendingText = stringResource(R.string.f3_chip_pending)
@@ -494,29 +601,34 @@ internal fun TimelineRow(item: TimelineItem, modifier: Modifier = Modifier, onUn
         if (item.pending) append(", ").append(pendingText)
         if (item.compensated) append(", ").append(correctedText)
     }
-    OutlinedCard(modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = cd }) {
+    val openCd = if (onClick != null) stringResource(R.string.ms_event_open_cd, cd) else cd
+    ArenaCard(
+        modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = openCd },
+        onClick = onClick,
+    ) {
         Row(
-            Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(Spacing.md),
+            Modifier.fillMaxWidth().heightIn(min = 48.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (seq != null) {
                 Text(
                     seq,
                     style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = Arena.colors.brandDeep,
                     modifier = Modifier.widthIn(min = 48.dp).padding(end = Spacing.sm),
                 )
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
                 Text(
                     label,
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                    color = Arena.colors.ink,
                     textDecoration = if (item.compensated) TextDecoration.LineThrough else null,
                 )
                 if (item.pending || item.compensated) {
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                        if (item.pending) StatusChip(pendingText, Icons.Default.Schedule)
-                        if (item.compensated) StatusChip(correctedText, Icons.Default.CheckCircle)
+                        if (item.pending) StatusChip(pendingText, Icons.Default.Schedule, tone = ChipTone.Warning)
+                        if (item.compensated) StatusChip(correctedText, Icons.Default.CheckCircle, tone = ChipTone.Success)
                     }
                 }
             }
@@ -529,6 +641,105 @@ internal fun TimelineRow(item: TimelineItem, modifier: Modifier = Modifier, onUn
                     Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = null, modifier = Modifier.size(18.dp))
                     Text(stringResource(R.string.f8_undo), modifier = Modifier.padding(start = Spacing.xs))
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun UpcomingInfo(s: MatchUiState) {
+    val tbc = stringResource(R.string.f3_time_tbc)
+    val kickoff = FixtureTime.format(s.scheduledAt, fallback = tbc)
+    Column(
+        Modifier.fillMaxWidth().padding(horizontal = Spacing.md),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+    ) {
+        InfoCard(stringResource(R.string.ms_kickoff), kickoff)
+        s.venueName?.let { InfoCard(stringResource(R.string.ms_venue), it) }
+    }
+}
+
+@Composable
+private fun InfoCard(label: String, value: String) {
+    ArenaCard(Modifier.fillMaxWidth().semantics(mergeDescendants = true) {}) {
+        Row(
+            Modifier.fillMaxWidth().heightIn(min = 48.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+        ) {
+            Text(label, style = MaterialTheme.typography.bodyLarge, color = Arena.colors.inkSoft, modifier = Modifier.weight(1f))
+            Text(
+                value,
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                color = Arena.colors.ink,
+                textAlign = TextAlign.End,
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+}
+
+/** Bottom sheet with only the fields the event actually carries. */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+internal fun EventDetailSheet(item: TimelineItem, onDismiss: () -> Unit) {
+    val a = Arena.colors
+    val sheet = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val label = item.label.asString()
+    val status = when {
+        item.pending -> stringResource(R.string.ms_event_status_pending)
+        item.compensated -> stringResource(R.string.ms_event_status_corrected)
+        else -> stringResource(R.string.ms_event_status_recorded)
+    }
+    val statusIcon = if (item.pending) Icons.Default.Schedule else Icons.Default.CheckCircle
+    val tone = when {
+        item.pending -> ChipTone.Warning
+        item.compensated -> ChipTone.Neutral
+        else -> ChipTone.Success
+    }
+    androidx.compose.material3.ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheet,
+        containerColor = Color.White,
+    ) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = Spacing.lg)
+                .padding(bottom = Spacing.md),
+            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+        ) {
+            Text(
+                stringResource(R.string.ms_event_detail_title),
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
+                color = a.ink,
+                modifier = Modifier.semantics { heading() },
+            )
+            InfoCard(stringResource(R.string.ms_event_field_event), label)
+            item.teamName?.let { InfoCard(stringResource(R.string.ms_event_field_team), it) }
+            item.minute?.let {
+                InfoCard(stringResource(R.string.ms_event_field_minute), stringResource(R.string.ms_event_minute_value, it))
+            }
+            item.sequence?.let { InfoCard(stringResource(R.string.ms_event_field_order), stringResource(R.string.f3_event_seq, it)) }
+            ArenaCard(Modifier.fillMaxWidth().semantics(mergeDescendants = true) {}) {
+                Row(
+                    Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                ) {
+                    Text(
+                        stringResource(R.string.ms_event_field_status),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = a.inkSoft,
+                        modifier = Modifier.weight(1f),
+                    )
+                    StatusChip(status, statusIcon, tone = tone)
+                }
+            }
+            TextButton(onClick = onDismiss, modifier = Modifier.heightIn(min = 48.dp).align(Alignment.End)) {
+                Text(stringResource(R.string.ms_event_close))
             }
         }
     }

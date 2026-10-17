@@ -12,15 +12,17 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
+import com.nascon.league.ui.components.ArenaCard
+import com.nascon.league.ui.theme.Arena
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
@@ -69,11 +71,12 @@ private fun ScoreControls(s: ScoringUiState, m: MatchDetailDto, vm: ScoringViewM
     val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
     val homeName = s.homeName ?: stringResource(R.string.f3_home_team)
     val awayName = s.awayName ?: stringResource(R.string.f3_away_team)
-    Card(modifier.fillMaxWidth().padding(horizontal = Spacing.md)) {
-        Column(Modifier.padding(Spacing.md), verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+    ArenaCard(modifier.fillMaxWidth().padding(horizontal = Spacing.md)) {
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
             Text(
                 stringResource(R.string.f8_panel_title),
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
+                color = Arena.colors.ink,
                 modifier = Modifier.semantics { heading() },
             )
             if (s.buttons.isEmpty() && s.disciplineOptions.isEmpty()) {
@@ -109,10 +112,18 @@ private fun TeamControls(
 ) {
     val sectionCd = stringResource(R.string.f8_team_section_cd, teamName)
     Column(
-        modifier.semantics { contentDescription = sectionCd },
+        modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(Arena.colors.surfaceAlt)
+            .padding(Spacing.md)
+            .semantics { contentDescription = sectionCd },
         verticalArrangement = Arrangement.spacedBy(Spacing.sm),
     ) {
-        Text(teamName, style = MaterialTheme.typography.titleMedium)
+        Text(
+            teamName,
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
+            color = Arena.colors.brandDeep,
+        )
         s.buttons.forEach { b ->
             val text = if (b.points != null) {
                 stringResource(R.string.f8_score_button_points, b.label, b.points)
@@ -120,43 +131,38 @@ private fun TeamControls(
                 stringResource(R.string.f8_score_button, b.label)
             }
             val cd = stringResource(R.string.f8_score_button_cd, b.label, teamName)
-            Button(
+            PrimaryButton(
+                text = text,
                 onClick = { vm.onScore(teamId, teamName, b) },
+                icon = Icons.Default.Add,
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = ButtonMinHeight)
                     .semantics { contentDescription = cd },
-            ) {
-                Icon(Icons.Default.Add, contentDescription = null)
-                Text(text, modifier = Modifier.padding(start = Spacing.sm))
-            }
+            )
         }
         s.disciplineOptions.forEach { pts ->
             val cd = stringResource(R.string.f8_discipline_button_cd, pts, teamName)
-            FilledTonalButton(
+            SecondaryButton(
+                text = stringResource(R.string.f8_discipline_button, pts),
                 onClick = { vm.onDiscipline(teamId, teamName, pts) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = ButtonMinHeight)
                     .semantics { contentDescription = cd },
-            ) {
-                Text(stringResource(R.string.f8_discipline_button, pts))
-            }
+            )
         }
         if (s.tiebreakAvailable) {
             val cd = stringResource(R.string.f8_tiebreak_button_cd, teamName)
-            FilledTonalButton(
+            SecondaryButton(
+                text = stringResource(R.string.f8_tiebreak_button),
                 onClick = { vm.onTiebreak(teamId, teamName) },
+                icon = Icons.Default.EmojiEvents,
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = ButtonMinHeight)
                     .semantics { contentDescription = cd },
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.EmojiEvents, contentDescription = null)
-                    Text(stringResource(R.string.f8_tiebreak_button), modifier = Modifier.padding(start = Spacing.sm))
-                }
-            }
+            )
         }
     }
 }

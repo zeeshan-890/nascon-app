@@ -21,7 +21,6 @@ import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarResult
@@ -32,6 +31,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
@@ -49,6 +50,9 @@ import com.nascon.league.data.store.formatPkr
 import com.nascon.league.di.LocalAppContainer
 import com.nascon.league.ui.components.EmptyState
 import com.nascon.league.ui.components.ErrorState
+import com.nascon.league.ui.components.FilterPill
+import com.nascon.league.ui.components.ArenaCard
+import com.nascon.league.ui.theme.Arena
 import com.nascon.league.ui.components.PrimaryButton
 import com.nascon.league.ui.navigation.LocalSnackbarHostState
 import com.nascon.league.ui.theme.Spacing
@@ -142,6 +146,7 @@ private fun ProductDetailContent(
             Text(
                 product.name,
                 style = MaterialTheme.typography.headlineSmall,
+                color = Arena.colors.ink,
                 modifier = Modifier.semantics { heading() },
             )
             if (product.category.isNotBlank()) {
@@ -152,7 +157,7 @@ private fun ProductDetailContent(
                 )
             }
             if (variant != null) {
-                Text(formatPkr(variant.priceMinor), style = MaterialTheme.typography.titleLarge)
+                Text(formatPkr(variant.priceMinor), style = MaterialTheme.typography.titleLarge, color = Arena.colors.brand)
             } else {
                 Text(
                     stringResource(R.string.f6_out_of_stock),
@@ -185,7 +190,7 @@ private fun ProductDetailContent(
             if (variant != null) {
                 StockLine(variant.stock)
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                    Text(stringResource(R.string.f6_quantity), style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.f6_quantity), style = MaterialTheme.typography.titleMedium, color = Arena.colors.ink)
                     QuantityStepper(
                         quantity = quantity,
                         min = 1,
@@ -197,7 +202,7 @@ private fun ProductDetailContent(
                 }
             }
         }
-        Surface(tonalElevation = 3.dp, modifier = Modifier.fillMaxWidth()) {
+        Surface(color = androidx.compose.ui.graphics.Color.White, shadowElevation = 6.dp, modifier = Modifier.fillMaxWidth()) {
             PrimaryButton(
                 text = stringResource(R.string.f6_add_to_cart),
                 onClick = onAdd,
@@ -225,8 +230,9 @@ private fun StockLine(stock: Int) {
             if (low) Icons.Default.Info else Icons.Default.Check,
             contentDescription = null,
             modifier = Modifier.size(18.dp),
+            tint = if (low) Arena.colors.warnFg else Arena.colors.successFg,
         )
-        Text(text, style = MaterialTheme.typography.bodyLarge)
+        Text(text, style = MaterialTheme.typography.bodyLarge, color = if (low) Arena.colors.warnFg else Arena.colors.successFg)
     }
 }
 
@@ -240,14 +246,16 @@ private fun VariantChip(v: VariantDto, selected: Boolean, showPrice: Boolean, on
         else -> label
     }
     val cd = if (selected) stringResource(R.string.f6_selected_cd, text) else text
-    FilterChip(
+    FilterPill(
+        text = text,
         selected = selected,
-        onClick = onClick,
-        enabled = !soldOut,
-        label = { Text(text, style = MaterialTheme.typography.bodyLarge) },
-        leadingIcon = if (selected) {
-            { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
-        } else null,
-        modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = cd },
+        onClick = { if (!soldOut) onClick() },
+        modifier = Modifier
+            .heightIn(min = 48.dp)
+            .alpha(if (soldOut) 0.5f else 1f)
+            .semantics {
+                contentDescription = cd
+                if (soldOut) disabled()
+            },
     )
 }

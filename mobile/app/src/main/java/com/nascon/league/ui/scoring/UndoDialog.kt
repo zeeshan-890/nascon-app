@@ -5,10 +5,19 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import com.nascon.league.ui.components.ArenaTextField
+import com.nascon.league.ui.components.SecondaryButton
+import com.nascon.league.ui.theme.Arena
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -76,42 +85,58 @@ fun UndoDialog(
     onDismiss: () -> Unit,
 ) {
     var reason by rememberSaveable(eventId) { mutableStateOf("") }
+    val a = Arena.colors
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.f8_undo_title)) },
+        shape = RoundedCornerShape(24.dp),
+        containerColor = Color.White,
+        title = {
+            Text(
+                stringResource(R.string.f8_undo_title),
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
+                color = a.ink,
+            )
+        },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                Text(stringResource(R.string.f8_undo_message), style = MaterialTheme.typography.bodyLarge)
-                OutlinedTextField(
+            Column(
+                Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+            ) {
+                Text(stringResource(R.string.f8_undo_message), style = MaterialTheme.typography.bodyLarge, color = a.inkMid)
+                ArenaTextField(
                     value = reason,
                     onValueChange = {
                         reason = it
                         onReasonChange(it)
                     },
-                    label = { Text(stringResource(R.string.f8_reason_label)) },
+                    label = stringResource(R.string.f8_reason_label),
                     isError = error != null,
-                    supportingText = {
-                        Text(
-                            when (error) {
-                                ReasonError.EMPTY -> stringResource(R.string.f8_reason_empty)
-                                ReasonError.TOO_LONG -> stringResource(R.string.f8_reason_too_long)
-                                null -> stringResource(R.string.f8_reason_counter, reason.length)
-                            },
-                        )
+                    errorText = when (error) {
+                        ReasonError.EMPTY -> stringResource(R.string.f8_reason_empty)
+                        ReasonError.TOO_LONG -> stringResource(R.string.f8_reason_too_long)
+                        null -> null
                     },
+                    supportingText = if (error == null) stringResource(R.string.f8_reason_counter, reason.length) else null,
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(reason) }, modifier = Modifier.heightIn(min = 48.dp)) {
-                Text(stringResource(R.string.f8_undo_confirm))
+            Button(
+                onClick = { onConfirm(reason) },
+                shape = CircleShape,
+                colors = ButtonDefaults.buttonColors(containerColor = a.liveFg, contentColor = Color.White),
+                modifier = Modifier.heightIn(min = 50.dp),
+            ) {
+                Text(stringResource(R.string.f8_undo_confirm), fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss, modifier = Modifier.heightIn(min = 48.dp)) {
-                Text(stringResource(R.string.f8_cancel))
-            }
+            SecondaryButton(
+                text = stringResource(R.string.f8_cancel),
+                onClick = onDismiss,
+                modifier = Modifier.heightIn(min = 50.dp),
+            )
         },
     )
 }

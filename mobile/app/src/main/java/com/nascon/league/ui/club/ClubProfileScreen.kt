@@ -91,6 +91,12 @@ import com.nascon.league.ui.components.PrimaryButton
 import com.nascon.league.ui.components.RefreshableList
 import com.nascon.league.ui.components.SavedDataBadge
 import com.nascon.league.ui.components.StatusChip
+import com.nascon.league.ui.components.ChipTone
+import com.nascon.league.ui.components.ArenaCard
+import com.nascon.league.ui.components.SecondaryButton
+import com.nascon.league.ui.navigation.HeaderExtra
+import com.nascon.league.ui.theme.Arena
+import androidx.compose.ui.graphics.Color
 import com.nascon.league.ui.components.tenantInitials
 import com.nascon.league.ui.match.isConnectivity
 import com.nascon.league.ui.match.isForbidden
@@ -108,6 +114,7 @@ fun ClubProfileScreen(
     clubId: String,
     onManageRoster: (String) -> Unit,
     modifier: Modifier = Modifier,
+    onOpenPlayer: ((playerId: String, clubId: String) -> Unit)? = null,
 ) {
     val container = LocalAppContainer.current
     val vm: ClubProfileViewModel = viewModel(
@@ -165,6 +172,7 @@ fun ClubProfileScreen(
                     canManage = Permissions(session).canManageRoster(club.clubId),
                     pendingFor = pendingFor,
                     onManageRoster = onManageRoster,
+                    onOpenPlayer = onOpenPlayer,
                 )
             }
         }
@@ -238,6 +246,7 @@ private fun ProfileList(
     canManage: Boolean,
     pendingFor: (String) -> Flow<Boolean>,
     onManageRoster: (String) -> Unit,
+    onOpenPlayer: ((String, String) -> Unit)?,
 ) {
     val context = LocalContext.current
     val snackbar = LocalSnackbarHostState.current
@@ -251,36 +260,44 @@ private fun ProfileList(
     val noMaps = stringResource(R.string.f5_no_maps_app)
     val linkFailed = stringResource(R.string.f5_social_open_failed)
 
+    HeaderExtra {
+        Row(
+            Modifier.fillMaxWidth().padding(bottom = Spacing.sm),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+        ) {
+            ClubLogo(club.name, resolveLogoUrl(club.logoUrl, baseUrl), 64.dp)
+            Column(Modifier.weight(1f)) {
+                Text(
+                    club.name,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = Color.White,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.semantics { heading() },
+                )
+                if (!tenantName.isNullOrBlank()) {
+                    Text(
+                        tenantName,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color.White.copy(alpha = 0.85f),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+    }
+
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = Spacing.xl),
+        contentPadding = PaddingValues(top = Spacing.xs, bottom = Spacing.xl),
         verticalArrangement = Arrangement.spacedBy(Spacing.sm),
     ) {
-        // ---- header ----
+        // ---- status (hero lives in the gradient header) ----
         item(key = "header") {
-            Column(Modifier.fillMaxWidth().padding(horizontal = Spacing.md, vertical = Spacing.md)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                    ClubLogo(club.name, resolveLogoUrl(club.logoUrl, baseUrl), 72.dp)
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            club.name,
-                            style = MaterialTheme.typography.titleLarge,
-                            maxLines = 3,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.semantics { heading() },
-                        )
-                        if (!tenantName.isNullOrBlank()) {
-                            Text(
-                                tenantName,
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-                    }
-                }
+            Column(Modifier.fillMaxWidth().padding(horizontal = Spacing.md)) {
                 Row(
                     Modifier.fillMaxWidth().padding(top = Spacing.sm),
                     verticalAlignment = Alignment.CenterVertically,
@@ -301,11 +318,11 @@ private fun ProfileList(
         }
 
         // ---- venue ----
-        stickyHeader(key = "h-venue") { SectionHeader(stringResource(R.string.f5_venue_title)) }
+        item(key = "h-venue") { SectionHeader(stringResource(R.string.f5_venue_title)) }
         item(key = "venue") {
             val venue = club.venue
             val coords = formatCoordinates(venue?.lat, venue?.lng)
-            OutlinedCard(Modifier.fillMaxWidth().padding(horizontal = Spacing.md)) {
+            ArenaCard(Modifier.fillMaxWidth().padding(horizontal = Spacing.md)) {
                 Column(Modifier.fillMaxWidth().padding(Spacing.md), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                     if (venue == null || (venue.name.isBlank() && coords == null)) {
                         Text(stringResource(R.string.f5_venue_none), style = MaterialTheme.typography.bodyLarge)
@@ -329,12 +346,12 @@ private fun ProfileList(
                                     R.string.f5_open_maps_cd,
                                     venue.name.ifBlank { coords },
                                 )
-                                OutlinedButton(
+                                SecondaryButton(
+                                    text = stringResource(R.string.f5_open_maps),
                                     onClick = { launchView(context, geo) { notify(scope, snackbar, noMaps) } },
-                                    modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = mapsCd },
-                                ) {
-                                    Text(stringResource(R.string.f5_open_maps))
-                                }
+                                    modifier = Modifier.fillMaxWidth().semantics { contentDescription = mapsCd },
+                                    icon = Icons.Default.Place,
+                                )
                             }
                         }
                     }
@@ -344,19 +361,24 @@ private fun ProfileList(
 
         // ---- socials ----
         if (socials.isNotEmpty()) {
-            stickyHeader(key = "h-socials") { SectionHeader(stringResource(R.string.f5_socials_title)) }
-            items(socials, key = { "social-" + it.key }) { link ->
-                SocialRow(link) { url -> launchView(context, url) { notify(scope, snackbar, linkFailed) } }
+            item(key = "h-socials") { SectionHeader(stringResource(R.string.f5_socials_title)) }
+            item(key = "socials") {
+                ArenaCard(Modifier.fillMaxWidth().padding(horizontal = Spacing.md)) {
+                    socials.forEach { link ->
+                        SocialRow(link) { url -> launchView(context, url) { notify(scope, snackbar, linkFailed) } }
+                    }
+                }
             }
         }
 
         // ---- staff ----
-        stickyHeader(key = "h-staff") { SectionHeader(stringResource(R.string.f5_staff_title)) }
+        item(key = "h-staff") { SectionHeader(stringResource(R.string.f5_staff_title)) }
         if (club.staff.isEmpty()) {
             item(key = "staff-empty") { BodyNote(stringResource(R.string.f5_staff_empty)) }
         } else {
-            items(club.staff.indices.toList(), key = { "staff-$it" }) { i ->
-                val member = club.staff[i]
+            item(key = "staff") {
+              ArenaCard(Modifier.fillMaxWidth().padding(horizontal = Spacing.md)) {
+              club.staff.forEach { member ->
                 val role = staffRoleLabel(member.role)
                 val roleText = when (role.known) {
                     StaffRoleKind.COACH -> stringResource(R.string.f5_staff_coach)
@@ -385,20 +407,24 @@ private fun ProfileList(
                         }
                     }
                 }
+              }
+              }
             }
         }
 
         // ---- season stats ----
-        stickyHeader(key = "h-stats") { SectionHeader(stringResource(R.string.f5_stats_title)) }
+        item(key = "h-stats") { SectionHeader(stringResource(R.string.f5_stats_title)) }
         item(key = "stats-caption") { BodyNote(stringResource(R.string.f5_stats_caption)) }
         if (club.stats.isEmpty()) {
             item(key = "stats-empty") { BodyNote(stringResource(R.string.f5_stats_empty)) }
         } else {
-            item(key = "stats-table") { StatsTable(club.stats) }
+            item(key = "stats-table") {
+                ArenaCard(Modifier.fillMaxWidth().padding(horizontal = Spacing.md)) { StatsTable(club.stats) }
+            }
         }
 
         // ---- roster ----
-        stickyHeader(key = "h-roster") { SectionHeader(stringResource(R.string.f5_roster_title)) }
+        item(key = "h-roster") { SectionHeader(stringResource(R.string.f5_roster_title)) }
         if (canManage) {
             item(key = "manage") {
                 PrimaryButton(
@@ -436,7 +462,7 @@ private fun ProfileList(
                     Text(
                         title,
                         style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = Arena.colors.brand,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = Spacing.md, vertical = Spacing.xs)
@@ -447,7 +473,7 @@ private fun ProfileList(
                     val pending by produceState(false, p.playerId) {
                         pendingFor(p.playerId).collect { value = it }
                     }
-                    PlayerRow(p, pending)
+                    PlayerRow(p, pending, onOpenPlayer?.let { open -> { open(p.playerId, club.clubId) } })
                 }
             }
         }
@@ -456,15 +482,16 @@ private fun ProfileList(
 
 @Composable
 private fun SectionHeader(title: String) {
-    Surface(color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.fillMaxWidth()) {
-        Text(
-            title,
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier
-                .padding(horizontal = Spacing.md, vertical = Spacing.sm)
-                .semantics { heading() },
-        )
-    }
+    Text(
+        title,
+        style = MaterialTheme.typography.titleMedium,
+        color = Arena.colors.ink,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = Spacing.md)
+            .padding(top = Spacing.sm)
+            .semantics { heading() },
+    )
 }
 
 @Composable
@@ -480,16 +507,11 @@ private fun BodyNote(text: String) {
 @Composable
 private fun SquadChip(label: String, selected: Boolean, onClick: () -> Unit) {
     val selectedCd = stringResource(R.string.f5_squad_selected_cd, label)
-    FilterChip(
+    com.nascon.league.ui.components.FilterPill(
+        text = label,
         selected = selected,
         onClick = onClick,
-        label = { Text(label, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-        leadingIcon = if (selected) {
-            { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
-        } else null,
-        modifier = Modifier
-            .heightIn(min = 48.dp)
-            .semantics { if (selected) contentDescription = selectedCd },
+        modifier = Modifier.semantics { if (selected) contentDescription = selectedCd },
     )
 }
 
@@ -540,7 +562,7 @@ private fun StatsTable(stats: List<ClubStatDto>) {
         Modifier
             .fillMaxWidth()
             .horizontalScroll(rememberScrollState())
-            .padding(horizontal = Spacing.md),
+            .padding(horizontal = Spacing.xs),
     ) {
         StatsRow(
             listOf(
@@ -596,7 +618,7 @@ private fun StatsRow(cells: List<String>, header: Boolean, cd: String?) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun PlayerRow(p: RosterPlayerDto, pending: Boolean) {
+private fun PlayerRow(p: RosterPlayerDto, pending: Boolean, onOpen: (() -> Unit)? = null) {
     val role = playerRoleLabel(p.role)
     val roleText: String? = when (role.kind) {
         PlayerRoleKind.CAPTAIN -> stringResource(R.string.f5_role_captain)
@@ -613,11 +635,12 @@ private fun PlayerRow(p: RosterPlayerDto, pending: Boolean) {
         PlayerRoleKind.SUBSTITUTE -> Icons.Default.SwapVert
         else -> Icons.Default.Person
     }
-    OutlinedCard(
+    ArenaCard(
         Modifier
             .fillMaxWidth()
             .padding(horizontal = Spacing.md)
             .semantics(mergeDescendants = true) {},
+        onClick = onOpen,
     ) {
         Column(
             Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = Spacing.md, vertical = Spacing.sm),
@@ -636,9 +659,9 @@ private fun PlayerRow(p: RosterPlayerDto, pending: Boolean) {
                     horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
                     verticalArrangement = Arrangement.spacedBy(Spacing.xs),
                 ) {
-                    if (roleText != null) StatusChip(roleText, roleIcon)
-                    if (p.onLoan) StatusChip(stringResource(R.string.f5_on_loan), Icons.Default.SyncAlt)
-                    if (pending) StatusChip(stringResource(R.string.f5_pending), Icons.Default.Schedule)
+                    if (roleText != null) StatusChip(roleText, roleIcon, tone = if (role.kind == PlayerRoleKind.CAPTAIN || role.kind == PlayerRoleKind.VICE_CAPTAIN) ChipTone.Brand else ChipTone.Neutral)
+                    if (p.onLoan) StatusChip(stringResource(R.string.f5_on_loan), Icons.Default.SyncAlt, tone = ChipTone.Warning)
+                    if (pending) StatusChip(stringResource(R.string.f5_pending), Icons.Default.Schedule, tone = ChipTone.Warning)
                 }
             }
         }

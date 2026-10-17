@@ -2,7 +2,9 @@ package com.nascon.league.ui.receipt
 
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -25,7 +27,7 @@ import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.WifiOff
-import androidx.compose.material3.Card
+import androidx.compose.material3.Surface
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -57,11 +59,13 @@ import com.nascon.league.R
 import com.nascon.league.data.receipts.ReceiptEntry
 import com.nascon.league.data.store.formatPkr
 import com.nascon.league.di.LocalAppContainer
+import com.nascon.league.ui.components.ArenaCard
 import com.nascon.league.ui.components.EmptyState
 import com.nascon.league.ui.components.ErrorState
 import com.nascon.league.ui.components.PrimaryButton
 import com.nascon.league.ui.components.SecondaryButton
 import com.nascon.league.ui.navigation.LocalSnackbarHostState
+import com.nascon.league.ui.theme.Arena
 import com.nascon.league.ui.theme.Spacing
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
@@ -168,7 +172,7 @@ private fun CorruptState(onDownloadAgain: () -> Unit) {
             Icons.Default.Receipt,
             contentDescription = null,
             modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.error,
+            tint = Arena.colors.liveFg,
         )
         Text(
             stringResource(R.string.f6r_corrupt_title),
@@ -187,16 +191,24 @@ private fun ReceiptHeader(orderId: String, entry: ReceiptEntry?) {
     val refText = stringResource(R.string.f6r_order_ref, ref)
     val totalText = total?.let { stringResource(R.string.f6r_total, it) }
     val dateText = date?.let { stringResource(R.string.f6r_paid_on, it) }
-    Column(
+    ArenaCard(
         Modifier
             .fillMaxWidth()
             .padding(Spacing.md)
             .semantics(mergeDescendants = true) {},
-        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
     ) {
-        Text(refText, style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { heading() })
-        if (totalText != null) Text(totalText, style = MaterialTheme.typography.bodyLarge)
-        if (dateText != null) Text(dateText, style = MaterialTheme.typography.bodyLarge)
+        Text(
+            refText,
+            style = MaterialTheme.typography.titleLarge,
+            color = Arena.colors.ink,
+            modifier = Modifier.semantics { heading() },
+        )
+        if (totalText != null) {
+            Text(totalText, style = MaterialTheme.typography.titleMedium, color = Arena.colors.brand)
+        }
+        if (dateText != null) {
+            Text(dateText, style = MaterialTheme.typography.bodyLarge, color = Arena.colors.inkSoft)
+        }
     }
 }
 
@@ -204,9 +216,10 @@ private fun ReceiptHeader(orderId: String, entry: ReceiptEntry?) {
 private fun PdfViewer(pages: PdfPages, modifier: Modifier = Modifier) {
     val density = LocalDensity.current
     BoxWithConstraints(modifier.fillMaxSize()) {
-        val widthPx = with(density) { maxWidth.roundToPx() }
+        val widthPx = with(density) { (maxWidth - Spacing.md * 2 - 2.dp).roundToPx() }
         LazyColumn(
             Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(horizontal = Spacing.md, vertical = Spacing.sm),
             verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         ) {
             items(pages.pageCount, key = { it }) { index ->
@@ -225,18 +238,25 @@ private fun PdfViewer(pages: PdfPages, modifier: Modifier = Modifier) {
                 }
                 val pageLabel = stringResource(R.string.f6r_page_cd, index + 1, pages.pageCount)
                 val b = bitmap
-                if (b != null) {
-                    Image(
-                        bitmap = b.asImageBitmap(),
-                        contentDescription = pageLabel,
-                        contentScale = ContentScale.FillWidth,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                } else {
-                    Box(
-                        Modifier.fillMaxWidth().heightIn(min = heightDp),
-                        contentAlignment = Alignment.Center,
-                    ) { CircularProgressIndicator() }
+                Surface(
+                    color = Color.White,
+                    shape = RoundedCornerShape(14.dp),
+                    border = BorderStroke(1.dp, Arena.colors.cardBorder),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    if (b != null) {
+                        Image(
+                            bitmap = b.asImageBitmap(),
+                            contentDescription = pageLabel,
+                            contentScale = ContentScale.FillWidth,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    } else {
+                        Box(
+                            Modifier.fillMaxWidth().heightIn(min = heightDp),
+                            contentAlignment = Alignment.Center,
+                        ) { CircularProgressIndicator() }
+                    }
                 }
             }
         }
@@ -275,34 +295,32 @@ private fun ReceiptRow(entry: ReceiptEntry, onClick: () -> Unit) {
     val paidText = date?.let { stringResource(R.string.f6r_paid_on, it) }
     val cd = listOfNotNull(ref, total, paidText, stringResource(R.string.f6r_open_receipt))
         .joinToString(", ")
-    Card(
-        Modifier
+    ArenaCard(
+        modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 72.dp)
-            .clickable(onClick = onClick)
             .clearAndSetSemantics {
                 contentDescription = cd
                 role = Role.Button
             },
+        onClick = onClick,
     ) {
         Row(
-            Modifier.fillMaxWidth().padding(Spacing.md),
+            Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.md),
         ) {
-            Icon(Icons.Default.Receipt, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Icon(Icons.Default.Receipt, contentDescription = null, tint = Arena.colors.brand)
             Column(Modifier.weight(1f)) {
-                Text(ref, style = MaterialTheme.typography.titleMedium)
+                Text(ref, style = MaterialTheme.typography.titleMedium, color = Arena.colors.ink)
                 if (paidText != null) {
-                    Text(
-                        paidText,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    Text(paidText, style = MaterialTheme.typography.bodyLarge, color = Arena.colors.inkSoft)
                 }
-                if (total != null) Text(total, style = MaterialTheme.typography.bodyLarge)
+                if (total != null) {
+                    Text(total, style = MaterialTheme.typography.bodyLarge, color = Arena.colors.brand)
+                }
             }
-            Icon(Icons.Default.ChevronRight, contentDescription = null)
+            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Arena.colors.inkSoft)
         }
     }
 }

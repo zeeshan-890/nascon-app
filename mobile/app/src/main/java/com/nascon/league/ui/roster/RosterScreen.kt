@@ -56,6 +56,13 @@ import com.nascon.league.di.LocalAppContainer
 import com.nascon.league.ui.club.LoadingBox
 import com.nascon.league.ui.club.NotSavedState
 import com.nascon.league.ui.club.showPendingChip
+import com.nascon.league.ui.components.ArenaCard
+import com.nascon.league.ui.components.ChipTone
+import com.nascon.league.ui.theme.Arena
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Surface
+import androidx.compose.ui.graphics.Color
 import com.nascon.league.ui.components.ConfirmDialog
 import com.nascon.league.ui.components.EmptyState
 import com.nascon.league.ui.components.ErrorState
@@ -238,6 +245,8 @@ private fun ActionSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = Color.White,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
     ) {
         Column(
             Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = Spacing.md),
@@ -250,13 +259,24 @@ private fun ActionSheet(
                 modifier = Modifier.padding(horizontal = Spacing.md).semantics { heading() },
             )
             if (RosterLogic.showsOnLoanWarning(player)) {
-                Row(
-                    Modifier.padding(horizontal = Spacing.md, vertical = Spacing.sm),
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-                    verticalAlignment = Alignment.CenterVertically,
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = Arena.colors.warnBg,
+                    border = BorderStroke(1.dp, Arena.colors.warnBorder),
+                    modifier = Modifier.padding(horizontal = Spacing.md, vertical = Spacing.sm).fillMaxWidth(),
                 ) {
-                    Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
-                    Text(stringResource(R.string.f7_on_loan_warning), style = MaterialTheme.typography.bodyLarge)
+                    Row(
+                        Modifier.padding(Spacing.md),
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(Icons.Default.Warning, contentDescription = null, tint = Arena.colors.warnFg)
+                        Text(
+                            stringResource(R.string.f7_on_loan_warning),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Arena.colors.warnFg,
+                        )
+                    }
                 }
             }
             ActionRow(Icons.Default.SwapHoriz, stringResource(R.string.f7_action_transfer)) { onPick(MoveType.TRANSFER) }
@@ -268,17 +288,21 @@ private fun ActionSheet(
 
 @Composable
 private fun ActionRow(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, onClick: () -> Unit) {
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .heightIn(min = 56.dp)
-            .clickable(role = androidx.compose.ui.semantics.Role.Button, onClick = onClick)
-            .padding(horizontal = Spacing.md, vertical = Spacing.xs),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(14.dp),
+        color = Arena.colors.surfaceAlt,
+        border = BorderStroke(1.dp, Arena.colors.cardBorder),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.md, vertical = 4.dp).heightIn(min = 56.dp),
     ) {
-        Icon(icon, contentDescription = null, modifier = Modifier.size(24.dp))
-        Text(label, style = MaterialTheme.typography.bodyLarge)
+        Row(
+            Modifier.padding(horizontal = Spacing.md, vertical = Spacing.xs),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+        ) {
+            Icon(icon, contentDescription = null, modifier = Modifier.size(24.dp), tint = Arena.colors.brand)
+            Text(label, style = MaterialTheme.typography.bodyLarge, color = Arena.colors.ink)
+        }
     }
 }
 
@@ -335,7 +359,7 @@ private fun RosterList(
                     Text(
                         stringResource(R.string.f7_squad_header, group.squad.name, group.players.size),
                         style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = Arena.colors.brand,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = Spacing.md, vertical = Spacing.xs)
@@ -380,16 +404,16 @@ private fun RosterPlayerRow(p: RosterPlayerDto, pending: Boolean, canManage: Boo
                     horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
                     verticalArrangement = Arrangement.spacedBy(Spacing.xs),
                 ) {
-                    if (p.onLoan) StatusChip(stringResource(R.string.f5_on_loan), Icons.Default.SyncAlt)
-                    if (pending) StatusChip(stringResource(R.string.f5_pending), Icons.Default.Schedule)
+                    if (p.onLoan) StatusChip(stringResource(R.string.f5_on_loan), Icons.Default.SyncAlt, tone = ChipTone.Warning)
+                    if (pending) StatusChip(stringResource(R.string.f5_pending), Icons.Default.Schedule, tone = ChipTone.Warning)
                 }
             }
         }
     }
     val cardModifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.md)
     if (canManage) {
-        OutlinedCard(onClick = onClick, modifier = cardModifier) { content() }
+        ArenaCard(modifier = cardModifier, onClick = onClick) { content() }
     } else {
-        OutlinedCard(modifier = cardModifier.semantics(mergeDescendants = true) {}) { content() }
+        ArenaCard(modifier = cardModifier.semantics(mergeDescendants = true) {}) { content() }
     }
 }

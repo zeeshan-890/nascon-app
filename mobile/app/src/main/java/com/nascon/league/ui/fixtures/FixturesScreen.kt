@@ -18,28 +18,40 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Surface
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Color
+import com.nascon.league.ui.components.ArenaCard
+import com.nascon.league.ui.components.ChipTone
+import com.nascon.league.ui.components.FilterPill
+import com.nascon.league.ui.navigation.HeaderSubtitle
+import com.nascon.league.ui.theme.Arena
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -95,6 +107,7 @@ private fun FixturesContent(
     hasPending: (String) -> Flow<Boolean>,
     modifier: Modifier = Modifier,
 ) {
+    HeaderSubtitle(s.selectedLeague?.name)
     Column(modifier.fillMaxSize()) {
         if (s.leagues.isNotEmpty()) {
             LeagueHeader(s, onLeague)
@@ -105,21 +118,35 @@ private fun FixturesContent(
             LinearProgressIndicator(Modifier.fillMaxWidth())
         }
         if (cached) {
-            Row(
-                Modifier.fillMaxWidth().padding(horizontal = Spacing.md, vertical = Spacing.xs),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+            val warn = s.offline || s.refresh.error != null
+            val a = Arena.colors
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Spacing.md, vertical = Spacing.xs)
+                    .then(
+                        if (warn) Modifier
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(a.warnBg)
+                            .padding(Spacing.sm)
+                        else Modifier,
+                    ),
+                verticalArrangement = Arrangement.spacedBy(Spacing.xs),
             ) {
-                if (s.offline || s.refresh.error != null) SavedDataBadge()
-                LastUpdatedLabel(s.updatedAt)
-            }
-            if (s.refresh.error != null && !s.offline) {
-                Text(
-                    stringResource(R.string.f3_refresh_failed_saved),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = Spacing.md),
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                ) {
+                    if (warn) SavedDataBadge()
+                    LastUpdatedLabel(s.updatedAt)
+                }
+                if (s.refresh.error != null && !s.offline) {
+                    Text(
+                        stringResource(R.string.f3_refresh_failed_saved),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = a.warnFg,
+                    )
+                }
             }
         }
         RefreshableList(
@@ -135,49 +162,41 @@ private fun FixturesContent(
 @Composable
 private fun LeagueHeader(s: FixturesUiState, onLeague: (String) -> Unit) {
     val name = s.selectedLeague?.name.orEmpty()
-    if (s.leagues.size <= 1) {
-        Text(
-            name,
-            style = MaterialTheme.typography.titleMedium,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = Spacing.md, vertical = Spacing.sm)
-                .semantics { heading() },
-        )
-        return
-    }
-    var open by remember { mutableStateOf(false) }
+    if (s.leagues.size <= 1) return
+    val a = Arena.colors
+    var open by rememberSaveable { mutableStateOf(false) }
     val cd = stringResource(R.string.f3_league_selector_cd, name)
-    Box(Modifier.fillMaxWidth().padding(horizontal = Spacing.sm)) {
-        TextButton(
+    Box(Modifier.fillMaxWidth().padding(horizontal = Spacing.md, vertical = Spacing.xs)) {
+        Surface(
             onClick = { open = true },
+            shape = CircleShape,
+            color = Color.White,
+            border = BorderStroke(1.5.dp, a.cardBorder),
             modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = cd },
         ) {
-            Text(
-                name,
-                style = MaterialTheme.typography.titleMedium,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false),
-            )
-            Icon(Icons.Default.ArrowDropDown, contentDescription = null)
-        }
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-            s.leagues.forEach { l ->
-                DropdownMenuItem(
-                    text = { Text(l.name, style = MaterialTheme.typography.bodyLarge) },
-                    onClick = {
-                        open = false
-                        onLeague(l.leagueId)
-                    },
-                    modifier = Modifier.heightIn(min = 48.dp),
-                    leadingIcon = {
-                        if (l.leagueId == s.selectedLeagueId) Icon(Icons.Default.Check, contentDescription = null)
-                    },
+            Row(
+                Modifier.padding(start = Spacing.md, end = Spacing.sm),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = a.ink,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
                 )
+                Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = a.brand)
             }
+        }
+        if (open) {
+            LeaguePickerSheet(
+                leagues = s.leagues,
+                selectedId = s.selectedLeagueId,
+                onSelect = onLeague,
+                onDismiss = { open = false },
+            )
         }
     }
 }
@@ -206,16 +225,11 @@ private fun FilterRow(selected: FixtureFilter, onFilter: (FixtureFilter) -> Unit
             val isSel = f == selected
             val label = filterLabel(f)
             val selectedCd = stringResource(R.string.f3_filter_selected_cd, label)
-            FilterChip(
+            FilterPill(
+                text = label,
                 selected = isSel,
                 onClick = { onFilter(f) },
-                label = { Text(label, style = MaterialTheme.typography.bodyLarge) },
-                leadingIcon = if (isSel) {
-                    { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
-                } else null,
-                modifier = Modifier
-                    .heightIn(min = 48.dp)
-                    .semantics { if (isSel) contentDescription = selectedCd },
+                modifier = Modifier.semantics { if (isSel) contentDescription = selectedCd },
             )
         }
     }
@@ -275,12 +289,13 @@ private fun FixturesBody(
         return
     }
     if (fixtures.isEmpty()) {
-        EmptyState(
-            icon = Icons.Default.SportsSoccer,
+        FixturesEmpty(
+            icon = Icons.Default.CalendarMonth,
             title = stringResource(R.string.f3_no_matches_title),
-            message = stringResource(R.string.f3_no_matches_message),
+            message = stringResource(R.string.ms_empty_all_message),
             actionLabel = stringResource(R.string.f3_refresh),
             onAction = onRefresh,
+            showPullHint = true,
         )
         return
     }
@@ -292,12 +307,23 @@ private fun FixturesBody(
             FixtureFilter.COMPLETED -> R.string.f3_empty_completed
             FixtureFilter.ALL -> R.string.f3_no_matches_title
         }
-        EmptyState(
-            icon = Icons.Default.SportsSoccer,
+        val message = when (s.filter) {
+            FixtureFilter.LIVE -> R.string.ms_empty_live_message
+            FixtureFilter.UPCOMING -> R.string.ms_empty_upcoming_message
+            FixtureFilter.COMPLETED -> R.string.ms_empty_completed_message
+            FixtureFilter.ALL -> R.string.f3_empty_filter_message
+        }
+        FixturesEmpty(
+            icon = when (s.filter) {
+                FixtureFilter.LIVE -> Icons.Default.SportsSoccer
+                FixtureFilter.COMPLETED -> Icons.Default.CheckCircle
+                else -> Icons.Default.CalendarMonth
+            },
             title = stringResource(title),
-            message = stringResource(R.string.f3_empty_filter_message),
+            message = stringResource(message),
             actionLabel = stringResource(R.string.f3_show_all),
             onAction = { onFilter(FixtureFilter.ALL) },
+            showPullHint = true,
         )
         return
     }
@@ -320,18 +346,86 @@ private fun FixtureList(
             stickyHeader(key = "header-" + section.group.name) {
                 GroupHeader(section.group)
             }
-            items(section.items, key = { "m-" + it.matchId }) { f ->
-                val pending by produceState(false, f.matchId) {
-                    hasPending(f.matchId).collect { value = it }
+            val runs = if (section.group == FixtureGroup.UPCOMING || section.group == FixtureGroup.COMPLETED) {
+                splitByDay(section.items)
+            } else {
+                listOf(DayRun(null, section.items))
+            }
+            val dated = section.group == FixtureGroup.UPCOMING || section.group == FixtureGroup.COMPLETED
+            runs.forEach { run ->
+                if (dated) {
+                    item(key = "day-" + section.group.name + "-" + (run.day?.toString() ?: "tbc")) {
+                        DayHeader(run.day, done = section.group == FixtureGroup.COMPLETED)
+                    }
                 }
-                FixtureRow(
-                    f = f,
-                    pending = pending,
-                    onClick = { onOpenMatch(f.matchId) },
-                    modifier = Modifier.padding(horizontal = Spacing.md),
-                )
+                items(run.items, key = { "m-" + it.matchId }) { f ->
+                    val pending by produceState(false, f.matchId) {
+                        hasPending(f.matchId).collect { value = it }
+                    }
+                    FixtureRow(
+                        f = f,
+                        pending = pending,
+                        onClick = { onOpenMatch(f.matchId) },
+                        modifier = Modifier.padding(horizontal = Spacing.md),
+                    )
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun DayHeader(day: java.time.LocalDate?, done: Boolean) {
+    val tbc = stringResource(R.string.f3_time_tbc)
+    val base = day?.let {
+        java.time.format.DateTimeFormatter.ofPattern("EEE d MMM", java.util.Locale.getDefault()).format(it)
+    } ?: tbc
+    val text = if (done) stringResource(R.string.ms_day_done, base) else base
+    Text(
+        text,
+        style = MaterialTheme.typography.labelLarge.copy(fontSize = 13.sp, fontWeight = FontWeight.ExtraBold),
+        color = Arena.colors.inkSoft,
+        modifier = Modifier.padding(horizontal = Spacing.md).semantics { heading() },
+    )
+}
+
+@Composable
+private fun FixturesEmpty(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    message: String,
+    actionLabel: String,
+    onAction: () -> Unit,
+    showPullHint: Boolean,
+) {
+    val colors = Arena.colors
+    androidx.compose.foundation.layout.Column(
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Spacing.lg),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Spacing.md, Alignment.CenterVertically),
+    ) {
+        Box(
+            Modifier.size(88.dp).clip(CircleShape).background(colors.chipBg),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(icon, contentDescription = null, modifier = Modifier.size(44.dp), tint = colors.brand)
+        }
+        Text(
+            title,
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
+            color = colors.ink,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.semantics { heading() },
+        )
+        Text(message, style = MaterialTheme.typography.bodyLarge, color = colors.inkSoft, textAlign = TextAlign.Center)
+        if (showPullHint) {
+            StatusChip(
+                text = stringResource(R.string.ms_pull_hint),
+                icon = Icons.Default.ArrowDownward,
+                tone = ChipTone.Neutral,
+            )
+        }
+        com.nascon.league.ui.components.PrimaryButton(text = actionLabel, onClick = onAction)
     }
 }
 
@@ -343,10 +437,11 @@ private fun GroupHeader(group: FixtureGroup) {
         FixtureGroup.COMPLETED -> R.string.f3_group_completed
         FixtureGroup.OTHER -> R.string.f3_group_other
     }
-    Surface(color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.fillMaxWidth()) {
+    Surface(color = Arena.colors.bg, modifier = Modifier.fillMaxWidth()) {
         Text(
             stringResource(res),
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.labelLarge.copy(fontSize = 13.sp, fontWeight = FontWeight.ExtraBold),
+            color = Arena.colors.inkMid,
             modifier = Modifier
                 .padding(horizontal = Spacing.md, vertical = Spacing.sm)
                 .semantics { heading() },
@@ -381,64 +476,66 @@ private fun FixtureRow(
     val vs = stringResource(R.string.f3_vs)
     val openLabel = stringResource(R.string.f3_open_match)
 
-    OutlinedCard(
+    val a = Arena.colors
+    val topLine = f.venueName?.takeIf { it.isNotBlank() }.orEmpty()
+    ArenaCard(
         modifier = modifier
             .fillMaxWidth()
-            .heightIn(min = 72.dp)
-            .clickable(onClickLabel = openLabel, onClick = onClick)
             .semantics(mergeDescendants = true) { contentDescription = cd },
+        onClick = onClick,
     ) {
-        Column(
-            Modifier.fillMaxWidth().padding(Spacing.md),
-            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
-        ) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    f.homeName,
-                    style = MaterialTheme.typography.bodyLarge,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.End,
-                    modifier = Modifier.weight(1f),
-                )
-                Text(
-                    if (showScore) "${f.homeScore} – ${f.awayScore}" else vs,
-                    style = MaterialTheme.typography.titleLarge,
-                    maxLines = 1,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = Spacing.md),
-                )
-                Text(
-                    f.awayName,
-                    style = MaterialTheme.typography.bodyLarge,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Start,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-                verticalArrangement = Arrangement.spacedBy(Spacing.xs),
-            ) {
-                FixtureStatusChip(kind)
-                if (pending) {
-                    StatusChip(
-                        text = stringResource(R.string.f3_pending_changes),
-                        icon = Icons.Default.HourglassEmpty,
-                    )
-                }
-            }
-            Text(time, style = MaterialTheme.typography.bodyLarge)
-            if (!f.venueName.isNullOrBlank()) {
-                Text(
-                    f.venueName,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                topLine,
+                style = MaterialTheme.typography.bodyLarge,
+                color = a.inkSoft,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f).padding(end = Spacing.sm),
+            )
+            FixtureStatusChip(kind, timeText = if (kind == StatusKind.UPCOMING) time else null)
+        }
+        Row(Modifier.fillMaxWidth().padding(vertical = Spacing.sm), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                f.homeName,
+                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 15.sp, fontWeight = FontWeight.Bold),
+                color = a.ink,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Start,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                if (showScore) "${f.homeScore} – ${f.awayScore}" else vs,
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontSize = if (showScore) 26.sp else 17.sp,
+                    fontWeight = if (showScore) FontWeight.ExtraBold else FontWeight.SemiBold,
+                ),
+                color = if (showScore) a.brandDeep else a.inkSoft,
+                maxLines = 1,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = Spacing.sm),
+            )
+            Text(
+                f.awayName,
+                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 15.sp, fontWeight = FontWeight.Bold),
+                color = a.ink,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.End,
+                modifier = Modifier.weight(1f),
+            )
+        }
+        if (kind != StatusKind.UPCOMING) {
+            Text(time, style = MaterialTheme.typography.bodyLarge, color = a.inkSoft)
+        }
+        if (pending) {
+            StatusChip(
+                text = stringResource(R.string.f3_pending_changes),
+                icon = Icons.Default.HourglassEmpty,
+                tone = ChipTone.Warning,
+                modifier = Modifier.padding(top = Spacing.xs),
+            )
         }
     }
 }

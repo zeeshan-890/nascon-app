@@ -56,6 +56,10 @@ data class TimelineItem(
     val label: EventLabel,
     val compensated: Boolean,
     val pending: Boolean,
+    /** Team display name when the event carries a team and it resolves to home/away; else null. */
+    val teamName: String? = null,
+    /** Minute taken from the event payload only when the server sent one; else null (never invented). */
+    val minute: String? = null,
 )
 
 /** Pending (offline) events first, then server events newest first. */
@@ -66,7 +70,11 @@ fun buildTimeline(
 ): List<TimelineItem> {
     val pendingItems = pending.map { TimelineItem("p-" + it.actionId, null, it.label, false, true) }
     val serverItems = events.sortedByDescending { it.sequence }.map {
-        TimelineItem("e-" + it.eventId, it.sequence, eventLabel(it.type, it.payload, teamName), it.compensated, false)
+        TimelineItem(
+            "e-" + it.eventId, it.sequence, eventLabel(it.type, it.payload, teamName), it.compensated, false,
+            teamName = teamName(eventTeamId(it.payload)),
+            minute = eventMinute(it.payload),
+        )
     }
     return pendingItems + serverItems
 }

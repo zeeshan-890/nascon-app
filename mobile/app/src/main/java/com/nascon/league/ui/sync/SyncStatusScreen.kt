@@ -3,6 +3,8 @@ package com.nascon.league.ui.sync
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -15,9 +17,6 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -37,8 +36,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.nascon.league.R
 import com.nascon.league.data.sync.SyncEvent
 import com.nascon.league.di.LocalAppContainer
+import com.nascon.league.ui.components.ArenaCard
+import com.nascon.league.ui.components.ChipTone
+import com.nascon.league.ui.components.PrimaryButton
 import com.nascon.league.ui.components.StatusChip
 import com.nascon.league.ui.navigation.LocalSnackbarHostState
+import com.nascon.league.ui.theme.Arena
 import com.nascon.league.ui.theme.Spacing
 import kotlinx.coroutines.launch
 
@@ -68,22 +71,22 @@ fun SyncStatusScreen(modifier: Modifier = Modifier) {
             }
         } else {
             items(s.pending, key = { "p_" + it.actionId }) { p ->
-                Column(Modifier.fillMaxWidth().heightIn(min = 48.dp).semantics(mergeDescendants = true) {}, verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                    Text(p.label, style = MaterialTheme.typography.bodyLarge)
+                ArenaCard(Modifier.fillMaxWidth().heightIn(min = 48.dp).semantics(mergeDescendants = true) {}) {
+                    Text(p.label, style = MaterialTheme.typography.titleMedium, color = Arena.colors.ink)
                     val whenText = formatQueuedAt(p.queuedAtIso)
                     if (whenText != null) {
                         Text(
                             stringResource(R.string.f9_queued_at, whenText),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = Arena.colors.inkSoft,
                         )
                     }
+                    Spacer(Modifier.height(Spacing.xs))
                     if (p.sending) {
-                        StatusChip(stringResource(R.string.f9_chip_sending), Icons.Default.Sync)
+                        StatusChip(stringResource(R.string.f9_chip_sending), Icons.Default.Sync, tone = ChipTone.Brand)
                     } else {
-                        StatusChip(stringResource(R.string.f9_chip_pending), Icons.Default.Schedule)
+                        StatusChip(stringResource(R.string.f9_chip_pending), Icons.Default.Schedule, tone = ChipTone.Warning)
                     }
-                    HorizontalDivider(Modifier.padding(top = Spacing.sm))
                 }
             }
             item(key = "sync_now") {
@@ -91,23 +94,19 @@ fun SyncStatusScreen(modifier: Modifier = Modifier) {
                     if (s.syncing) {
                         LinearProgressIndicator(Modifier.fillMaxWidth())
                     }
-                    Button(
+                    PrimaryButton(
+                        text = if (s.syncing) stringResource(R.string.f9_syncing_progress) else stringResource(R.string.f9_sync_now),
                         onClick = vm::syncNow,
                         enabled = s.online && !s.syncing,
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
-                    ) {
-                        if (s.syncing) {
-                            CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-                            Text(stringResource(R.string.f9_syncing_progress), Modifier.padding(start = Spacing.sm))
-                        } else {
-                            Text(stringResource(R.string.f9_sync_now))
-                        }
-                    }
+                        loading = s.syncing,
+                        icon = if (s.syncing) null else Icons.Default.Sync,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
+                    )
                     if (!s.online) {
                         Text(
                             stringResource(R.string.f9_offline_explain),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = Arena.colors.inkSoft,
                         )
                     }
                 }
@@ -123,6 +122,7 @@ fun SyncStatusScreen(modifier: Modifier = Modifier) {
                 Text(
                     stringResource(R.string.f9_summary, counts.saved, counts.notApplied, counts.alreadySaved),
                     style = MaterialTheme.typography.titleMedium,
+                    color = Arena.colors.ink,
                 )
             }
         }
@@ -132,31 +132,41 @@ fun SyncStatusScreen(modifier: Modifier = Modifier) {
             }
         } else {
             items(s.results, key = { "r_" + it.actionId }) { r ->
-                Column(Modifier.fillMaxWidth().heightIn(min = 48.dp).semantics(mergeDescendants = true) {}, verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                    Text(r.label, style = MaterialTheme.typography.bodyLarge)
+                ArenaCard(Modifier.fillMaxWidth().heightIn(min = 48.dp).semantics(mergeDescendants = true) {}) {
+                    Text(r.label, style = MaterialTheme.typography.titleMedium, color = Arena.colors.ink)
+                    Spacer(Modifier.height(Spacing.xs))
                     when (r.kind) {
-                        ResultKind.APPLIED -> IconText(
-                            Icons.Default.CheckCircle,
-                            stringResource(R.string.f9_icon_saved),
+                        ResultKind.APPLIED -> StatusChip(
                             stringResource(R.string.f9_result_applied),
+                            Icons.Default.CheckCircle,
+                            tone = ChipTone.Success,
                         )
-                        ResultKind.DUPLICATE -> IconText(
-                            Icons.Default.Info,
-                            stringResource(R.string.f9_icon_duplicate),
+                        ResultKind.DUPLICATE -> StatusChip(
                             stringResource(R.string.f9_result_duplicate),
+                            Icons.Default.Info,
+                            tone = ChipTone.Neutral,
                         )
-                        ResultKind.REJECTED -> IconText(
-                            Icons.Default.Warning,
-                            stringResource(R.string.f9_icon_not_applied),
-                            r.reason.orEmpty(),
-                        )
+                        ResultKind.REJECTED -> {
+                            StatusChip(
+                                stringResource(R.string.f9_icon_not_applied),
+                                Icons.Default.Warning,
+                                tone = ChipTone.Error,
+                            )
+                            if (!r.reason.isNullOrBlank()) {
+                                Text(r.reason.orEmpty(), style = MaterialTheme.typography.bodyLarge, color = Arena.colors.liveFg)
+                            }
+                            Text(
+                                stringResource(R.string.notif_rejected_outcome),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Arena.colors.inkSoft,
+                            )
+                        }
                     }
                     Text(
                         stringResource(R.string.f9_result_synced_at, formatSyncedAt(r.syncedAt)),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = Arena.colors.inkSoft,
                     )
-                    HorizontalDivider(Modifier.padding(top = Spacing.sm))
                 }
             }
         }
@@ -165,7 +175,7 @@ fun SyncStatusScreen(modifier: Modifier = Modifier) {
 
 @Composable
 private fun SectionTitle(text: String, modifier: Modifier = Modifier) {
-    Text(text, style = MaterialTheme.typography.titleLarge, modifier = modifier.semantics { heading() })
+    Text(text, style = MaterialTheme.typography.titleLarge, color = Arena.colors.ink, modifier = modifier.semantics { heading() })
 }
 
 @Composable

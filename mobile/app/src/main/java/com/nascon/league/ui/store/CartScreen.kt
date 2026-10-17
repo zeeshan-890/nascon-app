@@ -18,7 +18,6 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -40,7 +39,9 @@ import com.nascon.league.R
 import com.nascon.league.data.store.CartLine
 import com.nascon.league.data.store.formatPkr
 import com.nascon.league.di.LocalAppContainer
+import com.nascon.league.ui.components.ArenaCard
 import com.nascon.league.ui.components.EmptyState
+import com.nascon.league.ui.theme.Arena
 import com.nascon.league.ui.components.PrimaryButton
 import com.nascon.league.ui.navigation.LocalSnackbarHostState
 import com.nascon.league.ui.theme.Spacing
@@ -97,7 +98,7 @@ fun CartScreen(
                 )
             }
         }
-        Surface(tonalElevation = 3.dp, modifier = Modifier.fillMaxWidth()) {
+        Surface(color = androidx.compose.ui.graphics.Color.White, shadowElevation = 6.dp, modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(Spacing.md), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(
@@ -105,7 +106,7 @@ fun CartScreen(
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.weight(1f),
                     )
-                    Text(formatPkr(s.subtotalMinor), style = MaterialTheme.typography.titleLarge)
+                    Text(formatPkr(s.subtotalMinor), style = MaterialTheme.typography.titleLarge, color = Arena.colors.brand)
                 }
                 val canCheckout = checkoutEnabled(s.lines.size, s.hasBlockingProblem)
                 if (!canCheckout) {
@@ -135,13 +136,14 @@ private fun CartLineCard(
     onRemove: () -> Unit,
 ) {
     val removeCd = stringResource(R.string.f6_remove_cd, line.name)
-    OutlinedCard(Modifier.fillMaxWidth()) {
-        Row(Modifier.padding(Spacing.sm), horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+    ArenaCard(Modifier.fillMaxWidth()) {
+        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
             ProductImage(line.imageUrl, line.name, Modifier.size(80.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
                 Text(
                     line.name,
                     style = MaterialTheme.typography.titleMedium,
+                    color = Arena.colors.ink,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -153,12 +155,13 @@ private fun CartLineCard(
                 Text(
                     stringResource(R.string.f6_unit_price, formatPkr(line.unitPriceMinor)),
                     style = MaterialTheme.typography.bodyLarge,
+                    color = Arena.colors.brand,
                 )
                 line.problem?.let { ProblemChip(it) }
             }
         }
         FlowRow(
-            Modifier.fillMaxWidth().padding(horizontal = Spacing.sm).padding(bottom = Spacing.sm),
+            Modifier.fillMaxWidth().padding(top = Spacing.xs),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalArrangement = Arrangement.Center,
         ) {
