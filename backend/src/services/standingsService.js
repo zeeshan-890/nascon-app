@@ -5,7 +5,8 @@ const { project } = require('../domain/scoring/projection');
 const { computeStandings } = require('../domain/standings');
 
 // Exactly three queries, then everything is derived in memory. Never cached.
-async function getStandings(leagueId) {
+// Knockout-stage matches (bracket_slot.stage = 'knockout') are not part of the table.
+async function loadLeagueState(leagueId) {
   if (!Id.safeParse(leagueId).success) {
     throw new AppError(400, 'VALIDATION_ERROR', 'Request validation failed', { fields: ['league_id'] });
   }
@@ -23,8 +24,8 @@ async function getStandings(leagueId) {
   const teams = leagueRows.filter((r) => r.team_id !== null).map((r) => r.team_id);
 
   const { rows: matchRows } = await pool.query(
-    `SELECT match_id, sport_id, league_id, home_team_id, away_team_id FROM matches
-     WHERE league_id = $1 ORDER BY match_id`,
+    `SELECT match_id, sport_id, league_id, home_team_id, away_team_id, admin_status FROM matches
+     WHERE league_id = $1 AND COALESCE(bracket_slot->>'stage', '') <> 'knockout' ORDER BY match_id`,
     [leagueId]
   );
   const { rows: eventRows } = await pool.query(
@@ -41,20 +42,27 @@ async function getStandings(leagueId) {
 
   const sport = league.sport_config || { scoring_model: 'event', scoring_events: {}, periods: {}, draw_allowed: true };
   const config = league.config || {};
-  const projected = matchRows.map((m) => project(sport, m, byMatch.get(m.match_id) || []));
+  const projected = matchRows.map((m) => ({ ...project(sport, m, byMatch.get(m.match_id) || []), admin_status: m.admin_status }));
+  return { league, sport, config, teams, projected };
+}
 
+function tableOf({ league, sport, config, teams, projected }, subset = teams, overrides = {}) {
   return computeStandings({
     league_id: league.league_id,
     sport_id: league.sport_id,
-    teams,
+    teams: subset,
     scoring_model: sport.scoring_model,
     periods: sport.periods || {},
     points: config.points,
     tie_break_order: config.tie_break_order || sport.tie_break_order,
-    qualification_spots: config.qualification_spots,
+    qualification_spots: overrides.qualification_spots === undefined ? config.qualification_spots : overrides.qualification_spots,
     lots_seed: config.lots_seed,
     matches: projected,
   });
 }
 
-module.exports = { getStandings };
+async function getStandings(leagueId) {
+  return tableOf(await loadLeagueState(leagueId));
+}
+
+module.exports = { getStandings, loadLeagueState, tableOf };

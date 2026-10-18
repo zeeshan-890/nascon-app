@@ -6,8 +6,9 @@ const { accumulate, diffOf, pointsOf } = require('./stats');
 const EPS = 1e-9;
 
 function withLots(order) {
-  const list = Array.isArray(order) ? order.slice() : [];
-  if (list[list.length - 1] !== 'draw_lots') list.push('draw_lots');
+  // draw_lots is always applied last, wherever (or whether) it was listed.
+  const list = (Array.isArray(order) ? order : []).filter((c) => c !== 'draw_lots');
+  list.push('draw_lots');
   return list;
 }
 

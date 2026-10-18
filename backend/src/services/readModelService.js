@@ -49,7 +49,7 @@ async function computeFixtures(leagueId) {
     `SELECT m.match_id, m.sport_id, m.league_id, m.home_team_id, m.away_team_id, m.admin_status,
             m.scheduled_at, v.name AS venue_name
      FROM matches m LEFT JOIN venues v ON v.venue_id = m.venue_id
-     WHERE m.league_id = $1 ORDER BY m.scheduled_at NULLS LAST, m.match_id`,
+     WHERE m.league_id = $1 ORDER BY m.scheduled_at NULLS LAST, m.round NULLS LAST, m.match_id`,
     [leagueId],
   );
   const { rows: eventRows } = await pool.query(
@@ -156,11 +156,22 @@ async function clubRoster(clubId) {
   const today = roster.todayUtc();
   const list = [];
   const squadSet = new Map();
+  const destinations = new Map();
   for (const leagueId of [...new Set(squads.map((s) => s.league_id))]) {
     const mine = new Set(squads.filter((s) => s.league_id === leagueId).map((s) => s.squad_id));
     for (const s of squads.filter((x) => x.league_id === leagueId)) if (!squadSet.has(s.squad_id)) squadSet.set(s.squad_id, s);
     const [initial, audit] = await Promise.all([rosterRepo.listInitial(pool, leagueId), rosterRepo.listAudit(pool, leagueId)]);
     const state = roster.snapshot(initial, audit, today);
+    // Squads of the same league and tenant that a move can target, with their current head count.
+    const sizes = new Map();
+    for (const s of state.values()) if (s.squad_id) sizes.set(s.squad_id, (sizes.get(s.squad_id) || 0) + 1);
+    const { rows: others } = await pool.query(
+      `SELECT o.squad_id, o.name, o.club_id FROM roster_squads o
+       WHERE o.league_id = $1 AND o.club_id <> $2 AND o.tenant_id = (SELECT tenant_id FROM clubs WHERE club_id = $2)
+       ORDER BY o.squad_id`,
+      [leagueId, clubId],
+    );
+    for (const o of others) if (!destinations.has(o.squad_id)) destinations.set(o.squad_id, { ...o, size: sizes.get(o.squad_id) || 0 });
     for (const s of state.values()) {
       if (s.squad_id && mine.has(s.squad_id)) {
         list.push({
@@ -189,6 +200,7 @@ async function clubRoster(clubId) {
       audit_version: p.audit_version,
     })),
     squads: [...squadSet.values()].map((s) => ({ squad_id: s.squad_id, name: s.name, club_id: s.club_id })),
+    destination_squads: [...destinations.values()],
   };
 }
 
@@ -218,16 +230,17 @@ async function computeClub(clubId) {
     })),
     roster: r.roster,
     squads: r.squads,
+    destination_squads: r.destination_squads,
   };
 }
 
 const clubDetail = (clubId) => cached(`cache:club:${clubId}`, 'clubs-roster', () => computeClub(clubId));
 
-async function computeProducts(tenantScope) {
+async function computeProducts(tenantScope, productId = null) {
   const { rows: products } = await pool.query(
     `SELECT product_id, name, category, image_url FROM products
-     WHERE ($1::text IS NULL OR tenant_id = $1) ORDER BY product_id`,
-    [tenantScope],
+     WHERE ($1::text IS NULL OR tenant_id = $1) AND ($2::text IS NULL OR product_id = $2) ORDER BY product_id`,
+    [tenantScope, productId],
   );
   const ids = products.map((p) => p.product_id);
   const { rows: variants } = await pool.query(
@@ -257,6 +270,25 @@ async function computeProducts(tenantScope) {
 
 const products = (tenantScope) => cached(`cache:products:${tenantScope || 'all'}`, 'products', () => computeProducts(tenantScope), 30);
 
+// One product with live stock (never cached); same shape as a list item.
+async function productDetail(productId) {
+  const [item] = await computeProducts(null, productId);
+  if (!item) throw new AppError(404, 'PRODUCT_NOT_FOUND', 'Product not found');
+  return item;
+}
+
+// Collection endpoints added after the mobile API cap the page at 100.
+const pageOf100 = (q) => {
+  const limit = Math.min(Math.max(parseInt(q.limit, 10) || 50, 1), 100);
+  const offset = Math.max(parseInt(q.offset, 10) || 0, 0);
+  return { limit, offset };
+};
+
+async function listSports(query) {
+  return sports.list(pool, pageOf100(query));
+}
+
 module.exports = {
+  productDetail, pageOf100, listSports,
   effectiveStatus, pageOf, listLeagues, fixtures, standings, matchDetail, getSport, listClubs, clubDetail, products,
 };

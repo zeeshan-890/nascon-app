@@ -49,9 +49,15 @@ const GROUP = 'workers';
 // Consumer group reader; Redis being down only delays receipt uploads.
 async function consumeLoop(isRunning) {
   const consumer = 'w-' + process.pid;
+  // BLOCK 2000 would stall every other command on a shared connection (the outbox relay's publishes,
+  // i.e. realtime pushes, were delayed by up to 2 s), so the blocking reader gets a connection of its own.
+  let redis = null;
   while (isRunning()) {
     try {
-      const redis = getRedis();
+      if (!redis) {
+        redis = getRedis().duplicate();
+        redis.on('error', () => {});
+      }
       if (redis.status === 'wait') await redis.connect();
       try {
         await redis.xgroup('CREATE', STREAM, GROUP, '0', 'MKSTREAM');
@@ -71,6 +77,7 @@ async function consumeLoop(isRunning) {
       }
     } catch (err) {
       logger.warn({ err: err.message }, 'event consumer unavailable; retrying');
+      if (redis) { redis.disconnect(); redis = null; }
       await sleep(3000);
     }
   }

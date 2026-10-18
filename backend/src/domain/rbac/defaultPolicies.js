@@ -30,9 +30,12 @@ const MOBILE_ACTIONS = {
   ORDER_READ: 'order.read',
   ORDER_MANAGE: 'order.manage',
   PLAYER_HISTORY_READ: 'player.history.read',
+  SEASON_READ: 'season.read',
+  LEAGUE_WRITE: 'league.write',
+  SPORT_WRITE: 'sport.write',
 };
 
-const READ_ACTIONS = ['league.read', 'match.read', 'standings.read', 'sport.read', 'product.read'];
+const READ_ACTIONS = ['league.read', 'match.read', 'standings.read', 'sport.read', 'product.read', 'season.read'];
 const ALL_ROLES_SAME_TENANT = ['league_organizer', 'club_manager', 'player', 'viewer'];
 
 const MOBILE_POLICIES = [
@@ -42,9 +45,13 @@ const MOBILE_POLICIES = [
   ['super_admin', 'match.manage', 'any'],
   ['league_organizer', 'match.manage', 'own_league'],
   ['super_admin', 'season.write', 'any'],
+  ['league_organizer', 'season.write', 'same_tenant'],
   ['super_admin', 'league.create', 'any'],
   ['league_organizer', 'league.create', 'same_tenant'],
   ['super_admin', 'league.approve', 'any'],
+  ['super_admin', 'league.write', 'any'],
+  ['league_organizer', 'league.write', 'own_league'],
+  ['super_admin', 'sport.write', 'any'],
   ['super_admin', 'club.write', 'any'],
   ['club_manager', 'club.write', 'own_club'],
   ...ROLES.map((role) => [role, 'order.create', 'any']),

@@ -65,9 +65,9 @@ describeDb('POST /audit/v1/sports', () => {
       expect(r.body.config.tie_break_order).toEqual(['h2h_points', 'scored', 'draw_lots']);
       expect((await stored('hockey')).tie_break_order).toEqual(['h2h_points', 'scored', 'draw_lots']);
     });
-    test('draw_lots kept in place when present', async () => {
+    test('draw_lots listed earlier is moved to the end (always applied last)', async () => {
       const r = await post(eventSport({ tie_break_order: ['draw_lots', 'scored'] }));
-      expect(r.body.config.tie_break_order).toEqual(['draw_lots', 'scored']);
+      expect(r.body.config.tie_break_order).toEqual(['scored', 'draw_lots']);
     });
     test('missing tie_break_order defaults to a list containing draw_lots', async () => {
       const b = eventSport(); delete b.tie_break_order;

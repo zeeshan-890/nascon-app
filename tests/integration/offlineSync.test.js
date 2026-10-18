@@ -20,7 +20,7 @@ const tr = (body, base_version, over = {}) => ({
 const init = (match_id, extra = {}) => ev(match_id, 'match_init', { sport_id: 'football', home_team_id: 'H', away_team_id: 'A', ...extra }, 0);
 const codes = (r) => r.body.results.map((x) => x.error_code);
 
-describe('offline-sync envelope', () => {
+describeDb('offline-sync envelope', () => {
   test('400 with field paths, before any DB work', async () => {
     const r = await sync('dev', [{ action_id: 'a', type: 'x', queued_at: 'bad', base_version: -1, payload: 1 }]);
     expect(r.status).toBe(400);

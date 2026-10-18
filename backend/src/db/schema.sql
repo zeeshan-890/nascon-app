@@ -86,6 +86,7 @@ CREATE TABLE IF NOT EXISTS league_teams (
   PRIMARY KEY (league_id, team_id)
 );
 
+ALTER TABLE leagues ADD COLUMN IF NOT EXISTS parent_league_id text;
 ALTER TABLE league_teams ADD COLUMN IF NOT EXISTS name text;
 CREATE INDEX IF NOT EXISTS idx_league_teams_league ON league_teams (league_id);
 

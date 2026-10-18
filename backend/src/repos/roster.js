@@ -145,9 +145,21 @@ async function latestLeagueOfPlayer(db, playerId) {
   return rows.length ? rows[0].league_id : null;
 }
 
+// Audit ids are gap-free: the counter lives in a row updated inside the caller's transaction, so a
+// rejected request (rollback) or a no-op duplicate insert never consumes a number. /reset clears it.
 async function nextAuditNumber(client) {
-  const { rows } = await client.query("SELECT nextval('audit_seq') AS n");
+  const { rows } = await client.query(
+    `INSERT INTO settings (key, value) VALUES ('audit_counter', '1'::jsonb)
+     ON CONFLICT (key) DO UPDATE SET value = to_jsonb((settings.value #>> '{}')::int + 1)
+     RETURNING (value #>> '{}')::int AS n`
+  );
   return Number(rows[0].n);
+}
+
+async function releaseAuditNumber(client) {
+  await client.query(
+    `UPDATE settings SET value = to_jsonb((value #>> '{}')::int - 1) WHERE key = 'audit_counter'`
+  );
 }
 
 // Returns the inserted entry (with its audit id) or null when a loan return already exists.
@@ -162,7 +174,11 @@ async function insertAudit(client, e) {
     [auditId, n, e.league_id, e.player_id, e.action, e.from_squad_id, e.to_squad_id, e.effective_date,
       e.loan_end_date || null, e.loan_audit_id || null, e.who, e.why, e.at, e.state, e.role || null, e.position || null]
   );
-  return rowCount ? { ...e, audit_id: auditId, audit_seq: n } : null;
+  if (!rowCount) {
+    await releaseAuditNumber(client);
+    return null;
+  }
+  return { ...e, audit_id: auditId, audit_seq: n };
 }
 
 // Rewrites the registrations mirror from a replayed snapshot (Map player_id -> state).

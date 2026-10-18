@@ -73,7 +73,9 @@ Per-area line coverage is written to `COVERAGE.json` by `backend/scripts/coverag
 ## Mobile app server address
 
 In the app's Settings screen set the server to `http://<laptop-LAN-IP>:8080` (use the laptop's Wi-Fi
-address from `ipconfig` / `ip addr`; `10.0.2.2` only works from the Android emulator). The phone and
+address from `ipconfig` / `ip addr`; `10.0.2.2` only works from the Android emulator). The app starts in
+**demo mode** (built-in fake data, no server needed): in Settings turn **Use demo data** off to use the real
+backend. The phone and
 laptop must be on the same network, and the laptop firewall must allow inbound TCP 8080. Use the
 "Test connection" button, which calls `GET /api/v1/ping`.
 
