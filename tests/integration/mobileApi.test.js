@@ -29,7 +29,7 @@ describeDb('mobile API: read endpoints (contract)', () => {
   test('fixtures list: names, effective status, scores, versions', async () => {
     const r = await as('player').get('/api/v1/leagues/league-alpha-1/fixtures');
     expect(r.status).toBe(200);
-    expect(r.body).toHaveLength(6);
+    expect(r.body).toHaveLength(7);
     expect(keys(r.body[0])).toEqual([
       'away_name', 'away_score', 'away_team_id', 'home_name', 'home_score', 'home_team_id',
       'match_id', 'scheduled_at', 'status', 'venue_name', 'version',
@@ -291,7 +291,7 @@ describeDb('mobile API: static art and demo data', () => {
     const first = await count();
     await resetAll();
     expect(await count()).toEqual(first);
-    expect(first).toMatchObject({ matches: 6, products: 4, roster: 16 });
+    expect(first).toMatchObject({ matches: 7, products: 4, roster: 16 });
     const lg = await (await http()).post('/audit/v1/leagues').send({
       league_id: 'lg-1', sport_id: 'football', teams: ['a', 'b'], fixtures: [{ match_id: 'fx-1', home: 'a', away: 'b' }], qualification: { spots: 1 },
     });

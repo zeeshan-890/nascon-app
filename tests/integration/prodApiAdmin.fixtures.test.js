@@ -206,7 +206,7 @@ describeDb('POST /leagues/:id/fixtures/build', () => {
     expectErr(await asToken(null).post(`/api/v1/leagues/${lg}/fixtures/build`, { format: 'round_robin' }), 401, 'UNAUTHENTICATED');
     expect(await fixturesOf(admin, lg)).toHaveLength(0);
     // the seeded league's fixtures are untouched
-    expect(await fixturesOf(admin, 'league-alpha-1')).toHaveLength(6);
+    expect(await fixturesOf(admin, 'league-alpha-1')).toHaveLength(7);
   });
 
   test('a stored id longer than 64 characters is a validation error on league_id', async () => {

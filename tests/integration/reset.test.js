@@ -144,7 +144,8 @@ describeDb('reset', () => {
       ]);
       expect(await count('clubs')).toBe(3);
       const players = await q("SELECT player_id, club_id, tenant_id FROM players WHERE player_id NOT LIKE 'demo-%'");
-      expect(players).toHaveLength(3);
+      // Part II adds player-beta-2 (club-beta-1) to the Day 1 trio.
+      expect(players.map((p) => p.player_id).sort()).toEqual(['player-alpha-1', 'player-alpha-2', 'player-beta-1', 'player-beta-2']);
       players.forEach((p) => { expect(p.club_id).toBeTruthy(); expect(p.tenant_id).toBeTruthy(); });
     });
 

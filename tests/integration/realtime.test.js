@@ -66,7 +66,10 @@ describeDbRedis('websocket hub', () => {
     ws.send(JSON.stringify({ subscribe: 'match:demo-m-live' }));
     ws.send(JSON.stringify({ subscribe: 'league:league-alpha-1' }));
     await until(() => ws.frames.length >= 2);
-    expect(ws.frames).toEqual([{ type: 'subscribed', topic: 'match:demo-m-live' }, { type: 'subscribed', topic: 'league:league-alpha-1' }]);
+    // The two acks come from independent async permission checks, so their order is not part of the contract.
+    expect([...ws.frames].sort((a, b) => a.topic.localeCompare(b.topic))).toEqual([
+      { type: 'subscribed', topic: 'league:league-alpha-1' }, { type: 'subscribed', topic: 'match:demo-m-live' },
+    ]);
     await pump();
     ws.frames.length = 0;
 

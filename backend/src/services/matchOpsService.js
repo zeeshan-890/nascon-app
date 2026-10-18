@@ -45,6 +45,7 @@ async function changeStatus(matchId, to, actor) {
     });
     return after;
   });
+  try { require('../../day2/realtime').publishMatchStatus(matchId); } catch (err) { /* best-effort */ }
   await eventService.invalidateForMatch(matchId);
   return { match_id: matchId, status, changed_by: actor };
 }
