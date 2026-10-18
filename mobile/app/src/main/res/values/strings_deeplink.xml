@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dl_not_found_title">Link not found</string>
+    <string name="dl_not_found_title_missing">Nothing found</string>
+    <string name="dl_msg_generic">We could not open this link.</string>
+    <string name="dl_msg_invalid_id">That link has an id we cannot open.</string>
+    <string name="dl_msg_unsupported">This link is not one this app can open.</string>
+    <string name="dl_msg_missing_id">This link is missing what to open.</string>
+    <string name="dl_msg_extra_segments">This link has extra parts we do not understand.</string>
+    <string name="dl_msg_empty">There was no link to open.</string>
+    <string name="dl_msg_entity_missing">We could not find that match, club or session.</string>
+    <string name="dl_retry">Try Again</string>
+    <string name="dl_retry_desc">Try opening this link again</string>
+    <string name="dl_go_home">Go Home</string>
+    <string name="dl_go_home_desc">Go to the home screen</string>
+    <string name="dl_not_found_icon_desc">Link could not be opened</string>
+    <string name="dl_costream_title">Co-stream</string>
+    <string name="dl_costream_ready">Co-stream is getting ready</string>
+    <string name="dl_costream_connecting">Connecting</string>
+    <string name="dl_costream_session">Session %1$s</string>
+</resources>

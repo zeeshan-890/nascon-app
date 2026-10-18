@@ -58,7 +58,11 @@ class AppContainer(context: Context) {
     val configStore = ServerConfigStore(appContext)
     val tokenStore = TokenStore(appContext)
     val database: AppDatabase by lazy { AppDatabase.create(appContext) }
-    val sessionRepository = SessionRepository(tokenStore)
+    val sessionRepository = SessionRepository(tokenStore).also { it.ensureSession() }
+
+    /** Links received by the activity wait here until the NavHost can open them. [deepLinkSignal] wakes the shell. */
+    val deepLinks = com.nascon.league.deeplink.PendingDeepLink()
+    val deepLinkSignal = kotlinx.coroutines.flow.MutableStateFlow(0)
 
     val apiFactory = ApiFactory(tokenStore) { sessionRepository.expire() }
 

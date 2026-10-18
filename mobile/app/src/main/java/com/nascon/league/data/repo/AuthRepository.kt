@@ -44,7 +44,7 @@ class AuthRepository(
     suspend fun logout() {
         val refresh = tokenStore.refreshToken()
         if (refresh != null) safeCall { apiProvider().logout(LogoutRequest(refresh)) }
-        sessionRepository.clear()
+        sessionRepository.startGuest()
         runCatching { cacheManager?.onLogout() }
             .onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
     }
