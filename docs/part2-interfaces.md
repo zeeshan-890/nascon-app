@@ -243,3 +243,99 @@ Day 1 and Part II sockets: +1 on connect, -1 exactly once on close or error, nev
 closed. Measured latency (25 clients, in-process, direct publish): p50 35 ms, p95 61 ms, max 63 ms from sending the
 request; p95 8 ms after the HTTP response. Probe: `tests/integration/day2.realtime.nfr1.test.js`
 (`NFR1_BASE_URL=http://localhost:8080 npx jest ...` against the compose stack).
+
+## Realtime channels (NFR-1) — `backend/day2/realtime/`, `backend/day2/routes/realtime.js`
+
+All read-only channels are **unauthenticated**: a guest connects with no token. A token (member JWT, `guest_...` token or
+junk) may be sent as `?token=` or `Authorization: Bearer` and is accepted and ignored for reads. The Day 1 hub
+(`ws://<host>/ws?token=<jwt>`, `{"subscribe":"match:<id>"}`) is unchanged; both hubs share one upgrade dispatcher in
+`src/realtime/hub.js`.
+
+### URLs
+
+| Channel | URL |
+|---|---|
+| Match, WebSocket | `ws://<host>/ws/matches/{match_id}` |
+| Match, SSE | `GET /api/v1/matches/{match_id}/stream` (`text/event-stream`) |
+| Co-stream / chat room, WebSocket | `ws://<host>/ws/costream/{session_id}` |
+
+### Message envelope (every WebSocket text frame and every SSE `data:` line)
+
+```json
+{ "type": "match.event_appended", "match_id": "demo-m-live", "sequence": 14, "ts": "2026-10-18T07:41:02.118Z",
+  "data": { "match_id": "demo-m-live", "event_id": "e-123", "sequence": 14, "version": 14, "event_type": "score",
+            "status": "in_progress",
+            "home": { "team_id": "demo-team-1", "score": 3 }, "away": { "team_id": "demo-team-4", "score": 1 },
+            "home_score": 3, "away_score": 1 } }
+```
+
+- `type`, `match_id`, `data.match_id/event_id/sequence/version/event_type` are exactly the Day 1 `rt:match:*` payload;
+  the score, status and `ts` fields are additive.
+- Top-level **`sequence`**: integer, strictly increasing per match stream (events, status changes and reset snapshots all
+  advance it); use it to order frames and as the SSE event id. **`data.sequence`** is the Day 1 match event number
+  (1, 2, 3, ...) of the appended event. `ts` is the server time (ISO 8601 UTC) when the frame was produced.
+- Types: `snapshot`, `match.event_appended`, `match.status_changed` (`data: { match_id, status }`; the status changes to
+  `in_progress`, `completed`, `postponed`, `abandoned`, `cancelled`, or back to `upcoming`/`in_progress`).
+- Delivery: events of one match are delivered in sequence order, never twice, and the score in successive frames never
+  goes backwards. Both delivery paths (direct publish right after the database commit, and the worker's outbox relay as
+  fallback) feed the same de-duplicating stream.
+
+### Snapshot (first frame after connect, and again after `POST /audit/v1/reset`)
+
+```json
+{ "type": "snapshot", "match_id": "demo-m-live", "sequence": 14, "ts": "2026-10-18T07:41:00.002Z",
+  "data": { "match_id": "demo-m-live", "status": "in_progress",
+            "home": { "team_id": "demo-team-1", "score": 2 }, "away": { "team_id": "demo-team-4", "score": 1 },
+            "home_score": 2, "away_score": 1, "version": 13, "league_id": "league-alpha-1" } }
+```
+A client that (re)connects between events is correct immediately. After a reset every connected client (WebSocket and
+SSE) receives a fresh snapshot with a higher `sequence`.
+
+### Co-stream / chat room: `ws://<host>/ws/costream/{session_id}`
+
+Snapshot first: `{ "type":"snapshot", "session_id", "sequence", "ts", "data": { "session_id", "status", "active_host",
+"host_player_id", "layout", "participants", "active_participants", "handoff_occurred", "last_chat_seq",
+"recent_messages": [ { "seq", "message_id", "sender", "text", "flagged", "created_at" } ] } }` (last 50 messages).
+Then live frames, same envelope with `session_id` instead of `match_id`:
+`chat.message` (`data: { session_id, seq, message_id, sender, text, flagged?, created_at? }` — **`data.seq` is the room
+sequence number**), `participant.joined`, `participant.left`, `host.handoff`, `session.status`.
+**Needs (co-stream and chat modules):** publish with `require('../realtime').publishRoom(session_id, type, data)` (fire
+and forget, never throws; de-duplicated by `data.message_id` / `data.event_id`) or `PUBLISH rt:costream:<session_id>
+{"type":"...","data":{...}}` on Redis. Other publishing helpers in `backend/day2/realtime/index.js`:
+`publishMatchEvent`, `publishMatchStatus`.
+
+### Server-Sent Events: `GET /api/v1/matches/{match_id}/stream`
+
+No auth. Headers: `Content-Type: text/event-stream; charset=utf-8`, `Cache-Control: no-cache, no-transform`,
+`Connection: keep-alive`, `X-Accel-Buffering: no`, `Content-Encoding: identity` (never compressed). A comment line
+`: keep-alive` is sent every 15 s. The first block is the snapshot (`event: snapshot`, no `id`). Every later block is
+`id: <sequence>\nevent: <type>\ndata: <envelope json>`, the id equal to the envelope's top-level `sequence`. Send
+`Last-Event-ID: <n>` on reconnect: after the snapshot the server replays buffered frames with `sequence > n` (buffer: the
+last 200 frames per match, in memory), then continues live. `retry: 3000` is advertised.
+Unknown match: `404 {"error":{"code":"MATCH_NOT_FOUND","message":"Match not found","details":{}}}`.
+
+### Close codes and error frames
+
+| Code | Meaning |
+|---|---|
+| `4404` | unknown match / session (reason `match not found` / `session not found`) |
+| `1008` | more than 20 client messages per second |
+| `1009` | client message larger than 4096 bytes |
+| `1011` | internal error while subscribing |
+| `1001` | server shutting down |
+
+Client-to-server messages (all optional): `{"type":"ping"}` -> `{"type":"pong","ts"}`; `{"type":"resync"}` -> a fresh
+snapshot; `{"subscribe":"match:<id>"}` / `{"unsubscribe":"match:<id>"}` (also `room:<id>`) add or drop streams, at most
+10 per connection (`{"type":"error","code":"TOO_MANY_SUBSCRIPTIONS"}`). A write attempt (`chat`, `score`, `follow`, ...)
+from a connection without a member token is answered with `{"type":"error","code":"GUEST_WRITE_FORBIDDEN"}` and is
+not applied; the connection stays open. A member token gets `{"type":"error","code":"WRITE_NOT_SUPPORTED"}` (use REST).
+Malformed JSON -> `{"type":"error","code":"INVALID_MESSAGE"}`.
+
+### Hygiene
+
+Server pings every 25 s and terminates sockets that did not pong; a connection whose send queue exceeds 1 MiB is
+terminated (slow consumer); subscriptions are removed on close. `nascon_active_ws_connections` (GET /metrics) counts
+Day 1 and Part II sockets: +1 on connect, -1 exactly once on close or error, never below 0, set to 0 when the hub is
+closed. Measured latency (25 clients, in-process, direct publish): p50 35 ms, p95 61 ms, max 63 ms from sending the
+request; p95 8 ms after the HTTP response. Probe: `tests/integration/day2.realtime.nfr1.test.js`
+(`NFR1_BASE_URL=http://localhost:8080 npx jest ...` against the compose stack).

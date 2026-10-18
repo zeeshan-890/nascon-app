@@ -104,6 +104,16 @@ async function doAppend(client, req, requestCanonical) {
   return { created: response };
 }
 
+// Pushes a committed event to the Part II realtime streams without ever delaying or failing the request.
+function publishRealtime(created) {
+  try {
+    require('../../day2/realtime').publishMatchEvent({
+      match_id: created.match_id, event_id: created.event_id, sequence: created.sequence,
+      version: created.sequence, event_type: created.type,
+    });
+  } catch (err) { /* realtime is best-effort */ }
+}
+
 // League-scoped caches (fixtures, standings) must be fresh right after a write.
 async function invalidateForMatch(matchId) {
   const m = await matches.get(pool, matchId);
@@ -143,7 +153,10 @@ async function appendEvent(body) {
 
   try {
     const result = await withTransaction((client) => doAppend(client, req, requestCanonical));
-    if (result.created) await invalidateForMatch(req.match_id);
+    if (result.created) {
+      publishRealtime(result.created); // direct, fire-and-forget; the worker relay is the fallback
+      await invalidateForMatch(req.match_id);
+    }
     return result.replay || { status: 201, body: result.created };
   } catch (err) {
     // A racing request with the same event_id may have won; resolve idempotently.

@@ -197,6 +197,7 @@ async function resetLocked(parsed) {
   require('./authService').resetThrottles();
   await clearCache();
   require('../routes/static').clearArtCache();
+  await require('../../day2/realtime').onReset(); // connected realtime clients get a fresh snapshot
   return {
     status: 'reset_complete',
     seed: parsed.seed,

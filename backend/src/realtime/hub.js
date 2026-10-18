@@ -30,7 +30,19 @@ async function resolveTopic(kind, id) {
 }
 
 function createHub(server, { policies } = {}) {
-  const wss = new WebSocketServer({ server, path: '/ws', maxPayload: MAX_PAYLOAD });
+  // Part II: one upgrade dispatcher. /ws is the authenticated Day 1 hub; /ws/matches/* and /ws/costream/* are
+  // the unauthenticated read-only channels (backend/day2/realtime).
+  const day2 = require('../../day2/realtime');
+  const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_PAYLOAD });
+  const day2Ws = day2.createWsServer();
+  const onUpgrade = (req, socket, head) => {
+    let pathname = '';
+    try { pathname = new URL(req.url, 'http://localhost').pathname; } catch (e) { /* bad url */ }
+    if (pathname === '/ws') wss.handleUpgrade(req, socket, head, (ws) => wss.emit('connection', ws, req));
+    else if (!day2Ws.handleUpgrade(req, socket, head)) socket.destroy();
+  };
+  server.on('upgrade', onUpgrade);
+  day2.resetGauge();
   const topics = new Map(); // topic -> Set<ws>
   let subscriber = null;
 
@@ -96,6 +108,7 @@ function createHub(server, { policies } = {}) {
   }
 
   wss.on('connection', (ws, req) => {
+    day2.trackSocket(ws); // nascon_active_ws_connections
     let principal = null;
     try {
       const url = new URL(req.url, 'http://localhost');
@@ -143,6 +156,7 @@ function createHub(server, { policies } = {}) {
       subscriber.psubscribe('rt:*').catch(() => {});
     });
     subscriber.on('pmessage', (pattern, channel, message) => {
+      day2.ingestRedis(channel.slice(3), message); // Part II streams (de-duplicated against the direct publish)
       const set = topics.get(channel.slice(3));
       if (!set) return;
       for (const ws of set) if (ws.readyState === ws.OPEN) ws.send(message);
@@ -152,8 +166,12 @@ function createHub(server, { policies } = {}) {
 
   function close() {
     clearInterval(heartbeat);
+    server.removeListener('upgrade', onUpgrade);
     if (subscriber) subscriber.disconnect();
     for (const ws of wss.clients) ws.terminate();
+    day2Ws.close();
+    day2.clearStreams();
+    day2.resetGauge();
     return new Promise((resolve) => wss.close(() => resolve()));
   }
 
