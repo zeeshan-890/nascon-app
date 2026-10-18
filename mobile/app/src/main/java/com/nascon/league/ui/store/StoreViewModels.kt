@@ -11,6 +11,7 @@ import com.nascon.league.core.network.ConnState
 import com.nascon.league.data.api.dto.ProductDto
 import com.nascon.league.data.api.dto.VariantDto
 import com.nascon.league.data.repo.Resource
+import com.nascon.league.ui.failure.RateLimitRetry
 import com.nascon.league.data.store.CartLine
 import com.nascon.league.data.store.StoreLogic
 import com.nascon.league.data.store.reconcile
@@ -70,6 +71,7 @@ class StoreViewModel(
     private val handle: SavedStateHandle,
 ) : ViewModel() {
     private val category = MutableStateFlow(handle.get<String>("category"))
+    private val rateLimit = RateLimitRetry(viewModelScope)
 
     val state: StateFlow<StoreUiState> = combine(
         container.productRepository.observeResource().map { it.toCatalogue() },
@@ -84,6 +86,12 @@ class StoreViewModel(
 
     init {
         refreshCatalogueOnSignals(container)
+        viewModelScope.launch {
+            container.productRepository.observeResource().collect { res ->
+                val err = (res as? Resource.Error<*>)?.error
+                rateLimit.consider("products", err) { refresh() }
+            }
+        }
     }
 
     fun selectCategory(key: String?) {

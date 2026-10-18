@@ -51,7 +51,7 @@ data class ReceiptDto(
 data class CheckoutResponse(
     @SerialName("order_id") val orderId: String,
     @SerialName("status") val status: String = "",
-    @SerialName("currency") val currency: String = "USD",
+    @SerialName("currency") val currency: String = "PKR",
     @SerialName("items") val items: List<JsonObject> = emptyList(),
     @SerialName("subtotal_minor") val subtotalMinor: Long = 0,
     @SerialName("discount_minor") val discountMinor: Long = 0,

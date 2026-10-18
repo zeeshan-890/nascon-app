@@ -62,5 +62,12 @@ data class RefreshResponse(
 @Serializable
 data class LogoutRequest(@SerialName("refresh_token") val refreshToken: String)
 
+/** `GET /api/v1/me` — same user and tenant objects as login, without tokens. */
 @Serializable
-data class PingResponse(@SerialName("pong") val pong: Boolean)
+data class MeResponse(
+    @SerialName("user") val user: UserDto,
+    @SerialName("tenant") val tenant: TenantDto? = null,
+)
+
+@Serializable
+data class PingResponse(@SerialName("pong") val pong: Boolean = false)

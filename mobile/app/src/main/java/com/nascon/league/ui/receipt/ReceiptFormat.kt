@@ -5,6 +5,14 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
+/** True when the saved body is an error document rather than a PDF. */
+fun isErrorPayload(leading: String): Boolean {
+    val t = leading.trimStart().trimStart('\uFEFF')
+    return t.startsWith("{") || t.startsWith("[")
+}
+
+const val RECEIPT_NOT_OPENED = "The receipt could not be opened."
+
 /** Pure formatting helpers for the receipt screens. */
 object ReceiptFormat {
     /** Short upper-case 8-character reference taken from the order id (dashes ignored). */

@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ShoppingBag
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CloudOff
@@ -41,7 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.nascon.league.R
-import com.nascon.league.core.error.ErrorMapper
+import com.nascon.league.ui.failure.userMessage
 import com.nascon.league.core.network.ApiError
 import com.nascon.league.data.api.dto.ProductDto
 import com.nascon.league.data.store.StoreLogic
@@ -178,17 +179,15 @@ private fun StoreBody(
                 actionLabel = stringResource(R.string.f6_try_again),
                 onAction = onRefresh,
             )
-            else -> ErrorState(ErrorMapper.message(err), onRefresh)
+            else -> ErrorState(userMessage(err), onRefresh)
         }
         return
     }
     if (products.isEmpty()) {
-        EmptyState(
-            icon = Icons.Default.ShoppingBag,
-            title = stringResource(R.string.f6_no_products_title),
-            message = stringResource(R.string.f6_no_products_message),
-            actionLabel = stringResource(R.string.f6_refresh),
-            onAction = onRefresh,
+        StoreStateCard(
+            icon = Icons.Outlined.ShoppingBag,
+            title = stringResource(R.string.storestates_store_empty_title),
+            message = stringResource(R.string.storestates_store_empty_message),
         )
         return
     }

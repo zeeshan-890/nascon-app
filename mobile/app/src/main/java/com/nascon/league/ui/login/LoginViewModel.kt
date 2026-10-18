@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.nascon.league.core.error.ErrorContext
-import com.nascon.league.core.error.ErrorMapper
+import com.nascon.league.ui.failure.userMessage
 import com.nascon.league.core.network.ApiError
 import com.nascon.league.core.network.NetworkResult
 import com.nascon.league.data.fake.DemoAccount
@@ -30,7 +30,7 @@ data class LoginUiState(
     val passwordError: String? = null,
     val errorMessage: String? = null,
     val serverUnreachable: Boolean = false,
-    val demoExpanded: Boolean = false,
+    val demoExpanded: Boolean = true,
     val focusRequest: LoginField? = null,
     val failureKind: LoginFailureKind? = null,
     val attemptsLeft: Int? = null,
@@ -103,7 +103,7 @@ class LoginViewModel(private val container: AppContainer) : ViewModel() {
                 is NetworkResult.Failure -> _state.update {
                     it.copy(
                         loading = false,
-                        errorMessage = ErrorMapper.message(r.error, ErrorContext.Login),
+                        errorMessage = userMessage(r.error, ErrorContext.Login),
                         serverUnreachable = r.error is ApiError.ServerUnreachable,
                         failureKind = loginFailureKind(r.error),
                         attemptsLeft = attemptsLeft(r.error),

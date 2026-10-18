@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.LaunchedEffect
-import com.nascon.league.core.error.ErrorMapper
+import com.nascon.league.ui.failure.userMessage
 import com.nascon.league.core.network.ApiError
 import com.nascon.league.core.network.NetworkResult
 import com.nascon.league.data.api.dto.ClubDto
@@ -80,7 +80,7 @@ internal fun rememberClubLoad(clubId: String?): ClubLoad {
 
 @Composable
 internal fun LoadFailure(error: ApiError, onRetry: () -> Unit) {
-    if (error.isConnectivity()) NotSavedState(onRetry) else ErrorState(ErrorMapper.message(error), onRetry)
+    if (error.isConnectivity()) NotSavedState(onRetry) else ErrorState(userMessage(error), onRetry)
 }
 
 /** Round initials avatar. Decorative: callers describe the person in adjacent text. */

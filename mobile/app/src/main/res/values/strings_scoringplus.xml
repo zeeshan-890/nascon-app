@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="scoringplus_discipline_button">Discipline</string>
+    <string name="scoringplus_discipline_button_cd">Record a discipline event</string>
+    <string name="scoringplus_tiebreak_button">Tie-break winner</string>
+    <string name="scoringplus_tiebreak_button_cd">Record the tie-break winner</string>
+
+    <string name="scoringplus_discipline_title">Discipline</string>
+    <string name="scoringplus_team_label">Team</string>
+    <string name="scoringplus_points_label">Points</string>
+    <string name="scoringplus_points_value_cd">%1$d points</string>
+    <string name="scoringplus_points_less_cd">Fewer points</string>
+    <string name="scoringplus_points_more_cd">More points</string>
+    <string name="scoringplus_discipline_hint">Disciplinary points count against a team in the standings tiebreaks.</string>
+    <string name="scoringplus_record">Record</string>
+    <string name="scoringplus_cancel">Cancel</string>
+    <string name="scoringplus_selected_cd">Selected</string>
+
+    <string name="scoringplus_tiebreak_title">Tie-break winner</string>
+    <string name="scoringplus_tiebreak_message">The score is level at %1$d – %2$d and this match cannot end in a draw. Pick the winner of the tie-break.</string>
+    <string name="scoringplus_tiebreak_record">Record winner</string>
+
+    <string name="scoringplus_tie_message">The sport\'s rules do not allow a draw here. Choose who wins the tie-break, then end the match.</string>
+    <string name="scoringplus_tie_keep_playing">Keep playing</string>
+    <string name="scoringplus_tie_record">Record tie-break</string>
+
+    <string name="scoringplus_end_title">End this match?</string>
+    <string name="scoringplus_end_message">%1$s %2$d – %3$d %4$s will be final. Standings update for everyone. You can still correct events afterwards.</string>
+    <string name="scoringplus_end_keep">Keep playing</string>
+    <string name="scoringplus_end_confirm">End match</string>
+
+    <string name="scoringplus_undo_title">Undo this event?</string>
+    <string name="scoringplus_undo_message">A correction is recorded. The original stays in the history.</string>
+    <string name="scoringplus_undo_keep">Keep</string>
+    <string name="scoringplus_undo_confirm">Undo event</string>
+    <string name="scoringplus_reason_label">Reason</string>
+</resources>

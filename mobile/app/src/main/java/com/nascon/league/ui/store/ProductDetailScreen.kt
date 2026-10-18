@@ -1,6 +1,18 @@
 package com.nascon.league.ui.store
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.sp
+import com.nascon.league.ui.components.ChipTone
+import com.nascon.league.ui.components.StatusChip
+import com.nascon.league.ui.theme.Montserrat
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -41,7 +53,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.nascon.league.R
-import com.nascon.league.core.error.ErrorMapper
+import com.nascon.league.ui.failure.userMessage
 import com.nascon.league.data.api.dto.ProductDto
 import com.nascon.league.data.api.dto.VariantDto
 import com.nascon.league.data.store.StockText
@@ -106,7 +118,7 @@ fun ProductDetailScreen(
                     modifier = modifier,
                 )
             } else {
-                ErrorState(ErrorMapper.message(err), vm::refresh, modifier)
+                ErrorState(userMessage(err), vm::refresh, modifier)
             }
         }
         else -> ProductDetailContent(
@@ -142,7 +154,7 @@ private fun ProductDetailContent(
                 .padding(Spacing.md),
             verticalArrangement = Arrangement.spacedBy(Spacing.md),
         ) {
-            ProductImage(product.imageUrl, product.name, Modifier.fillMaxWidth().height(240.dp))
+            ProductImage(product.imageUrl, product.name, Modifier.fillMaxWidth().height(150.dp))
             Text(
                 product.name,
                 style = MaterialTheme.typography.headlineSmall,
@@ -168,7 +180,9 @@ private fun ProductDetailContent(
 
             if (product.variants.isNotEmpty()) {
                 Text(
-                    stringResource(R.string.f6_choose_option),
+                    stringResource(
+                        if (product.variants.all { !it.size.isNullOrBlank() }) R.string.storestates_size else R.string.f6_choose_option,
+                    ),
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.semantics { heading() },
                 )
@@ -188,7 +202,7 @@ private fun ProductDetailContent(
             }
 
             if (variant != null) {
-                StockLine(variant.stock)
+                StockLine(variant.stock, StoreLogic.variantLabel(variant.size, variant.color))
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
                     Text(stringResource(R.string.f6_quantity), style = MaterialTheme.typography.titleMedium, color = Arena.colors.ink)
                     QuantityStepper(
@@ -198,6 +212,13 @@ private fun ProductDetailContent(
                         onChange = onQuantity,
                         decreaseCd = stringResource(R.string.f6_decrease_qty),
                         increaseCd = stringResource(R.string.f6_increase_qty),
+                    )
+                }
+                if (product.variants.any { it.stock <= 0 }) {
+                    Text(
+                        stringResource(R.string.storestates_sold_out_hint),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Arena.colors.inkSoft,
                     )
                 }
             }
@@ -218,21 +239,29 @@ private fun ProductDetailContent(
 }
 
 @Composable
-private fun StockLine(stock: Int) {
-    val text = when (val t = StoreLogic.stockText(stock)) {
-        is StockText.InStock -> stringResource(R.string.f6_in_stock)
-        is StockText.OnlyLeft -> stringResource(R.string.f6_only_left, t.n)
-        is StockText.SoldOut -> stringResource(R.string.f6_sold_out)
-    }
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-        val low = StoreLogic.stockText(stock) !is StockText.InStock
-        Icon(
-            if (low) Icons.Default.Info else Icons.Default.Check,
-            contentDescription = null,
-            modifier = Modifier.size(18.dp),
-            tint = if (low) Arena.colors.warnFg else Arena.colors.successFg,
-        )
-        Text(text, style = MaterialTheme.typography.bodyLarge, color = if (low) Arena.colors.warnFg else Arena.colors.successFg)
+private fun StockLine(stock: Int, variantLabel: String) {
+    when (val t = StoreLogic.stockText(stock)) {
+        is StockText.OnlyLeft ->
+            StatusChip(
+                stringResource(R.string.storestates_only_left_in, t.n, variantLabel),
+                Icons.Default.Info,
+                tone = ChipTone.Warning,
+            )
+        else -> {
+            val text = when (t) {
+                is StockText.SoldOut -> stringResource(R.string.f6_sold_out)
+                else -> stringResource(R.string.f6_in_stock)
+            }
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                Icon(
+                    Icons.Default.Check,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = Arena.colors.successFg,
+                )
+                Text(text, style = MaterialTheme.typography.bodyLarge, color = Arena.colors.successFg)
+            }
+        }
     }
 }
 
@@ -240,22 +269,48 @@ private fun StockLine(stock: Int) {
 private fun VariantChip(v: VariantDto, selected: Boolean, showPrice: Boolean, onClick: () -> Unit) {
     val label = StoreLogic.variantLabel(v.size, v.color)
     val soldOut = v.stock <= 0
-    val text = when {
-        soldOut -> stringResource(R.string.f6_variant_sold_out, label)
-        showPrice -> stringResource(R.string.f6_variant_with_price, label, formatPkr(v.priceMinor))
-        else -> label
+    val text = if (showPrice && !soldOut) stringResource(R.string.f6_variant_with_price, label, formatPkr(v.priceMinor)) else label
+    val cd = when {
+        soldOut -> stringResource(R.string.storestates_variant_sold_out_cd, label)
+        selected -> stringResource(R.string.f6_selected_cd, text)
+        else -> text
     }
-    val cd = if (selected) stringResource(R.string.f6_selected_cd, text) else text
-    FilterPill(
-        text = text,
-        selected = selected,
-        onClick = { if (!soldOut) onClick() },
+    val c = Arena.colors
+    val bg = when {
+        soldOut -> Color(0xFFECEEF8)
+        selected -> c.brand
+        else -> Color.White
+    }
+    val fg = when {
+        soldOut -> Color(0xFF6C7599)
+        selected -> Color.White
+        else -> c.brand
+    }
+    val borderColor = if (soldOut) Color(0xFFC9CFEA) else c.brand
+    Surface(
+        shape = RoundedCornerShape(26.dp),
+        color = bg,
+        border = BorderStroke(2.dp, borderColor),
         modifier = Modifier
-            .heightIn(min = 48.dp)
-            .alpha(if (soldOut) 0.5f else 1f)
-            .semantics {
-                contentDescription = cd
-                if (soldOut) disabled()
-            },
-    )
+            .heightIn(min = 52.dp)
+            .widthIn(min = 64.dp)
+            .selectable(
+                selected = selected,
+                enabled = !soldOut,
+                role = Role.RadioButton,
+                onClick = onClick,
+            )
+            .semantics { contentDescription = cd },
+    ) {
+        Box(Modifier.padding(horizontal = 18.dp, vertical = 8.dp), contentAlignment = Alignment.Center) {
+            Text(
+                text,
+                color = fg,
+                fontFamily = Montserrat,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                textDecoration = if (soldOut) TextDecoration.LineThrough else TextDecoration.None,
+            )
+        }
+    }
 }

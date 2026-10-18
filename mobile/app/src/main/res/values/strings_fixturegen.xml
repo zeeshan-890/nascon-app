@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Steps -->
+    <string name="fg_step1">Step 1 of 3 · Choose a format</string>
+    <string name="fg_step2_rr">Step 2 of 3 · Options</string>
+    <string name="fg_step2_swiss">Step 2 of 3 · Options</string>
+    <string name="fg_step2_single">Step 2 of 3 · Options</string>
+    <string name="fg_step2_double">Step 2 of 3 · Options</string>
+    <string name="fg_step2_hybrid">Groups finished · pick who goes through</string>
+    <string name="fg_step3_preview">Step 3 of 3 · %1$d matches · %2$d rounds</string>
+
+    <!-- Common -->
+    <string name="fg_back">Back</string>
+    <string name="fg_next">Next</string>
+    <string name="fg_done">Done</string>
+    <string name="fg_add">Add</string>
+    <string name="fg_cancel">Cancel</string>
+    <string name="fg_loading_teams">Loading teams</string>
+    <string name="fg_no_teams_title">No teams yet</string>
+    <string name="fg_no_teams_message">This league has no teams to schedule. Add teams first, then come back.</string>
+    <string name="fg_denied_title">Not available for your account</string>
+    <string name="fg_denied_message">Only the league organizer or an administrator can generate fixtures.</string>
+    <string name="fg_nothing_title">Nothing to show yet</string>
+    <string name="fg_nothing_message">Choose a format and options first, then generate the fixtures.</string>
+    <string name="fg_updating">Updating the bracket</string>
+
+    <!-- Format picker -->
+    <string name="fg_fmt_rr">Round robin</string>
+    <string name="fg_fmt_rr_desc">Every team plays every other team. Single or double.</string>
+    <string name="fg_fmt_swiss">Swiss</string>
+    <string name="fg_fmt_swiss_desc">Fixed rounds, teams with similar scores meet each round.</string>
+    <string name="fg_fmt_single">Single elimination</string>
+    <string name="fg_fmt_single_desc">Lose once and you are out. Seeded bracket.</string>
+    <string name="fg_fmt_double">Double elimination</string>
+    <string name="fg_fmt_double_desc">Winners and losers brackets with a grand final.</string>
+    <string name="fg_fmt_hybrid">Hybrid</string>
+    <string name="fg_fmt_hybrid_desc">Group stage first, then a knockout from the standings.</string>
+
+    <!-- Teams -->
+    <string name="fg_teams">Teams</string>
+    <string name="fg_teams_edit">Edit</string>
+    <plurals name="fg_teams_selected">
+        <item quantity="one">%d selected</item>
+        <item quantity="other">%d selected</item>
+    </plurals>
+    <string name="fg_pick_teams_title">Choose teams</string>
+    <string name="fg_select_all">Select all</string>
+    <string name="fg_select_none">Clear</string>
+    <string name="fg_decrease">Decrease %1$s</string>
+    <string name="fg_increase">Increase %1$s</string>
+
+    <!-- Schedule -->
+    <string name="fg_start_date">Start date</string>
+    <string name="fg_date_hint">2026-10-24</string>
+    <string name="fg_match_days">Match days</string>
+
+    <!-- Round robin -->
+    <string name="fg_double_rr">Double round robin</string>
+    <string name="fg_double_rr_desc">Home and away legs</string>
+    <string name="fg_withdrawals">Withdrawals</string>
+    <string name="fg_withdrawals_desc">Optional. Teams that leave part-way through the season.</string>
+    <string name="fg_add_withdrawal">Add a withdrawal</string>
+    <string name="fg_after_round">After round</string>
+    <string name="fg_withdraws_after">%1$s leaves after round %2$d</string>
+    <string name="fg_remove_withdrawal">Remove withdrawal of %1$s</string>
+    <string name="fg_policy">What happens to their matches</string>
+    <string name="fg_policy_forfeit">Forfeit the rest</string>
+    <string name="fg_policy_void">Void all</string>
+    <string name="fg_policy_forfeit_desc">Matches after they leave are awarded to the opponent. Earlier matches stay.</string>
+    <string name="fg_policy_void_desc">All of their matches are cancelled, including those already planned.</string>
+    <string name="fg_rr_info">Home and away is balanced automatically. Teams alternate venues.</string>
+    <string name="fg_preview_fixtures">Preview fixtures</string>
+
+    <!-- Swiss -->
+    <string name="fg_swiss_rounds">Number of rounds</string>
+    <string name="fg_swiss_first_round">The first round pairs teams by seed order: the top half meets the bottom half.</string>
+    <string name="fg_swiss_info">With an odd number of teams, one team gets a bye each round. Teams do not meet twice.</string>
+    <string name="fg_generate_round1">Generate round 1</string>
+    <string name="fg_generate_round_n">Generate round %1$d</string>
+    <string name="fg_all_rounds">All rounds generated</string>
+    <string name="fg_swiss_subtitle">%1$d teams · round %2$d of %3$d</string>
+    <string name="fg_swiss_hint">Pairings by score. Teams do not meet twice. Record each result to unlock the next round.</string>
+    <string name="fg_round_short">R%1$d</string>
+    <string name="fg_result_home">%1$s won</string>
+    <string name="fg_result_away">%1$s won</string>
+    <string name="fg_result_draw">Draw</string>
+    <string name="fg_no_result">No result yet</string>
+    <string name="fg_gets_bye">%1$s gets a bye</string>
+    <string name="fg_bye_point">Bye · 1 point</string>
+    <string name="fg_standings_before">Standings before this round</string>
+    <string name="fg_score_buchholz">%1$s pts · tiebreak %2$s</string>
+    <string name="fg_save_round">Save round %1$d</string>
+
+    <!-- Knockouts -->
+    <string name="fg_seed_order">Seeding order</string>
+    <string name="fg_seed_order_desc">Use the arrows to change a team\'s seed. Seed 1 is the strongest.</string>
+    <string name="fg_bye">Bye</string>
+    <string name="fg_vs_seed">vs %1$d</string>
+    <string name="fg_move_up">Move %1$s up</string>
+    <string name="fg_move_down">Move %1$s down</string>
+    <string name="fg_pad_info">%1$d teams: the bracket is padded to %2$d slots. Seeds %3$s get a bye in round 1.</string>
+    <string name="fg_third_place">Third place match</string>
+    <string name="fg_third_place_desc">Include a match between the two losing semi-finalists</string>
+    <string name="fg_third_place_caption">Third place</string>
+    <string name="fg_preview_bracket">Preview bracket</string>
+    <string name="fg_double_info">Winners bracket, losers bracket and a grand final. A team must lose twice to be out.</string>
+    <string name="fg_gf_reset">Grand final reset</string>
+    <string name="fg_gf_reset_desc">If the losers-bracket champion wins the first final, a second final is played.</string>
+    <string name="fg_bracket_subtitle_single">Single elimination · %1$d teams</string>
+    <string name="fg_bracket_subtitle_double">Double elimination · %1$d teams</string>
+    <string name="fg_bracket_hint">Swipe sideways to see every round. Tap a team to move it forward; tap again to undo.</string>
+    <string name="fg_reset_results">Clear picks</string>
+    <string name="fg_advance_action">Advance %1$s</string>
+    <string name="fg_advances">Advances</string>
+    <string name="fg_tbd">To be decided</string>
+    <string name="fg_winner_of">Winner of %1$s</string>
+    <string name="fg_loser_of">Loser of %1$s</string>
+    <string name="fg_final">Final</string>
+    <string name="fg_semi">Semi-finals</string>
+    <string name="fg_quarter">Quarter-finals</string>
+    <string name="fg_round_n">Round %1$d</string>
+    <string name="fg_tab_winners">Winners</string>
+    <string name="fg_tab_losers">Losers</string>
+    <string name="fg_tab_grand">Grand final</string>
+    <string name="fg_winners_round">Winners round %1$d</string>
+    <string name="fg_losers_round">Losers round %1$d</string>
+    <string name="fg_gf1">Grand final</string>
+    <string name="fg_gf2">Grand final reset</string>
+    <string name="fg_reset_if_needed">Only played if needed</string>
+    <string name="fg_champion">Champion: %1$s</string>
+
+    <!-- Hybrid -->
+    <string name="fg_hybrid_table">League table</string>
+    <string name="fg_advancing">Teams advancing</string>
+    <string name="fg_hybrid_info">The bracket is seeded from the standings: the best team meets the lowest seed, and so on.</string>
+    <string name="fg_create_bracket">Create knockout bracket</string>
+    <plurals name="fg_points">
+        <item quantity="one">%d point</item>
+        <item quantity="other">%d points</item>
+    </plurals>
+
+    <!-- Preview -->
+    <string name="fg_round_date">Round %1$d · %2$s</string>
+    <string name="fg_match_vs">%1$s vs %2$s</string>
+    <string name="fg_byes">Bye: %1$s</string>
+    <string name="fg_forfeit">Forfeit · %1$s awarded</string>
+    <string name="fg_voided">Cancelled</string>
+    <string name="fg_no_conflicts">No conflicts found. Home and away is balanced.</string>
+    <string name="fg_conflicts">Some teams play twice in a round or have uneven home and away matches.</string>
+    <plurals name="fg_save_matches">
+        <item quantity="one">Save %d match</item>
+        <item quantity="other">Save %d matches</item>
+    </plurals>
+    <plurals name="fg_saved">
+        <item quantity="one">%d match saved to the league.</item>
+        <item quantity="other">%d matches saved to the league.</item>
+    </plurals>
+
+    <!-- Errors -->
+    <string name="fg_err_date">Enter the start date as year-month-day, for example 2026-10-24.</string>
+    <string name="fg_err_matchdays">Pick at least one match day.</string>
+    <string name="fg_err_teams">This format needs between %1$d and %2$d teams.</string>
+    <string name="fg_err_invalid">Some options are not valid. Check them and try again.</string>
+    <string name="fg_err_no_pairing">No valid pairing exists for this round. Change an earlier result or the number of rounds.</string>
+</resources>

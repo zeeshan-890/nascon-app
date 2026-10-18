@@ -14,7 +14,7 @@ class HomeCardsTest {
         homeCards(Session(User("u", "a@b.c", role, clubId = clubId))).map { it.title }
 
     @Test fun superAdmin() = assertEquals(
-        listOf("Leagues & Standings", "Fixtures", "Clubs", "Store", "Admin overview"),
+        listOf("Leagues & Standings", "Fixtures", "Clubs", "Store", "Manage leagues", "Admin overview"),
         titles(Role.SUPER_ADMIN),
     )
 

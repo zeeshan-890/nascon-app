@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Entry on match detail -->
+    <string name="mo_manage_match">Manage match</string>
+
+    <!-- Common -->
+    <string name="mo_needs_internet">This needs an internet connection</string>
+    <string name="mo_loading">Loading match</string>
+    <string name="mo_forbidden_title">Not allowed</string>
+    <string name="mo_forbidden_message">Only the league organizer or an administrator can manage this match.</string>
+    <string name="mo_gone_title">Match not found</string>
+    <string name="mo_gone_message">This match no longer exists.</string>
+    <string name="mo_back">Go back</string>
+    <string name="mo_unknown_match">This match</string>
+    <string name="mo_header_when_venue">%1$s · %2$s</string>
+
+    <!-- Status labels -->
+    <string name="mo_status_current">Status: %1$s</string>
+    <string name="mo_status_upcoming">Upcoming</string>
+    <string name="mo_status_in_progress">Live</string>
+    <string name="mo_status_completed">Completed</string>
+    <string name="mo_status_postponed">Postponed</string>
+    <string name="mo_status_abandoned">Abandoned</string>
+    <string name="mo_status_cancelled">Cancelled</string>
+    <string name="mo_status_unknown">Unknown</string>
+
+    <!-- F19 admin -->
+    <string name="mo_change_status">Change status</string>
+    <string name="mo_action_in_progress">Start match</string>
+    <string name="mo_action_postponed">Postpone</string>
+    <string name="mo_action_cancelled">Cancel match</string>
+    <string name="mo_action_completed">Mark completed</string>
+    <string name="mo_action_abandoned">Abandon</string>
+    <string name="mo_action_upcoming">Move back to upcoming</string>
+    <string name="mo_needs_live">Needs live match</string>
+    <string name="mo_match_final">Match is final</string>
+    <string name="mo_not_now">Not available now</string>
+    <string name="mo_reschedule">Reschedule</string>
+    <string name="mo_pins_row">Pinned products</string>
+    <string name="mo_rules_note">Only moves allowed by the match rules are active. Completed, abandoned and cancelled are final.</string>
+    <string name="mo_other_actions">More</string>
+    <string name="mo_status_changed">Match status updated.</string>
+    <string name="mo_open_hint">Opens the next step</string>
+
+    <!-- F20 confirm -->
+    <string name="mo_keep">Keep as is</string>
+    <string name="mo_confirm_in_progress_title">Start this match?</string>
+    <string name="mo_confirm_in_progress_msg">The match goes live and scoring opens. Fans will see it as live.</string>
+    <string name="mo_confirm_in_progress_btn">Start</string>
+    <string name="mo_confirm_completed_title">Mark as completed?</string>
+    <string name="mo_confirm_completed_msg">The match ends and the result becomes final. Standings are updated.</string>
+    <string name="mo_confirm_completed_btn">Complete</string>
+    <string name="mo_confirm_postponed_title">Postpone this match?</string>
+    <string name="mo_confirm_postponed_msg">Fans will see it as postponed. In a bracket, later matches fed by this one are cleared until it is played.</string>
+    <string name="mo_confirm_postponed_btn">Postpone</string>
+    <string name="mo_confirm_abandoned_title">Abandon this match?</string>
+    <string name="mo_confirm_abandoned_msg">The match stops and can\'t be restarted. This can\'t be undone.</string>
+    <string name="mo_confirm_abandoned_btn">Abandon</string>
+    <string name="mo_confirm_cancelled_title">Cancel this match?</string>
+    <string name="mo_confirm_cancelled_msg">Fans will see it as cancelled. This can\'t be undone.</string>
+    <string name="mo_confirm_cancelled_btn">Cancel match</string>
+    <string name="mo_confirm_upcoming_title">Move back to upcoming?</string>
+    <string name="mo_confirm_upcoming_msg">The match returns to the fixtures as upcoming. You can set a new time afterwards.</string>
+    <string name="mo_confirm_upcoming_btn">Move back</string>
+
+    <!-- F21 reschedule -->
+    <string name="mo_resched_now">Now: %1$s</string>
+    <string name="mo_resched_now_venue">Now: %1$s · %2$s</string>
+    <string name="mo_resched_no_time">No time set yet</string>
+    <string name="mo_new_date">New date</string>
+    <string name="mo_new_time">New time</string>
+    <string name="mo_venue">Venue</string>
+    <string name="mo_venue_note">The match stays at this venue.</string>
+    <string name="mo_resched_note">The app checks the venue, both teams, their players and rest time before saving.</string>
+    <string name="mo_check_save">Check and save</string>
+    <string name="mo_cancel">Cancel</string>
+    <string name="mo_pick_date">Pick a date</string>
+    <string name="mo_pick_time">Pick a time</string>
+    <string name="mo_ok">OK</string>
+    <string name="mo_schedule_saved">New time saved.</string>
+    <string name="mo_field_value_cd">%1$s: %2$s. Double tap to change.</string>
+
+    <!-- F22 conflicts -->
+    <string name="mo_conflict_intro">This time can\'t be saved. Fix the issues below or pick another slot.</string>
+    <string name="mo_pick_another">Pick another time</string>
+    <string name="mo_a_team">A team</string>
+    <string name="mo_the_venue">The venue</string>
+    <string name="mo_c_venue_title">Venue already booked</string>
+    <string name="mo_c_venue_msg">%1$s has %2$s at the same time.</string>
+    <string name="mo_c_venue_msg_plain">%1$s is already booked at that time.</string>
+    <string name="mo_c_team_title">Team already playing</string>
+    <string name="mo_c_team_msg">%1$s play another match at that time: %2$s.</string>
+    <string name="mo_c_team_msg_plain">%1$s already play another match at that time.</string>
+    <string name="mo_c_player_title">Player in two matches</string>
+    <plurals name="mo_c_player_msg">
+        <item quantity="one">%1$d player is in both squads at the same time.</item>
+        <item quantity="other">%1$d players are in both squads at the same time.</item>
+    </plurals>
+    <string name="mo_c_player_msg_plain">A player is in both squads at the same time.</string>
+    <string name="mo_c_rest_title">Not enough rest</string>
+    <string name="mo_c_rest_msg">%1$s need more time since their last match.</string>
+    <string name="mo_c_rest_msg_plain">A team needs more time since its last match.</string>
+    <string name="mo_c_closed_title">Venue closed</string>
+    <string name="mo_c_closed_msg">The venue is closed at that time.</string>
+    <string name="mo_c_other_title">Time clashes</string>
+    <string name="mo_c_other_msg">This time clashes with another match.</string>
+
+    <!-- E22 pins -->
+    <string name="mo_pins_intro">Fans watching this match will see the pinned product with a Buy button.</string>
+    <string name="mo_pin_product">Pin product</string>
+    <string name="mo_unpin">Unpin</string>
+    <string name="mo_unpin_cd">Unpin %1$s</string>
+    <string name="mo_pinned">Pinned</string>
+    <string name="mo_row_selected">%1$s, selected</string>
+    <string name="mo_row_not_selected">%1$s, not selected</string>
+    <string name="mo_from_price">From %1$s</string>
+    <string name="mo_product_unnamed">Product</string>
+    <string name="mo_no_products_title">No products yet</string>
+    <string name="mo_no_products_message">Add products to the store first, then pin one here.</string>
+    <string name="mo_pinned_done">Product pinned.</string>
+    <string name="mo_unpinned_done">Product unpinned.</string>
+</resources>

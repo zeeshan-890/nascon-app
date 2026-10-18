@@ -8,6 +8,8 @@ sealed interface ApiError {
         val code: String,
         val message: String,
         val details: JsonObject? = null,
+        /** Seconds from the Retry-After header or the error body, when the server sent one. */
+        val retryAfterSeconds: Int? = null,
     ) : ApiError
 
     data object NoConnection : ApiError

@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -156,11 +157,9 @@ private fun CenteredState(
     content: @Composable () -> Unit,
 ) {
     val c = Arena.colors
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 40.dp, vertical = Spacing.lg),
+    BoundedScrollColumn(
+        modifier = modifier,
+        contentPadding = PaddingValues(horizontal = 40.dp, vertical = Spacing.lg),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
     ) {
@@ -199,12 +198,9 @@ fun LoadingState(message: String? = null, modifier: Modifier = Modifier) {
         animationSpec = infiniteRepeatable(tween(900), RepeatMode.Reverse),
         label = "skeletonAlpha",
     )
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = Spacing.md)
-            .semantics { contentDescription = desc; liveRegion = LiveRegionMode.Polite },
+    BoundedScrollColumn(
+        modifier = modifier.semantics { contentDescription = desc; liveRegion = LiveRegionMode.Polite },
+        contentPadding = PaddingValues(horizontal = 24.dp, vertical = Spacing.md),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         repeat(4) {

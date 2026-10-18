@@ -34,6 +34,19 @@ object ReceiptActions {
         false
     }
 
+    /** Opens the receipt PDF in a viewer app. Returns false when nothing can open it. */
+    fun openPdf(context: Context, file: File): Boolean = try {
+        val uri = FileProvider.getUriForFile(context, authority(context), file)
+        val view = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "application/pdf")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(view)
+        true
+    } catch (_: Exception) {
+        false
+    }
+
     /** Copies the receipt into the public Downloads folder through MediaStore (API 29+). */
     suspend fun saveToDownloads(context: Context, file: File, orderId: String): DownloadResult =
         withContext(Dispatchers.IO) {

@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.Surface
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -90,12 +91,34 @@ fun ReceiptScreen(orderId: String, modifier: Modifier = Modifier) {
     val failMsg = stringResource(R.string.f6r_download_failed)
     var saving by remember { mutableStateOf(false) }
 
+    val savedOpenMsg = stringResource(R.string.storestates_receipt_saved)
+    val openLabel = stringResource(R.string.storestates_open)
+    val openFailed = stringResource(R.string.storestates_open_failed)
+
     Column(modifier.fillMaxSize()) {
-        ReceiptHeader(orderId, entry)
         val ready = state as? ReceiptUiState.Ready
+        // The PDF (or its loading / offline / error state) fills the content, as in the mockup.
+        Box(Modifier.weight(1f).fillMaxWidth()) {
+            when (val s = state) {
+                ReceiptUiState.Loading -> LoadingBox(stringResource(R.string.f6r_loading))
+                ReceiptUiState.NotSavedOffline -> EmptyState(
+                    icon = Icons.Default.WifiOff,
+                    title = stringResource(R.string.f6r_offline_title),
+                    message = stringResource(R.string.f6r_offline_message),
+                    actionLabel = stringResource(R.string.f6r_try_again),
+                    onAction = vm::load,
+                )
+                is ReceiptUiState.Failed -> ErrorState(
+                    message = s.message,
+                    onRetry = if (s.replaceLocal) vm::downloadAgain else vm::load,
+                )
+                ReceiptUiState.Corrupt -> CorruptState(onDownloadAgain = vm::downloadAgain)
+                is ReceiptUiState.Ready -> PdfViewer(s.pages, Modifier.fillMaxSize())
+            }
+        }
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = Spacing.md),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+            Modifier.fillMaxWidth().padding(horizontal = Spacing.md, vertical = Spacing.md),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             SecondaryButton(
                 text = stringResource(R.string.f6r_share),
@@ -108,10 +131,11 @@ fun ReceiptScreen(orderId: String, modifier: Modifier = Modifier) {
                     }
                 },
             )
-            SecondaryButton(
+            PrimaryButton(
                 text = stringResource(R.string.f6r_download),
                 icon = Icons.Default.Download,
                 enabled = ready != null && !saving,
+                loading = saving,
                 modifier = Modifier.weight(1f),
                 onClick = {
                     if (ready != null) {
@@ -119,31 +143,23 @@ fun ReceiptScreen(orderId: String, modifier: Modifier = Modifier) {
                         scope.launch {
                             val r = ReceiptActions.saveToDownloads(context, ready.file, orderId)
                             saving = false
-                            snackbar.showSnackbar(
-                                when (r) {
-                                    DownloadResult.Saved -> savedMsg
-                                    DownloadResult.StorageFull -> fullMsg
-                                    DownloadResult.Failed -> failMsg
-                                },
-                            )
+                            snackbar.currentSnackbarData?.dismiss()
+                            when (r) {
+                                DownloadResult.Saved -> {
+                                    val res = snackbar.showSnackbar(savedOpenMsg, actionLabel = openLabel)
+                                    if (res == SnackbarResult.ActionPerformed &&
+                                        !ReceiptActions.openPdf(context, ready.file)
+                                    ) {
+                                        snackbar.showSnackbar(openFailed)
+                                    }
+                                }
+                                DownloadResult.StorageFull -> snackbar.showSnackbar(fullMsg)
+                                DownloadResult.Failed -> snackbar.showSnackbar(failMsg)
+                            }
                         }
                     }
                 },
             )
-        }
-        Spacer(Modifier.size(Spacing.sm))
-        when (val s = state) {
-            ReceiptUiState.Loading -> LoadingBox(stringResource(R.string.f6r_loading))
-            ReceiptUiState.NotSavedOffline -> EmptyState(
-                icon = Icons.Default.WifiOff,
-                title = stringResource(R.string.f6r_offline_title),
-                message = stringResource(R.string.f6r_offline_message),
-                actionLabel = stringResource(R.string.f6r_try_again),
-                onAction = vm::load,
-            )
-            is ReceiptUiState.Failed -> ErrorState(message = s.message, onRetry = vm::load)
-            ReceiptUiState.Corrupt -> CorruptState(onDownloadAgain = vm::downloadAgain)
-            is ReceiptUiState.Ready -> PdfViewer(s.pages, Modifier.weight(1f))
         }
     }
 }

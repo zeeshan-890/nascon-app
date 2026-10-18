@@ -13,6 +13,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import com.nascon.league.domain.model.Role
 import com.nascon.league.domain.model.Session
 import com.nascon.league.ui.navigation.Destinations
+import com.nascon.league.ui.navigation.NewRoutes
+import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.Receipt
 
 data class HomeCard(
     val id: String,
@@ -32,17 +37,21 @@ fun homeCards(session: Session): List<HomeCard> {
             fixtures,
             HomeCard("clubs", "Clubs", "Browse all clubs", Icons.Default.Groups, Destinations.CLUBS),
             store,
+            HomeCard("leagues", "Manage leagues", "Create leagues and approve organizers' requests", Icons.Default.EmojiEvents, NewRoutes.LEAGUE_ADMIN_LIST),
             HomeCard("admin", "Admin overview", "Leagues, users and system status", Icons.Default.AdminPanelSettings, Destinations.ADMIN),
         )
         Role.LEAGUE_ORGANIZER -> listOf(
             HomeCard("score", "Score a live match", "Pick a match and record goals", Icons.Default.Stadium, Destinations.fixtures("live")),
             HomeCard("standings", "My league standings", "Current table for your league", Icons.Default.Leaderboard, Destinations.STANDINGS),
             fixtures,
+            HomeCard("leagues", "Manage leagues", "Seasons, divisions and fixtures", Icons.Default.EmojiEvents, NewRoutes.LEAGUE_ADMIN_LIST),
             store,
         )
         Role.CLUB_MANAGER -> listOf(
             HomeCard("roster", "Manage roster", "Add or edit your players", Icons.Default.Edit, Destinations.roster(clubId)),
             HomeCard("club", "My club profile", "Club details and squad", Icons.Default.Groups, Destinations.CLUBS),
+            HomeCard("club_products", "Club products", "Items, prices and stock", Icons.Default.Inventory2, NewRoutes.clubProducts(clubId)),
+            HomeCard("club_orders", "Club orders", "Orders, status and refunds", Icons.Default.Receipt, NewRoutes.clubOrders(clubId)),
             fixtures,
             store,
         )
@@ -50,6 +59,7 @@ fun homeCards(session: Session): List<HomeCard> {
             HomeCard("club", "My club", "Your club and teammates", Icons.Default.Person, Destinations.CLUBS),
             HomeCard("fixtures", "My fixtures", "Your upcoming matches", Icons.Default.SportsSoccer, Destinations.FIXTURES),
             HomeCard("standings", "Standings", "League tables", Icons.Default.Leaderboard, Destinations.STANDINGS),
+            HomeCard("my_stats", "My stats", "Your matches and scoring", Icons.Default.BarChart, NewRoutes.MY_STATS),
             store,
         )
         Role.VIEWER -> listOf(

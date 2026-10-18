@@ -11,6 +11,7 @@ import com.nascon.league.data.api.dto.ClubDto
 import com.nascon.league.data.api.dto.ClubSummaryDto
 import com.nascon.league.data.repo.Cached
 import com.nascon.league.di.AppContainer
+import com.nascon.league.ui.failure.RateLimitRetry
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -36,6 +37,7 @@ class ClubProfileViewModel(
 ) : ViewModel() {
     private val refreshInfo = MutableStateFlow(ClubRefresh(refreshing = true))
     private var inFlight = false
+    private val rateLimit = RateLimitRetry(viewModelScope)
 
     /** Not-yet-decoded cache emits null both for "nothing saved" and "still reading". */
     private val cache = MutableStateFlow(false)
@@ -71,7 +73,9 @@ class ClubProfileViewModel(
         viewModelScope.launch {
             val r = container.clubRepository.refresh(clubId)
             inFlight = false
-            refreshInfo.value = ClubRefresh(false, (r as? NetworkResult.Failure)?.error)
+            val err = (r as? NetworkResult.Failure)?.error
+            refreshInfo.value = ClubRefresh(false, err)
+            rateLimit.consider("club", err) { refresh() }
         }
     }
 
@@ -93,6 +97,7 @@ data class ClubsListState(
 class ClubsListViewModel(private val container: AppContainer) : ViewModel() {
     private val refreshInfo = MutableStateFlow(ClubRefresh(refreshing = true))
     private var inFlight = false
+    private val rateLimit = RateLimitRetry(viewModelScope)
     private val checked = MutableStateFlow(false)
     val state: StateFlow<ClubsListState> = combine(
         container.clubsListRepository.observe().map { it.also { checked.value = true } },
@@ -125,7 +130,9 @@ class ClubsListViewModel(private val container: AppContainer) : ViewModel() {
         viewModelScope.launch {
             val r = container.clubsListRepository.refresh()
             inFlight = false
-            refreshInfo.value = ClubRefresh(false, (r as? NetworkResult.Failure)?.error)
+            val err = (r as? NetworkResult.Failure)?.error
+            refreshInfo.value = ClubRefresh(false, err)
+            rateLimit.consider("clubs", err) { refresh() }
         }
     }
 

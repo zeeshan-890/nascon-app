@@ -4,7 +4,16 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import com.nascon.league.core.error.ErrorMapper
+import com.nascon.league.ui.components.PrimaryButton
+import com.nascon.league.ui.match.asString
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.foundation.rememberScrollState
@@ -53,21 +62,86 @@ fun ScoringHost(vm: ScoringViewModel) {
         }
     }
 
+    val home = s.homeName ?: stringResource(R.string.f3_home_team)
+    val away = s.awayName ?: stringResource(R.string.f3_away_team)
     if (s.showEndConfirm) {
         ConfirmDialog(
-            title = stringResource(R.string.f8_end_title),
-            message = stringResource(R.string.f8_end_message),
-            confirmLabel = stringResource(R.string.f8_end_confirm),
+            title = stringResource(R.string.scoringplus_end_title),
+            message = stringResource(R.string.scoringplus_end_message, home, s.homeScore, s.awayScore, away),
+            confirmLabel = stringResource(R.string.scoringplus_end_confirm),
             onConfirm = vm::confirmEnd,
             onDismiss = vm::dismissEnd,
-            destructive = true,
-            dismissLabel = stringResource(R.string.f8_cancel),
+            destructive = false,
+            dismissLabel = stringResource(R.string.scoringplus_end_keep),
+        )
+    }
+    val m = s.match
+    val teams = if (m == null) emptyList() else listOf(TeamChoice(m.home.teamId, home), TeamChoice(m.away.teamId, away))
+    if (s.showTieBlocked) {
+        AlertDialog(
+            onDismissRequest = vm::dismissTieBlocked,
+            shape = RoundedCornerShape(24.dp),
+            containerColor = Color.White,
+            icon = {
+                Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = Arena.colors.liveFg, modifier = Modifier.size(32.dp))
+            },
+            title = {
+                Text(
+                    ErrorMapper.forCode("TIE_NOT_ALLOWED"),
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
+                    color = Arena.colors.liveFg,
+                    modifier = Modifier.semantics { heading() },
+                )
+            },
+            text = {
+                Text(
+                    stringResource(R.string.scoringplus_tie_message),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Arena.colors.ink,
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                )
+            },
+            confirmButton = {
+                PrimaryButton(
+                    text = stringResource(R.string.scoringplus_tie_record),
+                    onClick = vm::openTiebreakFromBlocked,
+                    modifier = Modifier.heightIn(min = 50.dp),
+                )
+            },
+            dismissButton = {
+                SecondaryButton(
+                    text = stringResource(R.string.scoringplus_tie_keep_playing),
+                    onClick = vm::dismissTieBlocked,
+                    modifier = Modifier.heightIn(min = 50.dp),
+                )
+            },
+        )
+    }
+    if (s.showTiebreak) {
+        TiebreakSheet(
+            teams = teams,
+            homeScore = s.homeScore,
+            awayScore = s.awayScore,
+            onConfirm = { vm.confirmTiebreak(it.teamId, it.name) },
+            onDismiss = vm::dismissTiebreak,
+        )
+    }
+    if (s.showDiscipline) {
+        DisciplineSheet(
+            teams = teams,
+            options = s.disciplineOptions,
+            onConfirm = { t, pts -> vm.confirmDiscipline(t.teamId, t.name, pts) },
+            onDismiss = vm::dismissDiscipline,
         )
     }
     val undoId = s.undoEventId
     if (undoId != null) {
+        val described = s.timeline.firstOrNull { it.key == "e-$undoId" }?.let { item ->
+            listOfNotNull(item.minute?.let { m -> m + "′" }, item.teamName, item.label.asString()).joinToString(" · ")
+        }
         UndoDialog(
             eventId = undoId,
+            description = described,
             error = s.reasonError,
             onReasonChange = vm::onReasonChange,
             onConfirm = vm::confirmUndo,
@@ -79,6 +153,7 @@ fun ScoringHost(vm: ScoringViewModel) {
 @Composable
 fun UndoDialog(
     eventId: String,
+    description: String? = null,
     error: ReasonError?,
     onReasonChange: (String) -> Unit,
     onConfirm: (String) -> Unit,
@@ -92,7 +167,7 @@ fun UndoDialog(
         containerColor = Color.White,
         title = {
             Text(
-                stringResource(R.string.f8_undo_title),
+                stringResource(R.string.scoringplus_undo_title),
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
                 color = a.ink,
             )
@@ -102,14 +177,17 @@ fun UndoDialog(
                 Modifier.verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(Spacing.sm),
             ) {
-                Text(stringResource(R.string.f8_undo_message), style = MaterialTheme.typography.bodyLarge, color = a.inkMid)
+                if (!description.isNullOrBlank()) {
+                    Text(description, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = a.ink)
+                }
+                Text(stringResource(R.string.scoringplus_undo_message), style = MaterialTheme.typography.bodyMedium, color = a.inkMid)
                 ArenaTextField(
                     value = reason,
                     onValueChange = {
                         reason = it
                         onReasonChange(it)
                     },
-                    label = stringResource(R.string.f8_reason_label),
+                    label = stringResource(R.string.scoringplus_reason_label),
                     isError = error != null,
                     errorText = when (error) {
                         ReasonError.EMPTY -> stringResource(R.string.f8_reason_empty)
@@ -128,12 +206,12 @@ fun UndoDialog(
                 colors = ButtonDefaults.buttonColors(containerColor = a.liveFg, contentColor = Color.White),
                 modifier = Modifier.heightIn(min = 50.dp),
             ) {
-                Text(stringResource(R.string.f8_undo_confirm), fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.scoringplus_undo_confirm), fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
             SecondaryButton(
-                text = stringResource(R.string.f8_cancel),
+                text = stringResource(R.string.scoringplus_undo_keep),
                 onClick = onDismiss,
                 modifier = Modifier.heightIn(min = 50.dp),
             )

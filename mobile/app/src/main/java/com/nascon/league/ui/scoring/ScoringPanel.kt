@@ -79,7 +79,7 @@ private fun ScoreControls(s: ScoringUiState, m: MatchDetailDto, vm: ScoringViewM
                 color = Arena.colors.ink,
                 modifier = Modifier.semantics { heading() },
             )
-            if (s.buttons.isEmpty() && s.disciplineOptions.isEmpty()) {
+            if (s.buttons.isEmpty() && !s.supportsDiscipline) {
                 Text(stringResource(R.string.f8_no_buttons), style = MaterialTheme.typography.bodyLarge)
             }
             if (landscape) {
@@ -90,6 +90,23 @@ private fun ScoreControls(s: ScoringUiState, m: MatchDetailDto, vm: ScoringViewM
             } else {
                 TeamControls(s, m.home.teamId, homeName, vm, Modifier.fillMaxWidth())
                 TeamControls(s, m.away.teamId, awayName, vm, Modifier.fillMaxWidth())
+            }
+            if (s.supportsDiscipline) {
+                val cd = stringResource(R.string.scoringplus_discipline_button_cd)
+                SecondaryButton(
+                    text = stringResource(R.string.scoringplus_discipline_button),
+                    onClick = vm::openDiscipline,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = ButtonMinHeight).semantics { contentDescription = cd },
+                )
+            }
+            if (s.tiebreakAvailable) {
+                val cd = stringResource(R.string.scoringplus_tiebreak_button_cd)
+                SecondaryButton(
+                    text = stringResource(R.string.scoringplus_tiebreak_button),
+                    onClick = vm::openTiebreak,
+                    icon = Icons.Default.EmojiEvents,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = ButtonMinHeight).semantics { contentDescription = cd },
+                )
             }
             SecondaryButton(
                 text = stringResource(R.string.f8_end_match),
@@ -135,29 +152,6 @@ private fun TeamControls(
                 text = text,
                 onClick = { vm.onScore(teamId, teamName, b) },
                 icon = Icons.Default.Add,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = ButtonMinHeight)
-                    .semantics { contentDescription = cd },
-            )
-        }
-        s.disciplineOptions.forEach { pts ->
-            val cd = stringResource(R.string.f8_discipline_button_cd, pts, teamName)
-            SecondaryButton(
-                text = stringResource(R.string.f8_discipline_button, pts),
-                onClick = { vm.onDiscipline(teamId, teamName, pts) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = ButtonMinHeight)
-                    .semantics { contentDescription = cd },
-            )
-        }
-        if (s.tiebreakAvailable) {
-            val cd = stringResource(R.string.f8_tiebreak_button_cd, teamName)
-            SecondaryButton(
-                text = stringResource(R.string.f8_tiebreak_button),
-                onClick = { vm.onTiebreak(teamId, teamName) },
-                icon = Icons.Default.EmojiEvents,
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = ButtonMinHeight)

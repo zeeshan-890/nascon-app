@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ordx_title">Club orders</string>
+    <string name="ordx_subtitle">%1$d orders</string>
+    <string name="ordx_status_pending">Pending</string>
+    <string name="ordx_empty_title">No orders yet</string>
+    <string name="ordx_empty_message">Orders for this club will appear here.</string>
+    <string name="ordx_retry">Try again</string>
+    <string name="ordx_row_meta">%1$s · %2$s</string>
+    <string name="ordx_row_items">%1$d items</string>
+    <string name="ordx_row_cd">Open order %1$s, %2$s, total %3$s, %4$s</string>
+    <string name="ordx_manage_title">Manage order</string>
+    <string name="ordx_action_paid">Mark paid</string>
+    <string name="ordx_action_packed">Mark packed</string>
+    <string name="ordx_action_shipped">Mark shipped</string>
+    <string name="ordx_action_delivered">Mark delivered</string>
+    <string name="ordx_action_cancelled">Cancel order</string>
+    <string name="ordx_action_refund">Refund order</string>
+    <string name="ordx_offline">Order changes need an internet connection. Reconnect to update this order.</string>
+    <string name="ordx_no_actions">No further changes are possible for this order.</string>
+    <string name="ordx_confirm_cancel_title">Cancel order %1$s?</string>
+    <string name="ordx_confirm_cancel_message">The order will be cancelled. Items that were paid for go back into stock.</string>
+    <string name="ordx_confirm_cancel_yes">Cancel order</string>
+    <string name="ordx_confirm_refund_title">Refund order %1$s?</string>
+    <string name="ordx_confirm_refund_message">%1$s will be returned and the items go back into stock.</string>
+    <string name="ordx_confirm_refund_message_nostock">%1$s will be returned to the customer.</string>
+    <string name="ordx_confirm_refund_yes">Refund</string>
+    <string name="ordx_keep">Keep order</string>
+    <string name="ordx_done_updated">Order updated.</string>
+    <string name="ordx_done_refunded">Order refunded.</string>
+    <string name="ordx_illegal">This order can no longer be changed that way. Refresh and try again.</string>
+    <string name="ordx_working">Updating order…</string>
+    <string name="ordx_back">Go back</string>
+</resources>

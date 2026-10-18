@@ -4,10 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import com.nascon.league.core.error.ErrorMapper
 import com.nascon.league.data.receipts.ReceiptEntry
 import com.nascon.league.data.receipts.ReceiptLoadResult
 import com.nascon.league.data.receipts.ReceiptStore
+import com.nascon.league.ui.failure.userMessage
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,7 +18,7 @@ import java.io.File
 sealed interface ReceiptUiState {
     data object Loading : ReceiptUiState
     data object NotSavedOffline : ReceiptUiState
-    data class Failed(val message: String) : ReceiptUiState
+    data class Failed(val message: String, val replaceLocal: Boolean = false) : ReceiptUiState
     data object Corrupt : ReceiptUiState
     data class Ready(val file: File, val pages: PdfPages) : ReceiptUiState
 }
@@ -48,14 +48,19 @@ class ReceiptViewModel(
         _state.value = ReceiptUiState.Loading
         job = viewModelScope.launch {
             _state.value = when (val result = store.ensureDownloaded(orderId)) {
-                is ReceiptLoadResult.Ready -> {
-                    val pages = PdfPages.open(result.file)
-                    if (pages == null) ReceiptUiState.Corrupt else ReceiptUiState.Ready(result.file, pages)
-                }
+                is ReceiptLoadResult.Ready -> openReady(result.file)
                 ReceiptLoadResult.NotSavedOffline -> ReceiptUiState.NotSavedOffline
-                is ReceiptLoadResult.Failed -> ReceiptUiState.Failed(ErrorMapper.message(result.error))
+                is ReceiptLoadResult.Failed -> ReceiptUiState.Failed(userMessage(result.error))
             }
         }
+    }
+
+    private suspend fun openReady(file: File): ReceiptUiState {
+        if (isErrorPayload(leadingText(file))) {
+            return ReceiptUiState.Failed(RECEIPT_NOT_OPENED, replaceLocal = true)
+        }
+        val pages = PdfPages.open(file)
+        return if (pages == null) ReceiptUiState.Corrupt else ReceiptUiState.Ready(file, pages)
     }
 
     /** Deletes the local copy and downloads it again. */
@@ -67,6 +72,16 @@ class ReceiptViewModel(
             store.delete(orderId)
             load()
         }
+    }
+
+    private fun leadingText(file: File): String = try {
+        file.inputStream().use { input ->
+            val buf = ByteArray(64)
+            val n = input.read(buf)
+            if (n <= 0) "" else buf.copyOf(n).toString(Charsets.UTF_8)
+        }
+    } catch (_: Exception) {
+        ""
     }
 
     private fun closePages() {

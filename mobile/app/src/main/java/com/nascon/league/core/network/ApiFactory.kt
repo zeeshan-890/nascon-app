@@ -23,9 +23,9 @@ class ApiFactory(
 
     private fun client(authenticated: Boolean, authenticator: TokenAuthenticator?): OkHttpClient {
         val builder = OkHttpClient.Builder()
-            .connectTimeout(5, TimeUnit.SECONDS)
-            .readTimeout(10, TimeUnit.SECONDS)
-            .writeTimeout(10, TimeUnit.SECONDS)
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(15, TimeUnit.SECONDS)
+            .writeTimeout(15, TimeUnit.SECONDS)
         if (authenticated) builder.addInterceptor(AuthInterceptor(tokenStore))
         else builder.addInterceptor(Interceptor { it.proceed(it.request().newBuilder().header("Accept", "application/json").build()) })
         if (authenticator != null) builder.authenticator(authenticator)
@@ -41,10 +41,23 @@ class ApiFactory(
     }
 
     private fun retrofit(baseUrl: String, client: OkHttpClient): LeagueApi =
+        buildRetrofit(baseUrl, client).create(LeagueApi::class.java)
+
+    private fun buildRetrofit(baseUrl: String, client: OkHttpClient): Retrofit =
         Retrofit.Builder()
             .baseUrl(baseUrl)
             .client(client)
             .addConverterFactory(AppJson.asConverterFactory("application/json".toMediaType()))
             .build()
-            .create(LeagueApi::class.java)
+
+    private val serviceCache = java.util.concurrent.ConcurrentHashMap<String, Any>()
+
+    /** Authenticated Retrofit service for any extra API interface (cached per interface and base URL). */
+    @Suppress("UNCHECKED_CAST")
+    fun <T : Any> createService(baseUrl: String, service: Class<T>): T =
+        serviceCache.getOrPut(service.name + "@" + baseUrl) {
+            val plainApi = retrofit(baseUrl, client(authenticated = false, authenticator = null))
+            val authenticator = TokenAuthenticator(tokenStore, plainApi, onSessionExpired)
+            buildRetrofit(baseUrl, client(authenticated = true, authenticator = authenticator)).create(service)
+        } as T
 }

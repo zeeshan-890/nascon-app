@@ -23,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.EventBusy
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.SyncAlt
@@ -49,7 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.nascon.league.R
-import com.nascon.league.core.error.ErrorMapper
+import com.nascon.league.ui.failure.userMessage
 import com.nascon.league.data.api.dto.ClubDto
 import com.nascon.league.data.api.dto.RosterPlayerDto
 import com.nascon.league.di.LocalAppContainer
@@ -80,7 +81,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 
 @Composable
-fun RosterScreen(clubId: String, modifier: Modifier = Modifier) {
+fun RosterScreen(clubId: String, modifier: Modifier = Modifier, onAddPlayer: (() -> Unit)? = null) {
     val container = LocalAppContainer.current
     val vm: RosterViewModel = viewModel(
         key = "roster-$clubId",
@@ -142,7 +143,7 @@ fun RosterScreen(clubId: String, modifier: Modifier = Modifier) {
                     onAction = { back?.onBackPressed() },
                 )
                 err.isConnectivity() -> NotSavedState(vm::refresh)
-                else -> ErrorState(ErrorMapper.message(err), vm::refresh)
+                else -> ErrorState(userMessage(err), vm::refresh)
             }
         } else {
             val canManage = RosterLogic.canManage(session, club.clubId)
@@ -159,6 +160,7 @@ fun RosterScreen(clubId: String, modifier: Modifier = Modifier) {
                     canManage = canManage,
                     pendingFor = pendingFor,
                     onPlayer = vm::openPlayer,
+                    onAddPlayer = if (canManage) onAddPlayer else null,
                 )
             }
             if (canManage) RosterOverlays(club, s.flow, vm)
@@ -200,6 +202,7 @@ private fun RosterOverlays(club: ClubDto, flow: RosterFlowState, vm: RosterViewM
         onSubmit = vm::requestConfirm,
         onBack = vm::backToActions,
         onDismiss = vm::dismiss,
+        rejection = flow.rejection,
     )
     if (flow.step == RosterStep.CONFIRM && canSubmit) {
         val info = RosterLogic.confirmation(form, player, club.squads)
@@ -252,12 +255,20 @@ private fun ActionSheet(
             Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = Spacing.md),
         ) {
             Text(
-                player.name,
+                listOf(player.name, player.position).filter { it.isNotBlank() }.joinToString(" · "),
                 style = MaterialTheme.typography.titleLarge,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(horizontal = Spacing.md).semantics { heading() },
             )
+            if (player.role.isNotBlank()) {
+                Text(
+                    player.role.replace('_', ' ').replaceFirstChar { it.uppercase() },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = Spacing.md),
+                )
+            }
             if (RosterLogic.showsOnLoanWarning(player)) {
                 Surface(
                     shape = RoundedCornerShape(14.dp),
@@ -282,6 +293,11 @@ private fun ActionSheet(
             ActionRow(Icons.Default.SwapHoriz, stringResource(R.string.f7_action_transfer)) { onPick(MoveType.TRANSFER) }
             ActionRow(Icons.Default.SyncAlt, stringResource(R.string.f7_action_loan)) { onPick(MoveType.LOAN) }
             ActionRow(Icons.Default.ExitToApp, stringResource(R.string.f7_action_release)) { onPick(MoveType.RELEASE) }
+            com.nascon.league.ui.components.SecondaryButton(
+                text = stringResource(R.string.rp_add_cancel),
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.md, vertical = Spacing.sm),
+            )
         }
     }
 }
@@ -315,8 +331,9 @@ private fun RosterList(
     canManage: Boolean,
     pendingFor: (String) -> Flow<Boolean>,
     onPlayer: (String) -> Unit,
+    onAddPlayer: (() -> Unit)? = null,
 ) {
-    val groups = remember(club.roster, club.squads) { RosterLogic.groupBySquad(club.roster, club.squads) }
+    val groups =remember(club.roster, club.squads) { RosterLogic.groupBySquad(club.roster, club.squads) }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = Spacing.xl),
@@ -342,6 +359,14 @@ private fun RosterList(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = Spacing.xs),
                 )
+                if (onAddPlayer != null) {
+                    com.nascon.league.ui.components.SecondaryButton(
+                        text = stringResource(R.string.rp_add_button),
+                        onClick = onAddPlayer,
+                        icon = Icons.Default.PersonAdd,
+                        modifier = Modifier.padding(top = Spacing.sm).fillMaxWidth(),
+                    )
+                }
             }
         }
         if (club.roster.isEmpty()) {

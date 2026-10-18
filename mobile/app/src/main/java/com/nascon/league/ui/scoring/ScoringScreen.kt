@@ -38,6 +38,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.nascon.league.R
@@ -116,7 +117,7 @@ fun ScoringScreen(matchId: String, modifier: Modifier = Modifier) {
                             )
                             Text(
                                 stringResource(R.string.ui_scoring_offline_note),
-                                style = MaterialTheme.typography.bodyLarge,
+                                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold),
                                 color = Arena.colors.warnFg,
                                 modifier = Modifier.padding(start = Spacing.sm),
                             )

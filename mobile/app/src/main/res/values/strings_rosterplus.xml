@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="rp_head_window">Transfer window closed</string>
+    <string name="rp_head_loan">Player is on loan</string>
+    <string name="rp_head_position">Not enough players in a position</string>
+    <string name="rp_head_full">Squad is full</string>
+    <string name="rp_next_window">Choose a date inside the transfer window and try again.</string>
+    <string name="rp_next_loan">You can move this player again once the loan has ended. Until then, transfers, new loans and releases are not allowed.</string>
+    <string name="rp_next_position">Add another player in that position first, then try the move again.</string>
+    <string name="rp_next_full">Pick a squad with space, or release a player from that squad first.</string>
+    <string name="rp_back_to_roster">Back to roster</string>
+    <string name="rp_change_date">Change date</string>
+
+    <string name="rp_add_title">Add player</string>
+    <string name="rp_add_name">Player name</string>
+    <string name="rp_add_position">Position</string>
+    <string name="rp_add_squad">Squad</string>
+    <string name="rp_add_role">Squad role</string>
+    <string name="rp_add_squad_option">%1$s · %2$d players</string>
+    <string name="rp_add_info">Adding a new player needs an internet connection. A player can only be registered once per league.</string>
+    <string name="rp_add_offline">Adding a new player needs an internet connection</string>
+    <string name="rp_add_cancel">Cancel</string>
+    <string name="rp_add_submit">Add player</string>
+    <string name="rp_add_saved">%1$s was added to the roster.</string>
+    <string name="rp_add_reason">Registered in the app</string>
+    <string name="rp_add_err_name">Enter the player\'s name.</string>
+    <string name="rp_add_err_position">Enter a position.</string>
+    <string name="rp_add_err_squad">Choose a squad.</string>
+    <string name="rp_add_err_league">No league was found for this club, so a player can\'t be added yet.</string>
+    <string name="rp_add_already">This player is already registered in this league.</string>
+    <string name="rp_add_no_squads">This club has no squads yet.</string>
+    <string name="rp_add_button">Add player</string>
+    <string name="rp_role_captain">Captain</string>
+    <string name="rp_role_vice_captain">Vice-captain</string>
+    <string name="rp_role_starter">Starter</string>
+    <string name="rp_role_substitute">Substitute</string>
+
+    <string name="rp_stats_title">My stats</string>
+    <string name="rp_stats_matches">Matches</string>
+    <string name="rp_stats_discipline">Discipline</string>
+    <string name="rp_stats_no_player">No player profile is linked to your account</string>
+    <string name="rp_stats_no_player_msg">Ask your club manager to link your account to your player profile.</string>
+    <string name="rp_stats_tile">%1$s: %2$d</string>
+    <string name="rp_stats_empty">No stats yet</string>
+</resources>

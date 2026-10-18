@@ -19,12 +19,19 @@ fun ClubTabScreen(
     onManageRoster: (String) -> Unit,
     modifier: Modifier = Modifier,
     onOpenPlayer: ((playerId: String, clubId: String) -> Unit)? = null,
+    onEditClub: ((clubId: String) -> Unit)? = null,
+    onEditStaff: ((String) -> Unit)? = null,
+    onManageProducts: ((String) -> Unit)? = null,
+    onClubOrders: ((String) -> Unit)? = null,
 ) {
     val container = LocalAppContainer.current
     val session by container.sessionRepository.session.collectAsStateWithLifecycle()
     val destination = remember(session?.user?.role, session?.user?.clubId) { clubDestinationFor(session) }
     when (destination) {
-        is ClubDestination.Profile -> ClubProfileScreen(destination.clubId, onManageRoster, modifier, onOpenPlayer)
+        is ClubDestination.Profile -> ClubProfileScreen(
+            destination.clubId, onManageRoster, modifier, onOpenPlayer,
+            onEditClub, onEditStaff, onManageProducts, onClubOrders,
+        )
         ClubDestination.List -> ClubsListScreen(onOpenClub, modifier)
         ClubDestination.NoClub -> EmptyState(
             icon = Icons.Default.Groups,

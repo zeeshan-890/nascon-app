@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Admin home -->
+    <string name="ua_home_subtitle">Super admin · whole platform</string>
+    <string name="ua_tile_users">Users</string>
+    <string name="ua_tile_clubs">Clubs</string>
+    <string name="ua_tile_sports">Sports</string>
+    <string name="ua_tile_leagues">Leagues</string>
+    <string name="ua_row_users">Manage users</string>
+    <string name="ua_row_clubs">Manage clubs</string>
+    <string name="ua_row_sports">Manage sports</string>
+    <string name="ua_row_leagues">Manage leagues</string>
+    <string name="ua_row_audit">Audit log</string>
+    <string name="ua_row_access">Access rules</string>
+    <string name="ua_row_status">System status</string>
+    <string name="ua_tile_count_desc">%1$s, %2$d</string>
+    <string name="ua_not_allowed_title">Admins only</string>
+    <string name="ua_not_allowed_message">Only a super admin can manage the platform.</string>
+
+    <!-- Users list -->
+    <string name="ua_users_title">Users</string>
+    <string name="ua_search_label">Search</string>
+    <string name="ua_search_hint">Search by name or email</string>
+    <string name="ua_filter_all">All</string>
+    <string name="ua_filter_admin">Admin</string>
+    <string name="ua_filter_manager">Manager</string>
+    <string name="ua_filter_organizer">Organizer</string>
+    <string name="ua_filter_player">Player</string>
+    <string name="ua_filter_viewer">Viewer</string>
+    <string name="ua_new_user">New user</string>
+    <string name="ua_new_user_desc">Add a new user</string>
+    <string name="ua_users_empty_title">No users found</string>
+    <string name="ua_users_empty_message">Try a different name, email or role.</string>
+    <string name="ua_users_count">%1$d users</string>
+    <string name="ua_user_row_desc">%1$s, %2$s, %3$s. Open details</string>
+
+    <!-- Detail -->
+    <string name="ua_detail_title">User</string>
+    <string name="ua_label_email">Email</string>
+    <string name="ua_label_role">Role</string>
+    <string name="ua_label_tenant">Organisation</string>
+    <string name="ua_label_club">Club</string>
+    <string name="ua_label_leagues">Leagues</string>
+    <string name="ua_label_status">Status</string>
+    <string name="ua_label_last_sign_in">Last sign in</string>
+    <string name="ua_status_active">Active</string>
+    <string name="ua_status_deactivated">Deactivated</string>
+    <string name="ua_none">None</string>
+    <string name="ua_never">Never</string>
+    <string name="ua_today_at">Today %1$s</string>
+    <string name="ua_change_role">Change role</string>
+    <string name="ua_deactivate">Deactivate user</string>
+    <string name="ua_reactivate">Reactivate user</string>
+    <string name="ua_self_note">This is your own account. You can\'t deactivate it or change its role.</string>
+    <string name="ua_deactivated_done">%1$s was deactivated.</string>
+    <string name="ua_reactivated_done">%1$s was reactivated.</string>
+
+    <!-- Deactivate dialog -->
+    <string name="ua_deactivate_title">Deactivate this user?</string>
+    <string name="ua_deactivate_message">%1$s will be signed out and cannot sign in again. Their history stays. You can reactivate later.</string>
+    <string name="ua_deactivate_confirm">Deactivate</string>
+    <string name="ua_cancel">Cancel</string>
+
+    <!-- New user -->
+    <string name="ua_new_title">New user</string>
+    <string name="ua_field_name">Full name</string>
+    <string name="ua_field_email">Email</string>
+    <string name="ua_field_password">Temporary password</string>
+    <string name="ua_field_role">Role</string>
+    <string name="ua_field_club">Club</string>
+    <string name="ua_field_league">League</string>
+    <string name="ua_choose_one">Choose one</string>
+    <string name="ua_password_show">Show password</string>
+    <string name="ua_password_hide">Hide password</string>
+    <string name="ua_password_hint">At least 8 characters.</string>
+    <string name="ua_create">Create user</string>
+    <string name="ua_created_done">%1$s was added.</string>
+    <string name="ua_err_name">Enter a name.</string>
+    <string name="ua_err_email_required">Enter an email.</string>
+    <string name="ua_err_email_invalid">Enter a valid email.</string>
+    <string name="ua_err_email_taken">That email is already used by another user.</string>
+    <string name="ua_err_password">Use at least 8 characters.</string>
+    <string name="ua_err_role">Choose a role.</string>
+    <string name="ua_err_club">Choose a club for this role.</string>
+    <string name="ua_err_league">Choose a league for this role.</string>
+
+    <!-- Change role -->
+    <string name="ua_role_title">Change role</string>
+    <string name="ua_role_save">Save role</string>
+    <string name="ua_role_saved">Role updated to %1$s.</string>
+    <string name="ua_role_selected">Selected</string>
+    <string name="ua_role_current">Current role</string>
+    <string name="ua_role_self_blocked">You can\'t change your own role.</string>
+
+    <!-- Errors / states -->
+    <string name="ua_loading">Loading users…</string>
+    <string name="ua_not_found_title">User not found</string>
+    <string name="ua_not_found_message">This user no longer exists.</string>
+    <string name="ua_back">Go back</string>
+</resources>

@@ -1,7 +1,10 @@
 package com.nascon.league.ui.player
 
 import com.nascon.league.data.api.dto.HistoryEntryDto
+import java.time.Instant
 import java.time.LocalDate
+import java.time.OffsetDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -58,8 +61,25 @@ fun displayable(s: String?): String? = s?.trim()?.takeIf { it.isNotEmpty() && !l
 
 private val DATE_PREFIX = Regex("^\\d{4}-\\d{2}-\\d{2}")
 
-fun parseHistoryDate(raw: String?): LocalDate? {
+/**
+ * Calendar dates stay calendar dates. Instants (with a time and offset) are the local date in [zone].
+ * The offset is never stripped and then read as local wall time.
+ */
+fun parseHistoryDate(raw: String?, zone: ZoneId = ZoneId.systemDefault()): LocalDate? {
     val t = raw?.trim().orEmpty()
+    if (t.isEmpty()) return null
+    if (t.contains('T')) {
+        val instant = try {
+            Instant.parse(t)
+        } catch (_: Exception) {
+            try {
+                OffsetDateTime.parse(t).toInstant()
+            } catch (_: Exception) {
+                null
+            }
+        }
+        if (instant != null) return instant.atZone(zone).toLocalDate()
+    }
     if (!DATE_PREFIX.containsMatchIn(t)) return null
     return try {
         LocalDate.parse(t.take(10))
@@ -68,8 +88,11 @@ fun parseHistoryDate(raw: String?): LocalDate? {
     }
 }
 
-fun formatHistoryDate(raw: String?, locale: Locale = Locale.getDefault()): String? =
-    parseHistoryDate(raw)?.format(DateTimeFormatter.ofPattern("d MMM yyyy", locale))
+fun formatHistoryDate(
+    raw: String?,
+    locale: Locale = Locale.getDefault(),
+    zone: ZoneId = ZoneId.systemDefault(),
+): String? = parseHistoryDate(raw, zone)?.format(DateTimeFormatter.ofPattern("d MMM yyyy", locale))
 
 fun HistoryEntryDto.sortDate(): LocalDate? = parseHistoryDate(effectiveDate) ?: parseHistoryDate(whenAt)
 

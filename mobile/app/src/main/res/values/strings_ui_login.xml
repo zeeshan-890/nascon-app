@@ -9,6 +9,6 @@
     <string name="ui_login_hide">Hide</string>
     <string name="ui_login_show_pw_desc">Show password</string>
     <string name="ui_login_hide_pw_desc">Hide password</string>
-    <string name="ui_settings_server_hint">Use your laptop\'s address on the same Wi-Fi. On the emulator use 10.0.2.2.</string>
+    <string name="ui_settings_server_hint">Same Wi-Fi, port 8080. On the emulator use http://10.0.2.2:8080. On a phone use http://&lt;laptop LAN IP&gt;:8080.</string>
     <string name="ui_settings_demo_desc">Practice mode that works without a server.</string>
 </resources>

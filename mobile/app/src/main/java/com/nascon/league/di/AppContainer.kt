@@ -62,7 +62,7 @@ class AppContainer(context: Context) {
 
     val apiFactory = ApiFactory(tokenStore) { sessionRepository.expire() }
 
-    @Volatile private var demoMode = true
+    @Volatile private var demoMode = false
     @Volatile private var currentBaseUrl = ServerConfigStore.DEFAULT_BASE_URL
     private val fakeApi = FakeLeagueApi { connectivity.isNetworkAvailable() }
     private val apiState: MutableStateFlow<LeagueApi> = MutableStateFlow(
@@ -74,6 +74,19 @@ class AppContainer(context: Context) {
     )
     val api: StateFlow<LeagueApi> get() = apiState
     val apiProvider: () -> LeagueApi = { apiState.value }
+
+    /** True while the app runs on built-in demo data instead of a real server. */
+    val isDemoMode: Boolean get() = demoMode
+
+    /** Whether the device currently has a network (fakes use this to mimic a real offline call). */
+    fun hasNetwork(): Boolean = connectivity.isNetworkAvailable()
+
+    /**
+     * Resolves an extra API interface: the demo fake in demo mode, otherwise a real authenticated Retrofit
+     * service for the configured server. [fake] receives a hasNetwork provider and must return a long-lived instance.
+     */
+    fun <T : Any> service(service: Class<T>, fake: (hasNetwork: () -> Boolean) -> T): T =
+        if (demoMode) fake { hasNetwork() } else apiFactory.createService(currentBaseUrl, service)
 
     val connectivity = ConnectivityMonitor(appContext, scope, apiProvider)
     private val currentUserId: () -> String? = { sessionRepository.session.value?.user?.userId }

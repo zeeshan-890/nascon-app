@@ -13,6 +13,7 @@ import com.nascon.league.data.api.dto.StandingsDto
 import com.nascon.league.data.realtime.throttleFirst
 import com.nascon.league.data.repo.Cached
 import com.nascon.league.di.AppContainer
+import com.nascon.league.ui.failure.RateLimitRetry
 import com.nascon.league.domain.model.League
 import com.nascon.league.ui.fixtures.FixturesPrefsStore
 import com.nascon.league.ui.fixtures.RefreshInfo
@@ -64,6 +65,7 @@ class StandingsViewModel(
     private val refreshByLeague = MutableStateFlow<Map<String, RefreshInfo>>(emptyMap())
     private val leaguesInfo = MutableStateFlow(RefreshInfo(refreshing = true))
     private val active = MutableStateFlow(false)
+    private val rateLimit = RateLimitRetry(viewModelScope)
     private var leaguesStarted = false
 
     private val leagueCache = container.leaguesRepository.observe()
@@ -159,7 +161,9 @@ class StandingsViewModel(
         leaguesInfo.value = RefreshInfo(true, null)
         viewModelScope.launch {
             val r = container.leaguesRepository.refresh()
-            leaguesInfo.value = RefreshInfo(false, (r as? NetworkResult.Failure)?.error)
+            val err = (r as? NetworkResult.Failure)?.error
+            leaguesInfo.value = RefreshInfo(false, err)
+            rateLimit.consider("leagues", err) { refreshLeagues() }
         }
     }
 
@@ -172,7 +176,9 @@ class StandingsViewModel(
         refreshByLeague.update { it + (leagueId to RefreshInfo(true, null)) }
         viewModelScope.launch {
             val r = container.standingsRepository.refresh(leagueId)
-            refreshByLeague.update { it + (leagueId to RefreshInfo(false, (r as? NetworkResult.Failure)?.error)) }
+            val err = (r as? NetworkResult.Failure)?.error
+            refreshByLeague.update { it + (leagueId to RefreshInfo(false, err)) }
+            rateLimit.consider("standings:$leagueId", err) { refreshStandings(leagueId) }
         }
     }
 

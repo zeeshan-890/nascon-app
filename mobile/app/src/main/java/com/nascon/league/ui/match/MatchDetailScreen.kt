@@ -56,7 +56,7 @@ import com.nascon.league.ui.navigation.HeaderExtra
 import com.nascon.league.ui.theme.Arena
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.painter.ColorPainter
+import coil.compose.SubcomposeAsyncImage
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -70,9 +70,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.AsyncImage
 import com.nascon.league.R
-import com.nascon.league.core.error.ErrorMapper
+import com.nascon.league.ui.failure.userMessage
 import com.nascon.league.data.api.dto.MatchDetailDto
 import com.nascon.league.data.api.dto.PinnedProductDto
 import com.nascon.league.data.api.dto.TeamScoreDto
@@ -103,6 +102,8 @@ fun MatchDetailScreen(
     onOpenProduct: (String) -> Unit,
     onScore: (String) -> Unit,
     modifier: Modifier = Modifier,
+    /** Opens match administration (NewRoutes.matchAdmin). Shown only to roles allowed by match.manage. */
+    onManage: ((String) -> Unit)? = null,
 ) {
     val container = LocalAppContainer.current
     val vm: MatchDetailViewModel = viewModel(factory = MatchDetailViewModel.factory(container))
@@ -112,6 +113,7 @@ fun MatchDetailScreen(
         factory = ScoringViewModel.factory(container, vm.matchId),
     )
     val sc by scoring.state.collectAsStateWithLifecycle()
+    val manageSession by container.sessionRepository.session.collectAsStateWithLifecycle()
     val snackbar = LocalSnackbarHostState.current
 
     // Realtime + polling only while the screen is visible.
@@ -120,7 +122,7 @@ fun MatchDetailScreen(
         onStopOrDispose { vm.setActive(false) }
     }
     LaunchedEffect(vm) {
-        vm.refreshFailures.collect { snackbar.showSnackbar(ErrorMapper.message(it)) }
+        vm.refreshFailures.collect { snackbar.showSnackbar(userMessage(it)) }
     }
 
     MatchDetailContent(
@@ -131,6 +133,13 @@ fun MatchDetailScreen(
         onScore = { onScore(vm.matchId) },
         scoring = scoring,
         sc = sc,
+        onManage = if (onManage != null &&
+            com.nascon.league.data.matchops.canManageMatch(manageSession, s.match?.leagueId)
+        ) {
+            { onManage(vm.matchId) }
+        } else {
+            null
+        },
         modifier = modifier,
     )
     ScoringHost(scoring)
@@ -146,6 +155,7 @@ private fun MatchDetailContent(
     scoring: ScoringViewModel,
     sc: ScoringUiState,
     modifier: Modifier = Modifier,
+    onManage: (() -> Unit)? = null,
 ) {
     val m = s.match
     if (m == null) {
@@ -179,7 +189,7 @@ private fun MatchDetailContent(
                     actionLabel = stringResource(R.string.f3_try_again),
                     onAction = onRetry,
                 )
-                else -> ErrorState(ErrorMapper.message(err), onRetry)
+                else -> ErrorState(userMessage(err), onRetry)
             }
         }
         return
@@ -207,6 +217,16 @@ private fun MatchDetailContent(
             PrimaryButton(
                 text = stringResource(R.string.f3_score_button),
                 onClick = onScore,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 56.dp)
+                    .padding(horizontal = Spacing.md, vertical = Spacing.sm),
+            )
+        }
+        if (onManage != null) {
+            com.nascon.league.ui.components.SecondaryButton(
+                text = stringResource(R.string.mo_manage_match),
+                onClick = onManage,
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 56.dp)
@@ -511,35 +531,33 @@ private fun ProductsRow(products: List<PinnedProductDto>, onOpenProduct: (String
 }
 
 @Composable
+private fun PinnedProductImage(url: String?, name: String) {
+    val frame = Modifier.fillMaxWidth().height(110.dp).clip(MaterialTheme.shapes.small)
+    val placeholder: @Composable () -> Unit = {
+        Box(frame, contentAlignment = Alignment.Center) {
+            Surface(color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.fillMaxSize()) {}
+            Icon(Icons.Default.ShoppingBag, contentDescription = null, modifier = Modifier.size(40.dp))
+        }
+    }
+    if (url.isNullOrBlank()) {
+        placeholder()
+    } else {
+        SubcomposeAsyncImage(
+            model = url,
+            contentDescription = stringResource(R.string.f3_product_image_cd, name),
+            contentScale = ContentScale.Crop,
+            modifier = frame,
+            loading = { placeholder() },
+            error = { placeholder() },
+        )
+    }
+}
+
+@Composable
 private fun ProductCard(p: PinnedProductDto, onOpenProduct: (String) -> Unit) {
     ArenaCard(Modifier.width(180.dp)) {
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-            val placeholder = ColorPainter(MaterialTheme.colorScheme.surfaceVariant)
-            if (p.imageUrl.isNullOrBlank()) {
-                Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .height(110.dp)
-                        .clip(MaterialTheme.shapes.small)
-                        .then(Modifier),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Surface(color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.fillMaxSize()) {}
-                    Icon(Icons.Default.ShoppingBag, contentDescription = null, modifier = Modifier.size(40.dp))
-                }
-            } else {
-                AsyncImage(
-                    model = p.imageUrl,
-                    contentDescription = stringResource(R.string.f3_product_image_cd, p.name),
-                    placeholder = placeholder,
-                    error = placeholder,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(110.dp)
-                        .clip(MaterialTheme.shapes.small),
-                )
-            }
+            PinnedProductImage(p.imageUrl, p.name)
             Text(
                 p.name,
                 style = MaterialTheme.typography.bodyLarge,

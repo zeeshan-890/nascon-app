@@ -1,6 +1,6 @@
 package com.nascon.league.ui.store
 
-import com.nascon.league.core.error.ErrorMapper
+import com.nascon.league.ui.failure.userMessage
 import com.nascon.league.core.network.ApiError
 import com.nascon.league.data.api.dto.ProductDto
 import com.nascon.league.data.api.dto.VariantDto
@@ -59,14 +59,14 @@ fun resolveFailure(error: ApiError, hasDiscount: Boolean): PayResolution {
             if (hasDiscount) {
                 PayResolution(outcome, null, null, true, null, false)
             } else {
-                PayResolution(outcome, BannerKind.Other, ErrorMapper.message(error), false, null, false)
+                PayResolution(outcome, BannerKind.Other, userMessage(error), false, null, false)
             }
         CheckoutOutcome.DuplicateOrderId -> PayResolution(outcome, BannerKind.TryAgain, null, false, null, false)
         CheckoutOutcome.Success, CheckoutOutcome.Unknown ->
             if (error.isConnectionProblem()) {
                 PayResolution(outcome, BannerKind.ConnectionLost, null, false, null, false)
             } else {
-                PayResolution(outcome, BannerKind.Other, ErrorMapper.message(error), false, null, false)
+                PayResolution(outcome, BannerKind.Other, userMessage(error), false, null, false)
             }
     }
 }

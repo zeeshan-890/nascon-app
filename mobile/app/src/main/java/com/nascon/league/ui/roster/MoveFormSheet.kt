@@ -88,6 +88,7 @@ fun MoveFormSheet(
     onSubmit: () -> Unit,
     onBack: () -> Unit,
     onDismiss: () -> Unit,
+    rejection: RosterRejection? = null,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var picker by rememberSaveable { mutableStateOf<String?>(null) }
@@ -115,6 +116,14 @@ fun MoveFormSheet(
                 MoveType.RELEASE -> stringResource(R.string.f7_form_title_release, player.name)
             }
             Text(title, style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { heading() })
+            if (rejection != null) {
+                RosterRejectionCard(
+                    code = rejection.code,
+                    details = rejection.details,
+                    onBack = onDismiss,
+                    onChangeDate = if (rejection.code == "TRANSFER_WINDOW_CLOSED") ({ picker = PICK_EFFECTIVE }) else null,
+                )
+            }
             if (!fromSquadName.isNullOrBlank()) {
                 Text(
                     stringResource(R.string.f7_current_squad, fromSquadName),

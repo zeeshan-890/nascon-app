@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Store empty (C02) -->
+    <string name="storestates_store_empty_title">Nothing for sale yet</string>
+    <string name="storestates_store_empty_message">Clubs have not added products. Check back soon.</string>
+
+    <!-- Variant stock (C04) -->
+    <string name="storestates_size">Size</string>
+    <string name="storestates_variant_sold_out_cd">%1$s, sold out</string>
+    <string name="storestates_only_left_in">Only %1$d left in %2$s</string>
+    <string name="storestates_sold_out_hint">Sold-out options are crossed out and can\'t be picked.</string>
+
+    <!-- Cart (C05, C06, C11) -->
+    <string name="storestates_cart_empty_title">Your cart is empty</string>
+    <string name="storestates_cart_empty_message">Add something from the store to get started.</string>
+    <string name="storestates_go_to_checkout">Go to checkout</string>
+    <string name="storestates_name_variant">%1$s · %2$s</string>
+    <string name="storestates_qty">Qty %1$d</string>
+    <string name="storestates_remove_sold_out">Remove sold-out item</string>
+    <string name="storestates_remove_sold_out_many">Remove sold-out items</string>
+
+    <!-- Paying (C08) -->
+    <string name="storestates_paying_title">Processing payment…</string>
+    <string name="storestates_paying_message">Please keep the app open and don\'t tap again. You will only be charged once.</string>
+
+    <!-- Payment result (C09, C10) -->
+    <string name="storestates_declined_title">Payment declined</string>
+    <string name="storestates_try_another">Try another method</string>
+    <string name="storestates_capture_title">We couldn\'t confirm it</string>
+    <string name="storestates_check_orders">Check my orders</string>
+    <string name="storestates_try_again">Try again</string>
+
+    <!-- Offline checkout (C12) -->
+    <string name="storestates_offline_strip">You need internet to pay. Your cart is saved. Connect and try again.</string>
+    <string name="storestates_pay_needs_internet">Pay needs internet</string>
+
+    <!-- Receipt (C14, C15) -->
+    <string name="storestates_receipt_saved">Receipt saved to Downloads</string>
+    <string name="storestates_open">Open</string>
+    <string name="storestates_open_failed">No app available to open this receipt</string>
+</resources>

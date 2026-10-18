@@ -41,9 +41,24 @@ fun FixtureFilter.accepts(group: FixtureGroup): Boolean = when (this) {
 
 data class FixtureSection(val group: FixtureGroup, val items: List<Fixture>)
 
+/** One row per match. A repeated id keeps the higher version, then the later copy. */
+fun dedupeFixtures(fixtures: List<Fixture>): List<Fixture> {
+    val best = LinkedHashMap<String, Fixture>()
+    val blank = ArrayList<Fixture>()
+    for (f in fixtures) {
+        if (f.matchId.isBlank()) {
+            blank += f
+            continue
+        }
+        val prev = best[f.matchId]
+        if (prev == null || f.version >= prev.version) best[f.matchId] = f
+    }
+    return best.values.toList() + blank
+}
+
 /** Groups in fixed order Live, Upcoming, Completed, Other. Live/upcoming/other ascending, completed descending, null times last. */
 fun groupAndSort(fixtures: List<Fixture>, filter: FixtureFilter = FixtureFilter.ALL): List<FixtureSection> {
-    val byGroup = fixtures.groupBy { statusKind(it.status).group() }
+    val byGroup = dedupeFixtures(fixtures).groupBy { statusKind(it.status).group() }
     return FixtureGroup.entries.mapNotNull { g ->
         if (!filter.accepts(g)) return@mapNotNull null
         val list = byGroup[g].orEmpty()

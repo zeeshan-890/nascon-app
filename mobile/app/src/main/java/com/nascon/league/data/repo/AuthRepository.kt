@@ -9,6 +9,7 @@ import com.nascon.league.data.api.LeagueApi
 import com.nascon.league.data.api.dto.LoginRequest
 import com.nascon.league.data.api.dto.LoginResponse
 import com.nascon.league.data.api.dto.LogoutRequest
+import com.nascon.league.data.api.dto.MeResponse
 import com.nascon.league.data.api.dto.RefreshRequest
 import com.nascon.league.domain.model.Role
 import com.nascon.league.domain.model.Session
@@ -48,6 +49,18 @@ class AuthRepository(
             .onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
     }
 
+    /** `GET /api/v1/me`. Updates the saved session when the call succeeds. */
+    suspend fun me(): NetworkResult<Session> {
+        return when (val result = safeCall { apiProvider().me() }) {
+            is NetworkResult.Failure -> result
+            is NetworkResult.Success -> {
+                val session = result.data.toSession()
+                sessionRepository.setSession(session)
+                NetworkResult.Success(session)
+            }
+        }
+    }
+
     suspend fun refreshIfNeeded() {
         if (sessionRepository.session.value == null) return
         if (tokenStore.expiresAtEpoch() - Clock.nowEpochSeconds() > 60) return
@@ -66,7 +79,7 @@ class AuthRepository(
     }
 }
 
-private fun LoginResponse.toSession() = Session(
+private fun MeResponse.toSession() = Session(
     user = User(
         userId = user.userId,
         email = user.email,
@@ -80,3 +93,5 @@ private fun LoginResponse.toSession() = Session(
         Tenant(it.tenantId, it.name, it.logoUrl, it.primaryColor, it.secondaryColor)
     },
 )
+
+private fun LoginResponse.toSession() = MeResponse(user, tenant).toSession()

@@ -9,8 +9,10 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.nascon.league.core.network.ApiError
 import com.nascon.league.core.network.ConnState
 import com.nascon.league.core.network.NetworkResult
+import com.nascon.league.data.realtime.throttleFirst
 import com.nascon.league.data.repo.Cached
 import com.nascon.league.di.AppContainer
+import com.nascon.league.ui.failure.RateLimitRetry
 import com.nascon.league.domain.model.Fixture
 import com.nascon.league.domain.model.League
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -20,6 +22,8 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -61,6 +65,8 @@ class FixturesViewModel(
     /** Refresh state keyed by league id so a slow result never leaks into another league. */
     private val refreshByLeague = MutableStateFlow<Map<String, RefreshInfo>>(emptyMap())
     private val leaguesInfo = MutableStateFlow(RefreshInfo(refreshing = true))
+    private val active = MutableStateFlow(false)
+    private val rateLimit = RateLimitRetry(viewModelScope)
     private var leaguesStarted = false
 
     private val persisted: Flow<String?> = prefs.observeLeague(userId)
@@ -105,6 +111,26 @@ class FixturesViewModel(
                 state.value.selectedLeagueId?.let { refreshFixtures(it) }
             }
         }
+        // Live score and status: refetch this league. The list is replaced, then deduped by match id.
+        viewModelScope.launch {
+            combine(active, selectedId) { on, id -> if (on) id else null }
+                .distinctUntilChanged()
+                .flatMapLatest { id ->
+                    if (id == null) {
+                        emptyFlow()
+                    } else {
+                        container.realtime.subscribe("league:$id")
+                            .filter { it.type == "match.event_appended" || it.type == "match.status_changed" }
+                            .throttleFirst(1000)
+                            .map { id }
+                    }
+                }
+                .collect { id -> refreshFixtures(id) }
+        }
+    }
+
+    fun setActive(on: Boolean) {
+        active.value = on
     }
 
     fun setFilter(f: FixtureFilter) {
@@ -138,7 +164,9 @@ class FixturesViewModel(
         leaguesInfo.value = RefreshInfo(true, null)
         viewModelScope.launch {
             val r = container.leaguesRepository.refresh()
-            leaguesInfo.value = RefreshInfo(false, (r as? NetworkResult.Failure)?.error)
+            val err = (r as? NetworkResult.Failure)?.error
+            leaguesInfo.value = RefreshInfo(false, err)
+            rateLimit.consider("leagues", err) { refreshLeagues() }
         }
     }
 
@@ -151,9 +179,9 @@ class FixturesViewModel(
         refreshByLeague.update { it + (leagueId to RefreshInfo(true, null)) }
         viewModelScope.launch {
             val r = container.fixturesRepository.refresh(leagueId)
-            refreshByLeague.update {
-                it + (leagueId to RefreshInfo(false, (r as? NetworkResult.Failure)?.error))
-            }
+            val err = (r as? NetworkResult.Failure)?.error
+            refreshByLeague.update { it + (leagueId to RefreshInfo(false, err)) }
+            rateLimit.consider("fixtures:$leagueId", err) { refreshFixtures(leagueId) }
         }
     }
 

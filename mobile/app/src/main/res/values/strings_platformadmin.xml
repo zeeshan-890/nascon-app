@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Common -->
+    <string name="pa_cancel">Cancel</string>
+    <string name="pa_reset">Reset</string>
+    <string name="pa_remove">Remove</string>
+    <string name="pa_discard">Discard</string>
+    <string name="pa_optional">Optional</string>
+    <string name="pa_on">On</string>
+    <string name="pa_off">Off</string>
+    <string name="pa_saved">Saved.</string>
+    <string name="pa_locked">Fixed</string>
+    <string name="pa_empty_value">nothing</string>
+    <string name="pa_no_access_title">No access</string>
+    <string name="pa_no_access_message">Only the super admin can open this screen.</string>
+    <string name="pa_decrease_named">Decrease %1$s</string>
+    <string name="pa_increase_named">Increase %1$s</string>
+
+    <!-- Field problems -->
+    <string name="pa_err_required">This field is required.</string>
+    <string name="pa_err_too_short">That is too short.</string>
+    <string name="pa_err_too_long">That is too long.</string>
+    <string name="pa_err_bad_format">That does not look right.</string>
+    <string name="pa_err_duplicate">That already exists.</string>
+    <string name="pa_err_club_duplicate">A club with this name already exists.</string>
+    <string name="pa_err_tenant_format">Use letters, numbers, dashes or underscores only.</string>
+    <string name="pa_err_code_format">Use lowercase words joined by underscores, for example free_throw.</string>
+    <string name="pa_err_event_duplicate">This sport already has an event with that code.</string>
+    <string name="pa_err_date">Enter a date like 2026-10-17.</string>
+    <string name="pa_err_date_order">The end date must not be before the start date.</string>
+
+    <!-- G07 / G08 clubs -->
+    <string name="pa_new_club">New club</string>
+    <string name="pa_create_club">Create club</string>
+    <string name="pa_clubs_empty_title">No clubs yet</string>
+    <string name="pa_clubs_empty_message">Create the first club to get started.</string>
+    <string name="pa_club_name">Club name</string>
+    <string name="pa_club_tenant">Organisation ID</string>
+    <string name="pa_club_tenant_hint">The organisation this club belongs to.</string>
+    <string name="pa_club_venue">Venue name</string>
+    <string name="pa_club_city">City</string>
+
+    <!-- G09 sports -->
+    <plurals name="pa_scoring_events">
+        <item quantity="one">%1$d scoring event</item>
+        <item quantity="other">%1$d scoring events</item>
+    </plurals>
+    <plurals name="pa_points">
+        <item quantity="one">%1$d point</item>
+        <item quantity="other">%1$d points</item>
+    </plurals>
+    <string name="pa_draws_allowed">draws allowed</string>
+    <string name="pa_no_draws">no draws</string>
+    <string name="pa_sport_summary">%1$s · %2$s</string>
+    <string name="pa_sports_note">Each sport is a configuration. Scoring buttons in the app are built from it.</string>
+    <string name="pa_sports_fallback">This server cannot list every sport yet, so only the sports your leagues use are shown. Changes cannot be saved here.</string>
+
+    <!-- G10 sport settings -->
+    <string name="pa_save_sport">Save sport</string>
+    <string name="pa_edit_unavailable">This server cannot save sport changes yet. Nothing was changed.</string>
+    <string name="pa_draws_allowed_label">Draws allowed</string>
+    <string name="pa_scoring_model">Scoring style</string>
+    <string name="pa_periods">Match length</string>
+    <string name="pa_overtime">If level at the end</string>
+    <string name="pa_tie_break">Tie-break order</string>
+    <string name="pa_roster">Squad size</string>
+    <string name="pa_squad_min">Squad minimum</string>
+    <string name="pa_squad_max">Squad maximum</string>
+    <string name="pa_required_position">Required: %1$s</string>
+    <string name="pa_scoring_events_heading">Scoring events</string>
+    <string name="pa_add_event">Add scoring event</string>
+
+    <!-- G11 scoring event -->
+    <string name="pa_event_label">Button label</string>
+    <string name="pa_event_code">Code</string>
+    <string name="pa_event_code_hint">Lowercase words joined by underscores.</string>
+    <string name="pa_event_code_locked">The code cannot change after the event is created.</string>
+    <string name="pa_event_points">Points added to score</string>
+    <string name="pa_event_needs_player">Needs a player</string>
+    <string name="pa_save_event">Save event</string>
+    <string name="pa_remove_event">Remove event</string>
+    <string name="pa_remove_event_title">Remove this event?</string>
+    <string name="pa_remove_event_message">%1$s will no longer appear as a scoring button. Past scores are not changed.</string>
+
+    <!-- G12 access -->
+    <string name="pa_edit_rules">Edit rules</string>
+    <string name="pa_save_changes">Save changes (%1$d)</string>
+    <string name="pa_save_confirm">Save</string>
+    <string name="pa_access_saved">Access rules saved.</string>
+    <string name="pa_access_editing_hint">Tap a role to choose what it may do. The admin rules cannot change.</string>
+    <string name="pa_access_note">Rules apply on the server for every request.</string>
+    <string name="pa_access_confirm_title">Save access rules?</string>
+    <string name="pa_access_confirm_message">%1$d changes will apply to everyone straight away.</string>
+    <string name="pa_change_access">Change access</string>
+    <string name="pa_scope_none">Not allowed</string>
+    <string name="pa_scope_any">Everything</string>
+    <string name="pa_scope_same_tenant">Own organisation</string>
+    <string name="pa_scope_own_league">Own league</string>
+    <string name="pa_scope_own_club">Own club</string>
+    <string name="pa_scope_own_club_player">Own club players</string>
+    <string name="pa_scope_self">Own items only</string>
+    <string name="pa_role_super_admin">Admin</string>
+    <string name="pa_role_league_organizer">Organizer</string>
+    <string name="pa_role_club_manager">Manager</string>
+    <string name="pa_role_player">Player</string>
+    <string name="pa_role_viewer">Viewer</string>
+    <string name="pa_action_tenant_create">Create organisation</string>
+    <string name="pa_action_league_fixtures_write">Edit fixtures</string>
+    <string name="pa_action_club_roster_write">Change squad</string>
+    <string name="pa_action_club_products_write">Edit store products</string>
+    <string name="pa_action_player_update">Edit player</string>
+    <string name="pa_action_club_read">View club</string>
+    <string name="pa_action_platform_config_read">View platform settings</string>
+    <string name="pa_action_league_read">View leagues</string>
+    <string name="pa_action_match_read">View matches</string>
+    <string name="pa_action_standings_read">View standings</string>
+    <string name="pa_action_sport_read">View sports</string>
+    <string name="pa_action_product_read">View store</string>
+    <string name="pa_action_match_score_write">Enter scores</string>
+    <string name="pa_action_match_manage">Manage matches</string>
+    <string name="pa_action_season_write">Edit seasons</string>
+    <string name="pa_action_league_create">Create league</string>
+    <string name="pa_action_club_write">Edit club</string>
+    <string name="pa_action_order_create">Buy in store</string>
+    <string name="pa_action_order_read">View orders</string>
+    <string name="pa_action_order_manage">Manage orders</string>
+    <string name="pa_action_player_history_read">View player history</string>
+
+    <!-- G13 / G14 / G15 audit -->
+    <string name="pa_cat_all">All</string>
+    <string name="pa_cat_roster">Roster</string>
+    <string name="pa_cat_score">Scores</string>
+    <string name="pa_cat_user">Users</string>
+    <string name="pa_cat_fixture">Fixtures</string>
+    <string name="pa_cat_order">Orders</string>
+    <string name="pa_cat_platform">Platform</string>
+    <string name="pa_action_roster_transfer_approved">Transfer approved</string>
+    <string name="pa_action_roster_player_added">Player added to squad</string>
+    <string name="pa_action_score_corrected">Score corrected</string>
+    <string name="pa_action_score_entered">Score entered</string>
+    <string name="pa_action_user_role_changed">Role changed</string>
+    <string name="pa_action_user_deactivated">Account deactivated</string>
+    <string name="pa_action_fixture_rescheduled">Fixture rescheduled</string>
+    <string name="pa_action_fixture_generated">Fixtures generated</string>
+    <string name="pa_action_order_refunded">Refund issued</string>
+    <string name="pa_action_platform_club_created">Club created</string>
+    <string name="pa_action_platform_access_updated">Access rules changed</string>
+    <string name="pa_action_platform_sport_updated">Sport settings changed</string>
+    <string name="pa_filter">Filter</string>
+    <string name="pa_filter_on">Filter (on)</string>
+    <string name="pa_load_more">Show more</string>
+    <string name="pa_yesterday">Yesterday</string>
+    <string name="pa_audit_empty_title">Nothing to show</string>
+    <string name="pa_audit_empty_message">No log entries match. Try a different filter.</string>
+    <string name="pa_by">By</string>
+    <string name="pa_when">When</string>
+    <string name="pa_target">About</string>
+    <string name="pa_request_id">Request ID</string>
+    <string name="pa_reason">Reason</string>
+    <string name="pa_what_changed">What changed</string>
+    <string name="pa_before">Before</string>
+    <string name="pa_after">After</string>
+    <string name="pa_no_changes_recorded">No details were recorded for this entry.</string>
+    <string name="pa_action_type">Action type</string>
+    <string name="pa_all_actions">All actions</string>
+    <string name="pa_done_by">Done by</string>
+    <string name="pa_anyone">Anyone</string>
+    <string name="pa_from">From</string>
+    <string name="pa_to">To</string>
+    <string name="pa_date_hint">YYYY-MM-DD</string>
+    <string name="pa_show_results">Show results</string>
+
+    <!-- G16 status -->
+    <string name="pa_status_server">Server</string>
+    <string name="pa_status_database">Database</string>
+    <string name="pa_status_online">Online</string>
+    <string name="pa_status_healthy">Healthy</string>
+    <string name="pa_status_slow">Slow</string>
+    <string name="pa_status_starting">Starting up</string>
+    <string name="pa_status_down">Not reachable</string>
+    <string name="pa_status_checking">Checking...</string>
+    <string name="pa_status_response">Response time</string>
+    <string name="pa_status_ms">%1$d ms</string>
+    <string name="pa_status_address">Server address</string>
+    <string name="pa_status_version">App version</string>
+    <string name="pa_status_demo">You are using demo data. These checks are simulated.</string>
+    <string name="pa_status_scope_note">Cache, file storage and payments are not reported by this server.</string>
+    <string name="pa_check_again">Check again</string>
+</resources>

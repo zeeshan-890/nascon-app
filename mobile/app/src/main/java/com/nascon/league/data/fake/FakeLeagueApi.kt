@@ -12,6 +12,7 @@ import com.nascon.league.data.api.dto.LoginRequest
 import com.nascon.league.data.api.dto.LoginResponse
 import com.nascon.league.data.api.dto.LogoutRequest
 import com.nascon.league.data.api.dto.MatchDetailDto
+import com.nascon.league.data.api.dto.MeResponse
 import com.nascon.league.data.api.dto.MatchEventDto
 import com.nascon.league.data.api.dto.MatchEventRequest
 import com.nascon.league.data.api.dto.MatchEventResponse
@@ -47,6 +48,7 @@ import kotlinx.serialization.json.put
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.ResponseBody
 import okhttp3.ResponseBody.Companion.toResponseBody
+import okhttp3.Headers
 import retrofit2.HttpException
 import retrofit2.Response
 import java.util.UUID
@@ -54,6 +56,7 @@ import kotlin.math.abs
 
 class FakeLeagueApi(private val hasNetwork: () -> Boolean = { true }) : LeagueApi {
 
+    private var signedIn: LoginResponse? = null
     private val matches = FakeMatches()
     private val rosterState = FakeRoster()
     private val syncState = FakeSync(matches, rosterState)
@@ -110,13 +113,21 @@ class FakeLeagueApi(private val hasNetwork: () -> Boolean = { true }) : LeagueAp
             "viewer@nascon.test" -> UserDto("u-viewer", email, "viewer", "tenant-alpha") to true
             else -> fail(401, "UNAUTHENTICATED", "Invalid email or password.")
         }
-        return LoginResponse(
+        val response = LoginResponse(
             accessToken = "fake-access-${UUID.randomUUID()}",
             refreshToken = "fake-refresh-${UUID.randomUUID()}",
             expiresIn = 3600,
             user = user,
             tenant = if (withTenant) tenant() else null,
         )
+        signedIn = response
+        return response
+    }
+
+    override suspend fun me(): MeResponse {
+        pause("me")
+        val session = signedIn ?: fail(401, "UNAUTHENTICATED", "Authentication required.")
+        return MeResponse(session.user, session.tenant)
     }
 
     override suspend fun refresh(body: RefreshRequest): RefreshResponse {
@@ -140,15 +151,15 @@ class FakeLeagueApi(private val hasNetwork: () -> Boolean = { true }) : LeagueAp
         if (id != "league-alpha-1") fail(404, "LEAGUE_NOT_FOUND", "League not found.")
     }
 
-    override suspend fun leagues(): List<LeagueDto> {
+    override suspend fun leagues(limit: Int?, offset: Int?): Response<List<LeagueDto>> {
         pause("leagues")
-        return listOf(LeagueDto("league-alpha-1", "Alpha Premier League", "football", "2026"))
+        return paged(listOf(LeagueDto("league-alpha-1", "Alpha Premier League", "football", "2026")), limit, offset)
     }
 
-    override suspend fun fixtures(leagueId: String): List<FixtureDto> {
+    override suspend fun fixtures(leagueId: String, limit: Int?, offset: Int?): Response<List<FixtureDto>> {
         pause("fixtures$leagueId")
         requireLeague(leagueId)
-        return matches.fixtures()
+        return paged(matches.fixtures(), limit, offset)
     }
 
     override suspend fun match(id: String): MatchDetailDto {
@@ -236,13 +247,13 @@ class FakeLeagueApi(private val hasNetwork: () -> Boolean = { true }) : LeagueAp
     }
 
     // ---- clubs ----
-    override suspend fun clubs(): List<ClubSummaryDto> {
+    override suspend fun clubs(limit: Int?, offset: Int?): Response<List<ClubSummaryDto>> {
         pause("clubs")
-        return listOf(
+        return paged(listOf(
             ClubSummaryDto("club-alpha-1", "Alpha Lions FC", null),
             ClubSummaryDto("club-alpha-2", "Beta Hawks United", null),
             ClubSummaryDto("club-alpha-3", "Gamma Wolves Athletic", null),
-        )
+        ), limit, offset)
     }
 
     override suspend fun club(id: String): ClubDto {
@@ -288,13 +299,16 @@ class FakeLeagueApi(private val hasNetwork: () -> Boolean = { true }) : LeagueAp
     // ---- commerce ----
     private val fakeStore = FakeStore(AndroidReceiptPdfGenerator())
 
+    /** Shared demo store, so the club orders fake sees (and changes) the same orders. */
+    fun orderStore(): FakeStore = fakeStore
+
     private fun requireNetwork() {
         if (!hasNetwork()) throw java.net.UnknownHostException("offline")
     }
 
-    override suspend fun products(): List<ProductDto> {
+    override suspend fun products(limit: Int?, offset: Int?): Response<List<ProductDto>> {
         requireNetwork()
-        return fakeStore.products()
+        return paged(fakeStore.products(), limit, offset)
     }
 
     override suspend fun checkout(body: CheckoutRequest): CheckoutResponse {
@@ -324,5 +338,12 @@ class FakeLeagueApi(private val hasNetwork: () -> Boolean = { true }) : LeagueAp
     override suspend fun sync(body: SyncRequest): SyncResponse {
         pause("sync${body.deviceId}")
         return syncState.sync(body)
+    }
+
+    private fun <T> paged(all: List<T>, limit: Int?, offset: Int?): Response<List<T>> {
+        val start = (offset ?: 0).coerceAtLeast(0)
+        val end = if (limit == null || limit < 0) all.size else minOf(all.size, start + limit.coerceAtLeast(0))
+        val slice = if (start >= all.size) emptyList() else all.subList(start, end.coerceAtLeast(start))
+        return Response.success(slice, Headers.headersOf("X-Total-Count", all.size.toString()))
     }
 }

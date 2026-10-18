@@ -55,6 +55,22 @@ import com.nascon.league.ui.components.ConnectivityBanner
 import com.nascon.league.ui.home.HomeScreen
 import com.nascon.league.ui.login.LoginScreen
 import com.nascon.league.ui.placeholder.ComingSoonScreen
+import com.nascon.league.ui.clubadmin.clubAdminGraph
+import com.nascon.league.ui.clubadmin.clubAdminTitles
+import com.nascon.league.ui.fixturegen.fixtureGenGraph
+import com.nascon.league.ui.fixturegen.fixtureGenTitles
+import com.nascon.league.ui.leagueadmin.leagueAdminGraph
+import com.nascon.league.ui.leagueadmin.leagueAdminTitles
+import com.nascon.league.ui.matchops.matchOpsGraph
+import com.nascon.league.ui.matchops.matchOpsTitles
+import com.nascon.league.ui.orders.ordersExtraGraph
+import com.nascon.league.ui.orders.ordersExtraTitles
+import com.nascon.league.ui.platformadmin.platformAdminGraph
+import com.nascon.league.ui.platformadmin.platformAdminTitles
+import com.nascon.league.ui.roster.rosterExtraGraph
+import com.nascon.league.ui.roster.rosterExtraTitles
+import com.nascon.league.ui.useradmin.userAdminGraph
+import com.nascon.league.ui.useradmin.userAdminTitles
 import com.nascon.league.ui.notifications.NotificationsScreen
 import com.nascon.league.ui.orders.OrderDetailScreen
 import com.nascon.league.ui.orders.OrdersScreen
@@ -112,8 +128,13 @@ private fun titleFor(route: String?): String = when (baseRoute(route)) {
     Destinations.PLAYER_HISTORY -> "Player history"
     Destinations.SQUAD -> "Squad"
     Destinations.MY_HISTORY -> "My history"
-    else -> "Arena360"
+    else -> extraTitles[route]
+        ?: extraTitles.entries.firstOrNull { baseRoute(it.key) == baseRoute(route) }?.value
+        ?: "Arena360"
 }
+
+private val extraTitles: Map<String, String> = clubAdminTitles + fixtureGenTitles + leagueAdminTitles +
+    matchOpsTitles + ordersExtraTitles + platformAdminTitles + rosterExtraTitles + userAdminTitles
 
 private fun NavHostController.clearAndGoToLogin() {
     navigate(Destinations.LOGIN) {
@@ -303,6 +324,7 @@ private fun AppShell(session: Session?) {
                             onScore = { id ->
                                 navController.navigate(Destinations.scoring(id)) { launchSingleTop = true }
                             },
+                            onManage = { id -> navController.navigate(NewRoutes.matchAdmin(id)) { launchSingleTop = true } },
                         )
                     }
                     composable(Destinations.PROFILE) {
@@ -372,6 +394,10 @@ private fun AppShell(session: Session?) {
                             onOpenClub = { id -> navController.navigate(Destinations.club(id)) { launchSingleTop = true } },
                             onManageRoster = { id -> navController.navigate(Destinations.roster(id)) { launchSingleTop = true } },
                             onOpenPlayer = { pid, cid -> navController.navigate(Destinations.player(pid, cid)) { launchSingleTop = true } },
+                            onEditClub = { id -> navController.navigate(NewRoutes.clubEdit(id)) { launchSingleTop = true } },
+                            onEditStaff = { id -> navController.navigate(NewRoutes.clubStaff(id)) { launchSingleTop = true } },
+                            onManageProducts = { id -> navController.navigate(NewRoutes.clubProducts(id)) { launchSingleTop = true } },
+                            onClubOrders = { id -> navController.navigate(NewRoutes.clubOrders(id)) { launchSingleTop = true } },
                         )
                     }
                     composable(
@@ -382,6 +408,10 @@ private fun AppShell(session: Session?) {
                             clubId = entry.arguments?.getString("clubId").orEmpty(),
                             onManageRoster = { id -> navController.navigate(Destinations.roster(id)) { launchSingleTop = true } },
                             onOpenPlayer = { pid, cid -> navController.navigate(Destinations.player(pid, cid)) { launchSingleTop = true } },
+                            onEditClub = { id -> navController.navigate(NewRoutes.clubEdit(id)) { launchSingleTop = true } },
+                            onEditStaff = { id -> navController.navigate(NewRoutes.clubStaff(id)) { launchSingleTop = true } },
+                            onManageProducts = { id -> navController.navigate(NewRoutes.clubProducts(id)) { launchSingleTop = true } },
+                            onClubOrders = { id -> navController.navigate(NewRoutes.clubOrders(id)) { launchSingleTop = true } },
                         )
                     }
                     composable(Destinations.STORE) {
@@ -414,6 +444,7 @@ private fun AppShell(session: Session?) {
                                 }
                             },
                             onBackToCart = { navController.popBackStack() },
+                            onOpenOrders = { navController.navigate(Destinations.ORDERS) { launchSingleTop = true } },
                         )
                     }
                     composable(
@@ -441,7 +472,11 @@ private fun AppShell(session: Session?) {
                         Destinations.ROSTER,
                         arguments = listOf(navArgument("clubId") { type = NavType.StringType }),
                     ) { entry ->
-                        RosterScreen(clubId = entry.arguments?.getString("clubId").orEmpty())
+                        val rosterClubId = entry.arguments?.getString("clubId").orEmpty()
+                        RosterScreen(
+                            clubId = rosterClubId,
+                            onAddPlayer = { navController.navigate(NewRoutes.rosterAdd(rosterClubId)) { launchSingleTop = true } },
+                        )
                     }
                     composable(
                         Destinations.SCORING,
@@ -450,11 +485,14 @@ private fun AppShell(session: Session?) {
                         ScoringScreen(matchId = entry.arguments?.getString("matchId").orEmpty())
                     }
                     composable(Destinations.SYNC) { SyncStatusScreen() }
-                    listOf(
-                        Destinations.ADMIN,
-                    ).forEach { r ->
-                        composable(r) { ComingSoonScreen(title = titleFor(r)) }
-                    }
+                    userAdminGraph(navController)
+                    platformAdminGraph(navController)
+                    leagueAdminGraph(navController)
+                    fixtureGenGraph(navController)
+                    clubAdminGraph(navController)
+                    matchOpsGraph(navController)
+                    rosterExtraGraph(navController)
+                    ordersExtraGraph(navController)
                 }
             }
         }

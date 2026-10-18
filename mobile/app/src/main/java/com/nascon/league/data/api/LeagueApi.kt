@@ -12,6 +12,7 @@ import com.nascon.league.data.api.dto.LogoutRequest
 import com.nascon.league.data.api.dto.MatchDetailDto
 import com.nascon.league.data.api.dto.MatchEventRequest
 import com.nascon.league.data.api.dto.MatchEventResponse
+import com.nascon.league.data.api.dto.MeResponse
 import com.nascon.league.data.api.dto.OrderDetailDto
 import com.nascon.league.data.api.dto.PingResponse
 import com.nascon.league.data.api.dto.PlayerHistoryDto
@@ -25,6 +26,7 @@ import com.nascon.league.data.api.dto.SyncRequest
 import com.nascon.league.data.api.dto.SyncResponse
 import kotlinx.serialization.json.JsonObject
 import okhttp3.ResponseBody
+import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
@@ -42,14 +44,24 @@ interface LeagueApi {
     @POST("api/v1/auth/logout")
     suspend fun logout(@Body body: LogoutRequest): JsonObject
 
+    @GET("api/v1/me")
+    suspend fun me(): MeResponse
+
     @GET("api/v1/ping")
     suspend fun ping(): PingResponse
 
     @GET("api/v1/leagues")
-    suspend fun leagues(): List<LeagueDto>
+    suspend fun leagues(
+        @Query("limit") limit: Int? = null,
+        @Query("offset") offset: Int? = null,
+    ): Response<List<LeagueDto>>
 
     @GET("api/v1/leagues/{id}/fixtures")
-    suspend fun fixtures(@Path("id") leagueId: String): List<FixtureDto>
+    suspend fun fixtures(
+        @Path("id") leagueId: String,
+        @Query("limit") limit: Int? = null,
+        @Query("offset") offset: Int? = null,
+    ): Response<List<FixtureDto>>
 
     @GET("api/v1/matches/{id}")
     suspend fun match(@Path("id") id: String): MatchDetailDto
@@ -64,7 +76,10 @@ interface LeagueApi {
     suspend fun standings(@Path("id") leagueId: String): StandingsDto
 
     @GET("api/v1/clubs")
-    suspend fun clubs(): List<ClubSummaryDto>
+    suspend fun clubs(
+        @Query("limit") limit: Int? = null,
+        @Query("offset") offset: Int? = null,
+    ): Response<List<ClubSummaryDto>>
 
     @GET("api/v1/clubs/{id}")
     suspend fun club(@Path("id") id: String): ClubDto
@@ -73,7 +88,10 @@ interface LeagueApi {
     suspend fun rosterTransfer(@Path("id") clubId: String, @Body body: JsonObject): RosterTransferResponse
 
     @GET("api/v1/products")
-    suspend fun products(): List<ProductDto>
+    suspend fun products(
+        @Query("limit") limit: Int? = null,
+        @Query("offset") offset: Int? = null,
+    ): Response<List<ProductDto>>
 
     @POST("api/v1/checkout")
     suspend fun checkout(@Body body: CheckoutRequest): CheckoutResponse

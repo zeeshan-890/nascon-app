@@ -36,7 +36,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.nascon.league.R
 import com.nascon.league.core.config.ServerConfigStore
-import com.nascon.league.core.error.ErrorMapper
+import com.nascon.league.ui.failure.userMessage
 import com.nascon.league.di.LocalAppContainer
 import com.nascon.league.ui.components.ArenaCard
 import com.nascon.league.ui.components.EmptyState
@@ -46,6 +46,8 @@ import com.nascon.league.ui.components.RefreshableList
 import com.nascon.league.ui.components.SavedDataBadge
 import com.nascon.league.ui.match.isConnectivity
 import com.nascon.league.ui.theme.Spacing
+import com.nascon.league.ui.theme.Arena
+import androidx.compose.material.icons.filled.ChevronRight
 
 @Composable
 fun ClubsListScreen(
@@ -110,7 +112,7 @@ fun ClubsListScreen(
                     when {
                         !s.cacheChecked || s.refresh.refreshing || err == null -> LoadingBox()
                         err.isConnectivity() -> NotSavedState(vm::refresh)
-                        else -> ErrorState(ErrorMapper.message(err), vm::refresh)
+                        else -> ErrorState(userMessage(err), vm::refresh)
                     }
                 }
                 clubs.isEmpty() && q.isNotEmpty() -> EmptyState(
@@ -142,13 +144,29 @@ fun ClubsListScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(Spacing.md),
                             ) {
-                                ClubLogo(club.name, resolveLogoUrl(club.logoUrl, baseUrl), 48.dp)
-                                Text(
-                                    club.name,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.weight(1f),
+                                ClubLogo(club.name, resolveLogoUrl(club.logoUrl, baseUrl), 44.dp)
+                                Column(Modifier.weight(1f)) {
+                                    Text(
+                                        club.name,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                    val place = club.venue?.name.orEmpty()
+                                    if (place.isNotBlank()) {
+                                        Text(
+                                            place,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                    }
+                                }
+                                Icon(
+                                    Icons.Default.ChevronRight,
+                                    contentDescription = null,
+                                    tint = Arena.colors.brand,
                                 )
                             }
                         }

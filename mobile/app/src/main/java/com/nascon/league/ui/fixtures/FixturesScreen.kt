@@ -62,10 +62,11 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.nascon.league.R
-import com.nascon.league.core.error.ErrorMapper
+import com.nascon.league.ui.failure.userMessage
 import com.nascon.league.di.LocalAppContainer
 import com.nascon.league.domain.model.Fixture
 import com.nascon.league.ui.components.EmptyState
@@ -86,6 +87,10 @@ fun FixturesScreen(
     val container = LocalAppContainer.current
     val vm: FixturesViewModel = viewModel(factory = FixturesViewModel.factory(container))
     val s by vm.state.collectAsStateWithLifecycle()
+    LifecycleStartEffect(vm) {
+        vm.setActive(true)
+        onStopOrDispose { vm.setActive(false) }
+    }
     FixturesContent(
         s = s,
         onFilter = vm::setFilter,
@@ -267,7 +272,7 @@ private fun FixturesBody(
         when {
             s.leaguesRefresh.refreshing -> Spinner()
             s.leaguesRefresh.error != null && s.leaguesRefresh.error.isConnectivity() -> NotSaved(onRefresh)
-            s.leaguesRefresh.error != null -> ErrorState(ErrorMapper.message(s.leaguesRefresh.error), onRefresh)
+            s.leaguesRefresh.error != null -> ErrorState(userMessage(s.leaguesRefresh.error), onRefresh)
             else -> EmptyState(
                 icon = Icons.Default.SportsSoccer,
                 title = stringResource(R.string.f3_no_leagues_title),
@@ -284,7 +289,7 @@ private fun FixturesBody(
         when {
             s.refresh.refreshing || err == null -> Spinner()
             err.isConnectivity() -> NotSaved(onRefresh)
-            else -> ErrorState(ErrorMapper.message(err), onRefresh)
+            else -> ErrorState(userMessage(err), onRefresh)
         }
         return
     }

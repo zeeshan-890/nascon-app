@@ -14,6 +14,7 @@ import com.nascon.league.data.realtime.RealtimeState
 import com.nascon.league.data.realtime.throttleFirst
 import com.nascon.league.data.repo.Cached
 import com.nascon.league.di.AppContainer
+import com.nascon.league.ui.failure.RateLimitRetry
 import com.nascon.league.domain.model.Fixture
 import com.nascon.league.domain.model.Permissions
 import com.nascon.league.ui.fixtures.StatusKind
@@ -89,6 +90,7 @@ class MatchDetailViewModel(
 
     private val active = MutableStateFlow(false)
     private val refreshState = MutableStateFlow(RefreshState())
+    private val rateLimit = RateLimitRetry(viewModelScope)
     private val errors = Channel<ApiError>(Channel.BUFFERED)
 
     /** One-shot refresh failures that happened while cached data is on screen (for a snackbar). */
@@ -218,6 +220,7 @@ class MatchDetailViewModel(
             val r = container.matchRepository.refresh(matchId)
             val err = (r as? NetworkResult.Failure)?.error
             refreshState.value = RefreshState(false, err)
+            rateLimit.consider("match", err) { refreshNow(silent = true) }
             val hadCache = state.value.match != null
             if (err != null && !silent && hadCache && !err.isNotFound() && err !is ApiError.NoConnection) {
                 errors.trySend(err)

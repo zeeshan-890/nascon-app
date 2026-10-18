@@ -42,7 +42,8 @@ class TokenAuthenticator(
                 )
                 response.request.newBuilder().header("Authorization", "Bearer ${tokens.accessToken}").build()
             } catch (e: HttpException) {
-                if (e.code() == 401 || e.code() == 403) onSessionExpired()
+                // 401 means the refresh token is dead. 403 is a permission error and must not log the user out.
+                if (e.code() == 401) onSessionExpired()
                 null
             } catch (e: Exception) {
                 null

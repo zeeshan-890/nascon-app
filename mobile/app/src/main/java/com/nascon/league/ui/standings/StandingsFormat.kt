@@ -1,5 +1,6 @@
 package com.nascon.league.ui.standings
 
+import com.nascon.league.data.api.dto.StandingRowDto
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -116,3 +117,18 @@ fun rowDescription(
 
 fun teamDisplayName(teamNames: Map<String, String>, teamId: String): String =
     teamNames[teamId]?.takeIf { it.isNotBlank() } ?: teamId
+
+/** One row per team. A repeat keeps the better (lower) rank, then the later copy. */
+fun dedupeStandingRows(rows: List<StandingRowDto>): List<StandingRowDto> {
+    val best = LinkedHashMap<String, StandingRowDto>()
+    val blank = ArrayList<StandingRowDto>()
+    for (row in rows) {
+        if (row.teamId.isBlank()) {
+            blank += row
+            continue
+        }
+        val prev = best[row.teamId]
+        if (prev == null || row.rank < prev.rank) best[row.teamId] = row
+    }
+    return best.values.toList() + blank
+}

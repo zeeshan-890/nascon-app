@@ -15,6 +15,8 @@ import com.nascon.league.data.api.dto.CheckoutRequest
 import com.nascon.league.data.api.dto.CheckoutResponse
 import com.nascon.league.data.api.dto.ClubDto
 import com.nascon.league.data.api.dto.FixtureDto
+import com.nascon.league.data.api.dto.MeResponse
+import retrofit2.Response
 import com.nascon.league.data.api.dto.LeagueDto
 import com.nascon.league.data.api.dto.LoginRequest
 import com.nascon.league.data.api.dto.LoginResponse
@@ -139,21 +141,25 @@ class FakeApi : LeagueApi {
     var fixturesImpl: suspend (String) -> List<FixtureDto> = { emptyList() }
     var matchImpl: suspend (String) -> MatchDetailDto = { matchDto(it) }
 
-    override suspend fun fixtures(leagueId: String): List<FixtureDto> { fixturesCalls++; return fixturesImpl(leagueId) }
+    override suspend fun fixtures(leagueId: String, limit: Int?, offset: Int?): Response<List<FixtureDto>> {
+        fixturesCalls++
+        return Response.success(fixturesImpl(leagueId))
+    }
     override suspend fun match(id: String): MatchDetailDto { matchCalls++; return matchImpl(id) }
 
     override suspend fun login(body: LoginRequest): LoginResponse = error("unused")
     override suspend fun refresh(body: RefreshRequest): RefreshResponse = error("unused")
     override suspend fun logout(body: LogoutRequest): JsonObject = error("unused")
+    override suspend fun me(): MeResponse = error("unused")
     override suspend fun ping(): PingResponse = error("unused")
-    override suspend fun leagues(): List<LeagueDto> = error("unused")
+    override suspend fun leagues(limit: Int?, offset: Int?): Response<List<LeagueDto>> = error("unused")
     override suspend fun postEvent(matchId: String, body: MatchEventRequest): MatchEventResponse = error("unused")
     override suspend fun sport(id: String): SportConfigDto = error("unused")
     override suspend fun standings(leagueId: String): StandingsDto = error("unused")
     override suspend fun club(id: String): ClubDto = error("unused")
-    override suspend fun clubs(): List<com.nascon.league.data.api.dto.ClubSummaryDto> = error("unused")
+    override suspend fun clubs(limit: Int?, offset: Int?): Response<List<com.nascon.league.data.api.dto.ClubSummaryDto>> = error("unused")
     override suspend fun rosterTransfer(clubId: String, body: JsonObject): RosterTransferResponse = error("unused")
-    override suspend fun products(): List<ProductDto> = error("unused")
+    override suspend fun products(limit: Int?, offset: Int?): Response<List<ProductDto>> = error("unused")
     override suspend fun checkout(body: CheckoutRequest): CheckoutResponse = error("unused")
     override suspend fun receiptPdf(orderId: String): ResponseBody = error("unused")
     override suspend fun sync(body: SyncRequest): SyncResponse = error("unused")

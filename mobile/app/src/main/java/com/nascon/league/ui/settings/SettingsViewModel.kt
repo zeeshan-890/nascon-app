@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.nascon.league.core.config.ServerConfigStore
-import com.nascon.league.core.error.ErrorMapper
+import com.nascon.league.ui.failure.userMessage
 import com.nascon.league.core.network.NetworkResult
 import com.nascon.league.core.network.safeCall
 import com.nascon.league.di.AppContainer
@@ -93,7 +93,7 @@ class SettingsViewModel(private val container: AppContainer) : ViewModel() {
             val result = safeCall { container.apiFactory.create(url).ping() }
             val next = when (result) {
                 is NetworkResult.Success -> TestState.Success
-                is NetworkResult.Failure -> TestState.Failed(ErrorMapper.message(result.error))
+                is NetworkResult.Failure -> TestState.Failed(userMessage(result.error))
             }
             _state.update { it.copy(test = next) }
         }

@@ -3,7 +3,7 @@
     <style name="Theme.NasconLeague" parent="android:Theme.Material.Light.NoActionBar" />
     <style name="Theme.NasconLeague.Splash" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/splash_bg</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/arena_logo</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_logo</item>
         <item name="postSplashScreenTheme">@style/Theme.NasconLeague</item>
     </style>
 </resources>

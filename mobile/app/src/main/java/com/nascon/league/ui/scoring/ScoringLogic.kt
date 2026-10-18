@@ -59,6 +59,34 @@ object ScoringLogic {
     fun tiebreakAvailable(config: SportConfigDto?, homeScore: Int, awayScore: Int): Boolean =
         config?.drawAllowed == false && homeScore == awayScore
 
+    /** True when a non-compensated tie-break winner exists on the server or in the pending queue. */
+    fun tiebreakRecorded(events: List<MatchEventDto>, pendingActions: List<PendingActionEntity>): Boolean {
+        if (events.any { it.type == "tiebreak_winner" && canUndo(it, events) }) return true
+        return pendingActions.any { a ->
+            a.type == "score_event" && parse(a.payloadJson)?.get("type").str() == "tiebreak_winner"
+        }
+    }
+
+    /** The match is level, draws are not allowed and nobody has been named tie-break winner yet. */
+    fun tiebreakRequired(config: SportConfigDto?, homeScore: Int, awayScore: Int, recorded: Boolean): Boolean =
+        tiebreakAvailable(config, homeScore, awayScore) && !recorded
+
+    fun canEndMatch(config: SportConfigDto?, homeScore: Int, awayScore: Int, tiebreakRecorded: Boolean = false): Boolean =
+        !tiebreakRequired(config, homeScore, awayScore, tiebreakRecorded)
+
+    /** Rejected sync result that means "ended level but draws are not allowed". */
+    fun isTieNotAllowed(reasonCode: String?): Boolean = reasonCode == "TIE_NOT_ALLOWED"
+
+    /** Steps the discipline points: through [options] when the sport lists them, otherwise 1..99. */
+    fun stepDiscipline(options: List<Int>, current: Int, delta: Int): Int {
+        if (options.isEmpty()) return (current + delta).coerceIn(1, 99)
+        val sorted = options.distinct().sorted()
+        val idx = sorted.indexOf(current).let { if (it < 0) 0 else it }
+        return sorted[(idx + delta).coerceIn(0, sorted.lastIndex)]
+    }
+
+    fun initialDiscipline(options: List<Int>): Int = options.minOrNull() ?: 1
+
     fun controlsMode(status: String?): ControlsMode = when (status) {
         "upcoming", "scheduled" -> ControlsMode.START
         "in_progress" -> ControlsMode.SCORE

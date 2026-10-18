@@ -61,7 +61,11 @@ class LeaguesRepository(
     }
 
     suspend fun refresh(): NetworkResult<Unit> = deduper.run("leagues", isOnline) {
-        when (val r = safeCall { apiProvider().leagues() }) {
+        when (val r = safeCall {
+            collectPages(LEAGUE_PAGE_CAP, fetch = { limit, offset ->
+                apiProvider().leagues(limit, offset).toPage()
+            }, idOf = { it.leagueId })
+        }) {
             is NetworkResult.Failure -> r
             is NetworkResult.Success -> {
                 val t = now()
@@ -102,7 +106,11 @@ class FixturesRepository(
         }
 
     suspend fun refresh(leagueId: String): NetworkResult<Unit> = deduper.run("fixtures:$leagueId", isOnline) {
-        when (val r = safeCall { apiProvider().fixtures(leagueId) }) {
+        when (val r = safeCall {
+            collectPages(FIXTURE_PAGE_CAP, fetch = { limit, offset ->
+                apiProvider().fixtures(leagueId, limit, offset).toPage()
+            }, idOf = { it.matchId })
+        }) {
             is NetworkResult.Failure -> r
             is NetworkResult.Success -> {
                 val t = now()
@@ -205,6 +213,7 @@ class ClubRepository(
         resourceFlow("club:$clubId", observe(clubId), deduper, now)
 }
 
+/** Loads one sport with `GET /api/v1/sports/{id}`. The collection route is not on the server. */
 class SportRepository(
     private val dao: SportDao,
     private val apiProvider: () -> LeagueApi,
@@ -246,7 +255,11 @@ class ProductRepository(
         }
 
     suspend fun refresh(): NetworkResult<Unit> = deduper.run("products", isOnline) {
-        when (val r = safeCall { apiProvider().products() }) {
+        when (val r = safeCall {
+            collectPages(PRODUCT_PAGE_CAP, fetch = { limit, offset ->
+                apiProvider().products(limit, offset).toPage()
+            }, idOf = { it.productId })
+        }) {
             is NetworkResult.Failure -> r
             is NetworkResult.Success -> {
                 val t = now()
@@ -262,4 +275,11 @@ class ProductRepository(
     }
 
     fun observeResource(): Flow<Resource<List<ProductDto>>> = resourceFlow("products", observe(), deduper, now)
+
+    /** Product detail is one row of [observe]. `GET /products/{id}` is not a route on the server. */
+    fun observeProduct(productId: String): Flow<Cached<ProductDto>?> = observe().map { cached ->
+        if (cached == null) return@map null
+        val product = cached.data.firstOrNull { it.productId == productId } ?: return@map null
+        Cached(product, cached.updatedAt)
+    }
 }

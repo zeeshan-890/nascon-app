@@ -63,7 +63,7 @@ import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.nascon.league.R
-import com.nascon.league.core.error.ErrorMapper
+import com.nascon.league.ui.failure.userMessage
 import com.nascon.league.data.api.dto.StandingRowDto
 import com.nascon.league.data.api.dto.StandingsDto
 import com.nascon.league.di.LocalAppContainer
@@ -71,7 +71,8 @@ import com.nascon.league.ui.components.EmptyState
 import com.nascon.league.ui.components.ErrorState
 import com.nascon.league.ui.components.LastUpdatedLabel
 import com.nascon.league.ui.components.RefreshableList
-import com.nascon.league.ui.components.SavedDataBadge
+import com.nascon.league.ui.components.AlertTone
+import com.nascon.league.ui.components.InlineAlert
 import com.nascon.league.ui.components.ChipTone
 import com.nascon.league.ui.components.StatusChip
 import com.nascon.league.ui.theme.Arena
@@ -125,6 +126,23 @@ private fun StandingsContent(
         val cached = s.standings != null
         if (cached && s.refresh.refreshing) LinearProgressIndicator(Modifier.fillMaxWidth())
         if (cached) {
+            if (s.offline) {
+                // B14: amber saved-copy strip with the "Updated ..." label inside it
+                InlineAlert(
+                    text = stringResource(R.string.cs_offline_saved),
+                    tone = AlertTone.WARNING,
+                    icon = Icons.Default.CloudOff,
+                    modifier = Modifier.padding(horizontal = Spacing.md, vertical = Spacing.xs),
+                    content = { LastUpdatedLabel(s.updatedAt) },
+                )
+            } else if (s.refresh.error != null) {
+                InlineAlert(
+                    text = stringResource(R.string.f4_refresh_failed_saved),
+                    tone = AlertTone.WARNING,
+                    modifier = Modifier.padding(horizontal = Spacing.md, vertical = Spacing.xs),
+                    content = { LastUpdatedLabel(s.updatedAt) },
+                )
+            }
             Row(
                 Modifier.fillMaxWidth().padding(horizontal = Spacing.md, vertical = Spacing.xs),
                 verticalAlignment = Alignment.CenterVertically,
@@ -135,8 +153,7 @@ private fun StandingsContent(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
                 ) {
-                    if (s.offline || s.refresh.error != null) SavedDataBadge()
-                    LastUpdatedLabel(s.updatedAt)
+                    if (!s.offline && s.refresh.error == null) LastUpdatedLabel(s.updatedAt)
                 }
                 val leagueId = s.selectedLeagueId
                 if (leagueId != null) {
@@ -145,14 +162,6 @@ private fun StandingsContent(
                         modifier = Modifier.heightIn(min = 48.dp),
                     ) { Text(stringResource(R.string.f4_view_fixtures), style = MaterialTheme.typography.bodyLarge) }
                 }
-            }
-            if (s.refresh.error != null && !s.offline) {
-                Text(
-                    stringResource(R.string.f4_refresh_failed_saved),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = Spacing.md),
-                )
             }
         }
         RefreshableList(
@@ -245,7 +254,7 @@ private fun StandingsBody(
         when {
             s.leaguesRefresh.refreshing -> Spinner()
             err != null && err.isConnectivity() -> NotSaved(onRefresh)
-            err != null -> ErrorState(ErrorMapper.message(err), onRefresh)
+            err != null -> ErrorState(userMessage(err), onRefresh)
             else -> EmptyState(
                 icon = Icons.Default.Leaderboard,
                 title = stringResource(R.string.f4_no_leagues_title),
@@ -262,7 +271,7 @@ private fun StandingsBody(
         when {
             s.refresh.refreshing || err == null -> Spinner()
             err.isConnectivity() -> NotSaved(onRefresh)
-            else -> ErrorState(ErrorMapper.message(err), onRefresh)
+            else -> ErrorState(userMessage(err), onRefresh)
         }
         return
     }
@@ -270,7 +279,7 @@ private fun StandingsBody(
         EmptyState(
             icon = Icons.Default.Leaderboard,
             title = stringResource(R.string.f4_empty_title),
-            message = stringResource(R.string.f4_empty_message),
+            message = stringResource(R.string.cs_empty_message),
             actionLabel = stringResource(R.string.f4_refresh),
             onAction = onRefresh,
         )
@@ -292,7 +301,7 @@ private sealed interface TableItem {
 }
 
 private fun buildItems(standings: StandingsDto): List<TableItem> {
-    val sorted = standings.table.sortedBy { it.rank }
+    val sorted = dedupeStandingRows(standings.table).sortedBy { it.rank }
     val after = qualificationLineAfter(standings.qualificationSpots, sorted.size)
     val out = ArrayList<TableItem>(sorted.size + 1)
     sorted.forEachIndexed { i, r ->
@@ -511,34 +520,45 @@ private fun H2hSheet(standings: StandingsDto, teamId: String, onDismiss: () -> U
     val others = remember(standings, teamId) { standings.table.sortedBy { it.rank }.map { it.teamId } }
     val entries = remember(standings, teamId) { parseH2h(standings.h2h, teamId, others) }
     val teamName = teamDisplayName(standings.teamNames, teamId)
+    val explanation = remember(standings, teamId) { tieExplanation(standings.table, teamId) }
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = Color.White,
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
     ) {
-        Column(Modifier.fillMaxWidth().padding(horizontal = Spacing.md)) {
-            Text(
-                stringResource(R.string.f4_h2h_title),
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.semantics { heading() },
-            )
-            Text(
-                stringResource(R.string.f4_h2h_subtitle, teamName),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(Spacing.sm))
-            if (entries.isEmpty()) {
-                Text(
-                    stringResource(R.string.f4_h2h_none),
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(vertical = Spacing.md),
-                )
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
-                ) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = Spacing.lg)) {
+            // single scroller: explanation + per-team list scroll together (B13)
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
+            ) {
+                if (explanation != null) {
+                    item(key = "why") { TieExplainBlock(standings, explanation) }
+                }
+                item(key = "title") {
+                    Column {
+                        Text(
+                            stringResource(if (explanation != null) R.string.cs_h2h_all_title else R.string.f4_h2h_title),
+                            style = MaterialTheme.typography.titleLarge,
+                            modifier = Modifier.padding(top = Spacing.sm).semantics { heading() },
+                        )
+                        Text(
+                            stringResource(R.string.f4_h2h_subtitle, teamName),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.height(Spacing.sm))
+                    }
+                }
+                if (entries.isEmpty()) {
+                    item(key = "none") {
+                        Text(
+                            stringResource(R.string.f4_h2h_none),
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(vertical = Spacing.md),
+                        )
+                    }
+                } else {
                     items(entries, key = { it.otherTeamId }) { e ->
                         val otherName = teamDisplayName(standings.teamNames, e.otherTeamId)
                         val detail = if (e.neverMet) {

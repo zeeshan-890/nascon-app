@@ -22,7 +22,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.outlined.ErrorOutline
+import androidx.compose.material.icons.outlined.CreditCardOff
 import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material3.CircularProgressIndicator
@@ -48,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.nascon.league.R
+import com.nascon.league.core.error.ErrorMapper
 import com.nascon.league.data.store.PaymentMethod
 import com.nascon.league.data.store.formatPkr
 import com.nascon.league.di.LocalAppContainer
@@ -65,6 +68,8 @@ fun CheckoutScreen(
     onOrderPlaced: (orderId: String) -> Unit,
     onBackToCart: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Optional: opens the user's orders (used by the "could not confirm" state). */
+    onOpenOrders: (() -> Unit)? = null,
 ) {
     val container = LocalAppContainer.current
     val vm: CheckoutViewModel = viewModel(factory = CheckoutViewModel.factory(container))
@@ -84,6 +89,20 @@ fun CheckoutScreen(
         Box(modifier.fillMaxSize().semantics { contentDescription = cd }, contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
         }
+        return
+    }
+    if (s.inFlight) {
+        PayingState(formatPkr(s.subtotalMinor), modifier)
+        return
+    }
+    if (s.banner == BannerKind.Declined || s.banner == BannerKind.CaptureFailed) {
+        PaymentFailedState(
+            captureFailed = s.banner == BannerKind.CaptureFailed,
+            onTryAgain = { vm.onMethodChange(s.method) },
+            onBackToCart = onBackToCart,
+            onOpenOrders = onOpenOrders,
+            modifier = modifier,
+        )
         return
     }
     if (s.lines.isEmpty() && !s.inFlight) {
@@ -136,6 +155,16 @@ private fun CheckoutContent(
                 .padding(Spacing.md),
             verticalArrangement = Arrangement.spacedBy(Spacing.md),
         ) {
+            if (s.hint == PayHint.Offline) {
+                StoreNoticeStrip(
+                    text = stringResource(R.string.storestates_offline_strip),
+                    icon = Icons.Default.Warning,
+                    background = Arena.colors.warnBg,
+                    foreground = Arena.colors.warnFg,
+                    border = Arena.colors.warnBorder,
+                    live = true,
+                )
+            }
             // Order summary
             Text(
                 stringResource(R.string.f6_order_summary),
@@ -250,18 +279,6 @@ private fun CheckoutContent(
                     Text(formatPkr(s.subtotalMinor), style = MaterialTheme.typography.titleLarge, color = Arena.colors.brand)
                 }
                 when (s.hint) {
-                    PayHint.Offline -> Surface(
-                        color = Arena.colors.warnBg,
-                        contentColor = Arena.colors.warnFg,
-                        shape = RoundedCornerShape(14.dp),
-                        border = BorderStroke(1.dp, Arena.colors.warnBorder),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Row(Modifier.padding(Spacing.md), horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                            Icon(Icons.Default.CloudOff, contentDescription = null, modifier = Modifier.size(24.dp))
-                            Text(stringResource(R.string.f6_pay_offline), style = MaterialTheme.typography.bodyLarge)
-                        }
-                    }
                     PayHint.Problems -> {
                         Text(
                             stringResource(R.string.f6_checkout_blocked),
@@ -278,7 +295,11 @@ private fun CheckoutContent(
                 }
                 val payingCd = stringResource(R.string.f6_paying_cd)
                 PrimaryButton(
-                    text = stringResource(R.string.f6_pay_button, formatPkr(s.subtotalMinor)),
+                    text = if (s.hint == PayHint.Offline) {
+                        stringResource(R.string.storestates_pay_needs_internet)
+                    } else {
+                        stringResource(R.string.f6_pay_button, formatPkr(s.subtotalMinor))
+                    },
                     onClick = onPay,
                     loading = s.inFlight,
                     enabled = s.payEnabled,
@@ -319,5 +340,68 @@ private fun PayBanner(kind: BannerKind, message: String?) {
             Icon(Icons.Default.ErrorOutline, contentDescription = null, modifier = Modifier.size(24.dp))
             Text(text, style = MaterialTheme.typography.bodyLarge)
         }
+    }
+}
+
+/** Mockup C08: the whole content is the in-flight state while the checkout request runs. */
+@Composable
+private fun PayingState(payLabelAmount: String, modifier: Modifier = Modifier) {
+    val payingCd = stringResource(R.string.f6_paying_cd)
+    StoreStateCard(
+        title = stringResource(R.string.storestates_paying_title),
+        message = stringResource(R.string.storestates_paying_message),
+        leading = {
+            CircularProgressIndicator(
+                modifier = Modifier.size(64.dp).semantics { contentDescription = payingCd },
+                strokeWidth = 6.dp,
+                color = Arena.colors.brand,
+                trackColor = Arena.colors.chipBg,
+            )
+        },
+        primaryLabel = stringResource(R.string.f6_pay_button, payLabelAmount),
+        onPrimary = {},
+        primaryEnabled = false,
+        live = true,
+        modifier = modifier.semantics { contentDescription = payingCd },
+    )
+}
+
+/** Mockups C09 / C10. Wording comes from ErrorMapper so it stays in step with the server codes. */
+@Composable
+private fun PaymentFailedState(
+    captureFailed: Boolean,
+    onTryAgain: () -> Unit,
+    onBackToCart: () -> Unit,
+    onOpenOrders: (() -> Unit)?,
+    modifier: Modifier = Modifier,
+) {
+    if (captureFailed) {
+        StoreStateCard(
+            icon = Icons.Outlined.ErrorOutline,
+            iconTint = Arena.colors.warnFg,
+            title = stringResource(R.string.storestates_capture_title),
+            message = ErrorMapper.forCode("PAYMENT_CAPTURE_FAILED"),
+            primaryLabel = stringResource(
+                if (onOpenOrders != null) R.string.storestates_check_orders else R.string.storestates_try_again,
+            ),
+            onPrimary = onOpenOrders ?: onTryAgain,
+            secondaryLabel = stringResource(R.string.f6_back_to_cart),
+            onSecondary = onBackToCart,
+            live = true,
+            modifier = modifier,
+        )
+    } else {
+        StoreStateCard(
+            icon = Icons.Outlined.CreditCardOff,
+            iconTint = Arena.colors.liveFg,
+            title = stringResource(R.string.storestates_declined_title),
+            message = ErrorMapper.forCode("PAYMENT_DECLINED"),
+            primaryLabel = stringResource(R.string.storestates_try_another),
+            onPrimary = onTryAgain,
+            secondaryLabel = stringResource(R.string.f6_back_to_cart),
+            onSecondary = onBackToCart,
+            live = true,
+            modifier = modifier,
+        )
     }
 }

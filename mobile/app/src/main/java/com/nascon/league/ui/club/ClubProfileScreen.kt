@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -78,7 +79,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.SubcomposeAsyncImage
 import com.nascon.league.R
 import com.nascon.league.core.config.ServerConfigStore
-import com.nascon.league.core.error.ErrorMapper
+import com.nascon.league.ui.failure.userMessage
 import com.nascon.league.data.api.dto.ClubDto
 import com.nascon.league.data.api.dto.ClubStatDto
 import com.nascon.league.data.api.dto.RosterPlayerDto
@@ -115,6 +116,10 @@ fun ClubProfileScreen(
     onManageRoster: (String) -> Unit,
     modifier: Modifier = Modifier,
     onOpenPlayer: ((playerId: String, clubId: String) -> Unit)? = null,
+    onEditClub: ((clubId: String) -> Unit)? = null,
+    onEditStaff: ((String) -> Unit)? = null,
+    onManageProducts: ((String) -> Unit)? = null,
+    onClubOrders: ((String) -> Unit)? = null,
 ) {
     val container = LocalAppContainer.current
     val vm: ClubProfileViewModel = viewModel(
@@ -156,7 +161,7 @@ fun ClubProfileScreen(
                     onAction = { back?.onBackPressed() },
                 )
                 err.isConnectivity() -> NotSavedState(vm::refresh)
-                else -> ErrorState(ErrorMapper.message(err), vm::refresh)
+                else -> ErrorState(userMessage(err), vm::refresh)
             }
         } else {
             RefreshableList(
@@ -173,6 +178,10 @@ fun ClubProfileScreen(
                     pendingFor = pendingFor,
                     onManageRoster = onManageRoster,
                     onOpenPlayer = onOpenPlayer,
+                    onEditClub = onEditClub,
+                    onEditStaff = onEditStaff,
+                    onManageProducts = onManageProducts,
+                    onClubOrders = onClubOrders,
                 )
             }
         }
@@ -247,8 +256,18 @@ private fun ProfileList(
     pendingFor: (String) -> Flow<Boolean>,
     onManageRoster: (String) -> Unit,
     onOpenPlayer: ((String, String) -> Unit)?,
+    onEditClub: ((String) -> Unit)? = null,
+    onEditStaff: ((String) -> Unit)? = null,
+    onManageProducts: ((String) -> Unit)? = null,
+    onClubOrders: ((String) -> Unit)? = null,
 ) {
     val context = LocalContext.current
+    var tabName by rememberSaveable(club.clubId) { mutableStateOf(ClubTab.SQUAD.name) }
+    val tab = clubTabOf(tabName)
+    val manage = manageActions(
+        canManage,
+        onEditClub != null, onEditStaff != null, onManageProducts != null, onClubOrders != null,
+    )
     val snackbar = LocalSnackbarHostState.current
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
@@ -371,6 +390,74 @@ private fun ProfileList(
             }
         }
 
+        // ---- manage club (only when wired AND the user may manage this club) ----
+        if (manage.any) {
+            item(key = "manage-club") {
+                Column(
+                    Modifier.fillMaxWidth().padding(horizontal = Spacing.md),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+                ) {
+                    Text(
+                        stringResource(R.string.cs_manage_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Arena.colors.ink,
+                        modifier = Modifier.semantics { heading() },
+                    )
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+                    ) {
+                        if (manage.editClub) SecondaryButton(
+                            text = stringResource(R.string.cs_edit_club),
+                            onClick = { onEditClub?.invoke(club.clubId) },
+                        )
+                        if (manage.editStaff) SecondaryButton(
+                            text = stringResource(R.string.cs_edit_staff),
+                            onClick = { onEditStaff?.invoke(club.clubId) },
+                        )
+                        if (manage.products) SecondaryButton(
+                            text = stringResource(R.string.cs_products),
+                            onClick = { onManageProducts?.invoke(club.clubId) },
+                        )
+                        if (manage.orders) SecondaryButton(
+                            text = stringResource(R.string.cs_orders),
+                            onClick = { onClubOrders?.invoke(club.clubId) },
+                        )
+                    }
+                }
+            }
+        }
+
+        // ---- tabs: squad / staff / season stats (single scroller, content swaps) ----
+        item(key = "tabs") {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = Spacing.md),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                ClubTab.values().forEach { t ->
+                    val label = stringResource(
+                        when (t) {
+                            ClubTab.SQUAD -> R.string.cs_tab_squad
+                            ClubTab.STAFF -> R.string.cs_tab_staff
+                            ClubTab.STATS -> R.string.cs_tab_stats
+                        },
+                    )
+                    val selectedCd = stringResource(R.string.cs_tab_selected_cd, label)
+                    com.nascon.league.ui.components.FilterPill(
+                        text = label,
+                        selected = tab == t,
+                        onClick = { tabName = t.name },
+                        modifier = Modifier.semantics { if (tab == t) contentDescription = selectedCd },
+                    )
+                }
+            }
+        }
+
+        if (tab == ClubTab.STAFF) {
         // ---- staff ----
         item(key = "h-staff") { SectionHeader(stringResource(R.string.f5_staff_title)) }
         if (club.staff.isEmpty()) {
@@ -395,7 +482,7 @@ private fun ProfileList(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(Spacing.md),
                 ) {
-                    Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(24.dp))
+                    InitialBadge(member.name, 42.dp)
                     Column(Modifier.weight(1f)) {
                         Text(member.name, style = MaterialTheme.typography.bodyLarge)
                         if (roleText.isNotBlank()) {
@@ -412,17 +499,50 @@ private fun ProfileList(
             }
         }
 
+        }
+        if (tab == ClubTab.STATS) {
         // ---- season stats ----
         item(key = "h-stats") { SectionHeader(stringResource(R.string.f5_stats_title)) }
         item(key = "stats-caption") { BodyNote(stringResource(R.string.f5_stats_caption)) }
         if (club.stats.isEmpty()) {
             item(key = "stats-empty") { BodyNote(stringResource(R.string.f5_stats_empty)) }
         } else {
+            val latest = latestSeasonStat(club.stats)
+            if (latest != null) {
+                item(key = "stats-latest-title") {
+                    Text(
+                        stringResource(R.string.cs_stats_season, latest.season),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = Arena.colors.brand,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.md),
+                    )
+                }
+                val cards = listOf(
+                    R.string.cs_stat_played to latest.played, R.string.cs_stat_won to latest.won,
+                    R.string.cs_stat_drawn to latest.drawn, R.string.cs_stat_lost to latest.lost,
+                    R.string.cs_stat_scored to latest.scored, R.string.cs_stat_conceded to latest.conceded,
+                )
+                cards.chunked(2).forEachIndexed { ri, pair ->
+                    item(key = "stats-cards-$ri") {
+                        Row(
+                            Modifier.fillMaxWidth().padding(horizontal = Spacing.md),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            pair.forEach { (labelRes, value) -> StatCard(stringResource(labelRes), value, Modifier.weight(1f)) }
+                        }
+                    }
+                }
+            }
+            if (club.stats.size > 1) {
+                item(key = "stats-all-title") { SectionHeader(stringResource(R.string.cs_stats_earlier)) }
+            }
             item(key = "stats-table") {
                 ArenaCard(Modifier.fillMaxWidth().padding(horizontal = Spacing.md)) { StatsTable(club.stats) }
             }
         }
+        }
 
+        if (tab == ClubTab.SQUAD) {
         // ---- roster ----
         item(key = "h-roster") { SectionHeader(stringResource(R.string.f5_roster_title)) }
         if (canManage) {
@@ -476,6 +596,42 @@ private fun ProfileList(
                     PlayerRow(p, pending, onOpenPlayer?.let { open -> { open(p.playerId, club.clubId) } })
                 }
             }
+        }
+        }
+    }
+}
+
+@Composable
+private fun InitialBadge(name: String, size: Dp) {
+    Box(
+        Modifier.size(size).clip(androidx.compose.foundation.shape.CircleShape).background(Arena.colors.chipBg),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            tenantInitials(name).take(1),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
+            color = Arena.colors.brand,
+            maxLines = 1,
+        )
+    }
+}
+
+@Composable
+private fun StatCard(label: String, value: Int, modifier: Modifier = Modifier) {
+    val cd = stringResource(R.string.cs_stat_cd, label, value)
+    ArenaCard(modifier.semantics(mergeDescendants = true) { contentDescription = cd }) {
+        Column(
+            Modifier.fillMaxWidth().heightIn(min = 92.dp).padding(14.dp),
+            verticalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(label, style = MaterialTheme.typography.titleSmall)
+            Text(
+                value.toString(),
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
+                color = Arena.colors.brand,
+            )
         }
     }
 }

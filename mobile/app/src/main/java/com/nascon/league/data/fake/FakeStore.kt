@@ -99,6 +99,38 @@ class FakeStore(
         return synchronized(lock) { orderDetails[orderId] } ?: fail(404, "ORDER_NOT_FOUND", "Order not found.")
     }
 
+    /** Read-only snapshot of every order (used by the club orders demo list). */
+    fun allOrders(): List<OrderDetailDto> = synchronized(lock) { orderDetails.values.toList() }
+
+    /** Adds a demo order if its id is unused. */
+    fun seedOrder(order: OrderDetailDto) {
+        synchronized(lock) { orderDetails.putIfAbsent(order.orderId, order) }
+    }
+
+    /** Mirrors orderService.transition: state machine (409 ILLEGAL_TRANSITION), restock, history. Returns from to updated. */
+    suspend fun transitionOrder(orderId: String, to: String): Pair<String, OrderDetailDto> {
+        pause("transition$orderId")
+        return synchronized(lock) {
+            val cur = orderDetails[orderId] ?: fail(404, "ORDER_NOT_FOUND", "Order not found.")
+            if (to !in com.nascon.league.ui.orders.OrderStateMachine.TRANSITIONS) {
+                fail(400, "VALIDATION_ERROR", "Unknown status.")
+            }
+            if (!com.nascon.league.ui.orders.OrderStateMachine.canTransition(cur.status, to)) {
+                fail(409, "ILLEGAL_TRANSITION", "Cannot move order from ${cur.status} to $to")
+            }
+            if (com.nascon.league.ui.orders.OrderStateMachine.restockOn(cur.status, to)) {
+                cur.items.forEach { i -> stock[i.variantId]?.let { stock[i.variantId] = it + i.quantity } }
+            }
+            val now = java.time.Instant.now().toString()
+            val updated = cur.copy(
+                status = to,
+                statusHistory = cur.statusHistory + OrderStatusEntryDto(cur.status, to, now),
+            )
+            orderDetails[orderId] = updated
+            cur.status to updated
+        }
+    }
+
     fun receiptPdf(orderId: String): ByteArray? {
         val bytes = synchronized(lock) { orders[orderId]?.pdfBytes }
         return bytes ?: fail(404, "ORDER_NOT_FOUND", "Order not found.")

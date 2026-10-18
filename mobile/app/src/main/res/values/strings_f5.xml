@@ -11,7 +11,7 @@
     <string name="f5_gone_title">This club is no longer available</string>
     <string name="f5_gone_message">It may have been removed. Go back and pick another club.</string>
     <string name="f5_forbidden_title">You can\'t view this club</string>
-    <string name="f5_forbidden_message">Your account doesn\'t have access to this club.</string>
+    <string name="f5_forbidden_message">You don\'t have permission to do that.</string>
     <string name="f5_back">Back</string>
     <string name="f5_try_again">Try again</string>
     <string name="f5_refresh_failed_saved">We couldn\'t refresh just now, so this is saved data.</string>

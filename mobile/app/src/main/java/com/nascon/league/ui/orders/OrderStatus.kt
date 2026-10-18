@@ -8,6 +8,7 @@ import java.util.Locale
 /** Maps a server order status to plain words; unknown or missing -> "Status unavailable". */
 @StringRes
 fun orderStatusRes(status: String?): Int = when (status?.trim()?.lowercase(Locale.ROOT)) {
+    "pending" -> R.string.ordx_status_pending
     "paid" -> R.string.ord_status_paid
     "packed" -> R.string.ord_status_packed
     "shipped" -> R.string.ord_status_shipped

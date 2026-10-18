@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Titles -->
+    <string name="ca_title_edit_club">Edit club</string>
+    <string name="ca_title_staff">Club staff</string>
+    <string name="ca_title_products">Club products</string>
+    <string name="ca_title_product_edit">Edit product</string>
+    <string name="ca_title_product_new">New product</string>
+    <string name="ca_title_stock">Update stock</string>
+
+    <!-- Shared -->
+    <string name="ca_no_access_title">You can\'t manage this club</string>
+    <string name="ca_no_access_message">Only the club manager or a super admin can change club details, staff and products.</string>
+    <string name="ca_cancel">Cancel</string>
+    <string name="ca_retry">Try again</string>
+    <string name="ca_loading">Loading…</string>
+    <string name="ca_saving">Saving…</string>
+    <string name="ca_saved">Changes saved.</string>
+    <string name="ca_discard_title">Discard changes?</string>
+    <string name="ca_discard_message">You have changes that are not saved yet. If you leave now they will be lost.</string>
+    <string name="ca_discard_confirm">Discard</string>
+    <string name="ca_keep_editing">Keep editing</string>
+    <string name="ca_remove">Remove</string>
+
+    <!-- Field errors -->
+    <string name="ca_err_required">This field is required.</string>
+    <string name="ca_err_too_long">That is too long.</string>
+    <string name="ca_err_number">Enter a number.</string>
+    <string name="ca_err_lat">Latitude must be between -90 and 90.</string>
+    <string name="ca_err_lng">Longitude must be between -180 and 180.</string>
+    <string name="ca_err_both_coords">Enter both latitude and longitude, or leave both empty.</string>
+    <string name="ca_err_url">Enter a link that starts with http:// or https://</string>
+    <string name="ca_err_price">Enter a price above 0, for example 4,500.00</string>
+    <string name="ca_err_stock">Enter a whole number, 0 or more.</string>
+    <string name="ca_err_duplicate">This is already used in another row.</string>
+    <string name="ca_err_too_many">You have reached the limit.</string>
+    <string name="ca_err_variant_label">Add a size or a colour.</string>
+    <string name="ca_err_no_variants">Add at least one variant.</string>
+    <string name="ca_err_fix_fields">Some fields need your attention. Check the highlighted ones.</string>
+
+    <!-- E17 edit club -->
+    <string name="ca_club_logo">Club logo link (optional)</string>
+    <string name="ca_club_logo_hint">https://example.com/logo.png</string>
+    <string name="ca_club_name">Club name</string>
+    <string name="ca_club_venue">Home venue</string>
+    <string name="ca_club_lat">Latitude</string>
+    <string name="ca_club_lng">Longitude</string>
+    <string name="ca_club_coords_hint">Used for the map. Between -90 and 90.</string>
+    <string name="ca_club_lng_hint">Between -180 and 180.</string>
+    <string name="ca_club_socials">Social links</string>
+    <string name="ca_club_social_key">Network</string>
+    <string name="ca_club_social_key_hint">Instagram</string>
+    <string name="ca_club_social_value">Handle or link</string>
+    <string name="ca_club_social_value_hint">\@clubhandle</string>
+    <string name="ca_club_social_add">Add social link</string>
+    <string name="ca_club_social_remove">Remove social link %1$d</string>
+    <string name="ca_club_save">Save changes</string>
+
+    <!-- E18 staff -->
+    <string name="ca_staff_name">Name</string>
+    <string name="ca_staff_role">Role</string>
+    <string name="ca_staff_role_hint">Coach, Manager, Physio…</string>
+    <string name="ca_staff_add">Add staff member</string>
+    <string name="ca_staff_save">Save</string>
+    <string name="ca_staff_remove">Remove %1$s</string>
+    <string name="ca_staff_remove_blank">Remove this row</string>
+    <string name="ca_staff_member_n">Staff member %1$d</string>
+    <string name="ca_staff_empty_title">No staff yet</string>
+    <string name="ca_staff_empty_message">Add coaches, managers and other staff so fans can see who runs the club.</string>
+    <string name="ca_staff_role_suggest">Use role %1$s</string>
+    <string name="ca_staff_limit">You can list up to 50 staff members.</string>
+
+    <!-- E19 products -->
+    <string name="ca_products_subtitle">%1$s · %2$d products</string>
+    <string name="ca_products_subtitle_plain">%1$d products</string>
+    <string name="ca_products_new">New product</string>
+    <string name="ca_products_empty_title">No products yet</string>
+    <string name="ca_products_empty_message">Add your first product so fans can buy club merchandise.</string>
+    <string name="ca_products_active">Active</string>
+    <string name="ca_products_inactive">Inactive</string>
+    <string name="ca_products_low">Low: %1$d</string>
+    <string name="ca_products_instock">In stock: %1$d</string>
+    <string name="ca_products_out">Out of stock</string>
+    <string name="ca_products_variants">%1$d options</string>
+    <string name="ca_products_price_one">%1$s</string>
+    <string name="ca_products_price_range">%1$s – %2$s</string>
+    <string name="ca_products_stock_button">Update stock for %1$s</string>
+    <string name="ca_products_stock">Stock</string>
+    <string name="ca_products_image">Picture of %1$s</string>
+    <string name="ca_products_error_stale">Could not refresh. Showing what was loaded before.</string>
+
+    <!-- E20 product edit -->
+    <string name="ca_product_name">Product name</string>
+    <string name="ca_product_category">Category (optional)</string>
+    <string name="ca_product_category_hint">Apparel, accessories…</string>
+    <string name="ca_product_image">Picture link (optional)</string>
+    <string name="ca_product_active">Show in the shop</string>
+    <string name="ca_product_active_on">Fans can see and buy this product.</string>
+    <string name="ca_product_active_off">Hidden from the shop.</string>
+    <string name="ca_product_variants">Variants and prices</string>
+    <string name="ca_product_variant_n">Variant %1$d</string>
+    <string name="ca_product_size">Size</string>
+    <string name="ca_product_color">Colour</string>
+    <string name="ca_product_price">Price (PKR)</string>
+    <string name="ca_product_price_hint">4,500.00</string>
+    <string name="ca_product_start_stock">Starting stock</string>
+    <string name="ca_product_variant_add">Add variant</string>
+    <string name="ca_product_variant_remove">Remove variant %1$d</string>
+    <string name="ca_product_stock_note">Stock for existing variants is changed on the Update stock screen.</string>
+    <string name="ca_product_save">Save product</string>
+    <string name="ca_product_create">Create product</string>
+    <string name="ca_product_limit">You can add up to 30 variants.</string>
+
+    <!-- E21 stock -->
+    <string name="ca_stock_row_in">In stock: %1$d</string>
+    <string name="ca_stock_row_low">Only %1$d left</string>
+    <string name="ca_stock_row_out">Out of stock</string>
+    <string name="ca_stock_decrease">Decrease stock for %1$s</string>
+    <string name="ca_stock_increase">Increase stock for %1$s</string>
+    <string name="ca_stock_field">Stock for %1$s</string>
+    <string name="ca_stock_note">Stock never goes below zero. Customers see \"Out of stock\" when an option reaches 0.</string>
+    <string name="ca_stock_save">Save stock</string>
+    <string name="ca_stock_confirm_title">Save new stock?</string>
+    <string name="ca_stock_confirm_message">%1$d options will change. Customers see the new numbers straight away.</string>
+    <string name="ca_stock_confirm_message_out">%1$d options will change, and %2$d will be out of stock. Customers see the new numbers straight away.</string>
+    <string name="ca_stock_no_variants">This product has no options to update yet.</string>
+    <string name="ca_stock_header">%1$s</string>
+</resources>

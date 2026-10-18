@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Header titles -->
+    <string name="la_title_leagues">Leagues</string>
+    <string name="la_title_league">League</string>
+    <string name="la_title_new_league">New league</string>
+    <string name="la_title_edit_league">Edit league</string>
+    <string name="la_title_seasons">Seasons</string>
+    <string name="la_title_teams">Teams</string>
+    <string name="la_teams_empty_title">No teams yet</string>
+    <string name="la_teams_empty_message">Add the teams that will play in this league, then generate fixtures.</string>
+    <string name="la_team_add">Add team</string>
+    <string name="la_team_name">Team name</string>
+    <string name="la_team_updated">Team list updated</string>
+    <string name="la_team_remove_cd">Remove %1$s</string>
+    <string name="la_teams_generate">Generate fixtures</string>
+    <string name="la_title_new_season">New season</string>
+    <string name="la_title_divisions">Divisions</string>
+    <string name="la_title_promotion">Promotion setup</string>
+    <string name="la_title_rules">Standings rules</string>
+
+    <!-- Shared -->
+    <string name="la_no_access_title">You do not have access</string>
+    <string name="la_no_access_message">Only organizers of this league and administrators can manage it.</string>
+    <string name="la_go_back">Go back</string>
+    <string name="la_cancel">Cancel</string>
+    <string name="la_save_unavailable">This server cannot save this yet. Your changes were not applied.</string>
+    <string name="la_date_unset">Choose a date</string>
+    <string name="la_date_ok">OK</string>
+    <string name="la_date_cd">%1$s, %2$s. Double tap to change.</string>
+    <string name="la_stepper_dec">Decrease %1$s</string>
+    <string name="la_stepper_inc">Increase %1$s</string>
+    <string name="la_stepper_value_cd">%1$s: %2$d</string>
+    <string name="la_chevron_cd">Open</string>
+
+    <!-- League list -->
+    <plurals name="la_leagues_count">
+        <item quantity="one">%d league</item>
+        <item quantity="other">%d leagues</item>
+    </plurals>
+    <plurals name="la_teams_count">
+        <item quantity="one">%d team</item>
+        <item quantity="other">%d teams</item>
+    </plurals>
+    <plurals name="la_matches_count">
+        <item quantity="one">%d match</item>
+        <item quantity="other">%d matches</item>
+    </plurals>
+    <plurals name="la_players_count">
+        <item quantity="one">%d player</item>
+        <item quantity="other">%d players</item>
+    </plurals>
+    <plurals name="la_divisions_count">
+        <item quantity="one">%d division</item>
+        <item quantity="other">%d divisions</item>
+    </plurals>
+    <string name="la_list_empty_title">No leagues yet</string>
+    <string name="la_list_empty_message_admin">Create the first league to start planning seasons and fixtures.</string>
+    <string name="la_list_empty_message">Leagues you organize will appear here.</string>
+    <string name="la_new_league">New league</string>
+    <string name="la_season_label">Season %1$s</string>
+    <string name="la_status_active">Active</string>
+    <string name="la_status_pending">Awaiting approval</string>
+    <string name="la_status_rejected">Rejected</string>
+    <string name="la_pending_organizer_note">An administrator must approve this league before viewers can see it.</string>
+    <string name="la_pending_admin_note">An organizer submitted this league. Approve it to make it visible to everyone.</string>
+    <string name="la_rejected_note">An administrator did not approve this league. Edit it and ask for another review.</string>
+    <string name="la_approve">Approve league</string>
+    <string name="la_reject">Reject</string>
+    <string name="la_approved_msg">League approved. Viewers can see it now.</string>
+    <string name="la_rejected_msg">League rejected</string>
+    <string name="la_review_failed">Could not update the league. Try again.</string>
+    <string name="la_form_submitted">League submitted for approval</string>
+    <string name="la_status_draft">Draft</string>
+    <string name="la_status_finished">Finished</string>
+    <string name="la_league_open_cd">Open %1$s</string>
+
+    <!-- Formats -->
+    <string name="la_format_round_robin">Round robin</string>
+    <string name="la_format_swiss">Swiss</string>
+    <string name="la_format_single_elimination">Single knockout</string>
+    <string name="la_format_double_elimination">Double knockout</string>
+    <string name="la_format_hybrid">Hybrid: groups then knockout</string>
+
+    <!-- League detail -->
+    <string name="la_edit_league">Edit league</string>
+    <string name="la_window_line">Transfer window: %1$s – %2$s</string>
+    <string name="la_window_none">No transfer window set</string>
+    <string name="la_hub_fixtures">Fixtures</string>
+    <string name="la_hub_fixtures_sub">%1$s · generate or edit</string>
+    <string name="la_hub_fixtures_sub_plain">Generate or edit the schedule</string>
+    <string name="la_hub_standings">Standings rules</string>
+    <string name="la_hub_standings_sub">Points, qualification line and tiebreaks</string>
+    <string name="la_hub_teams">Teams and squads</string>
+    <string name="la_hub_teams_sub">%1$s · %2$s</string>
+    <string name="la_hub_teams_sub_plain">See every team and squad</string>
+    <string name="la_hub_promotion">Promotion and relegation</string>
+    <string name="la_hub_promotion_sub">Spots up and down for each division</string>
+    <string name="la_hub_bracket">Knockout bracket</string>
+    <string name="la_hub_bracket_sub">Seed from group standings</string>
+    <string name="la_hub_seasons">Seasons</string>
+    <string name="la_hub_seasons_sub">Dates and rollover</string>
+    <string name="la_hub_divisions">Divisions</string>
+    <string name="la_hub_divisions_sub">Tiers and the teams in each</string>
+    <string name="la_not_found_title">League not found</string>
+    <string name="la_not_found_message">This league is not in your list any more.</string>
+
+    <!-- League form -->
+    <string name="la_form_name">League name</string>
+    <string name="la_form_name_hint">For example Alpha Cup</string>
+    <string name="la_form_sport">Sport</string>
+    <string name="la_form_sport_none">No sports could be loaded.</string>
+    <string name="la_form_window">Transfer window</string>
+    <string name="la_form_opens">Opens</string>
+    <string name="la_form_closes">Closes</string>
+    <string name="la_form_clear_window">Clear transfer window</string>
+    <string name="la_form_squad">Max squad size</string>
+    <string name="la_form_format">Format</string>
+    <string name="la_form_note">The sport decides which scoring buttons appear. Rules come from the sport\'s settings, not from the app.</string>
+    <string name="la_form_create">Create league</string>
+    <string name="la_form_save">Save changes</string>
+    <string name="la_form_saved_created">League created</string>
+    <string name="la_form_saved_updated">League saved</string>
+    <string name="la_err_name_required">Enter a league name.</string>
+    <string name="la_err_name_long">Use 60 characters or fewer.</string>
+    <string name="la_err_sport_required">Choose a sport.</string>
+    <string name="la_err_window_incomplete">Set both dates or neither.</string>
+    <string name="la_err_window_order">The window must close after it opens.</string>
+    <string name="la_err_squad">Enter a squad size from 1 to 99.</string>
+
+    <!-- Seasons -->
+    <string name="la_seasons_empty_title">No seasons yet</string>
+    <string name="la_seasons_empty_message">Create a season to set its dates.</string>
+    <string name="la_new_season">New season</string>
+    <string name="la_season_dates">%1$s – %2$s</string>
+    <string name="la_season_current">Current</string>
+    <string name="la_season_finished">Finished</string>
+    <string name="la_season_upcoming">Upcoming</string>
+    <string name="la_season_promotion_applied">Promotion applied</string>
+    <string name="la_season_name">Season name</string>
+    <string name="la_season_name_hint">For example Season 2027</string>
+    <string name="la_season_start">Start date</string>
+    <string name="la_season_end">End date</string>
+    <string name="la_season_copy">Copy leagues from (optional)</string>
+    <string name="la_season_copy_none">Do not copy</string>
+    <string name="la_season_apply_promotion">Apply promotion and relegation</string>
+    <string name="la_season_create">Create season</string>
+    <string name="la_season_created">Season created</string>
+    <string name="la_err_season_name">Enter a season name.</string>
+    <string name="la_err_season_start">Choose a start date.</string>
+    <string name="la_err_season_end">Choose an end date.</string>
+    <string name="la_err_season_order">The end date must be after the start date.</string>
+
+    <!-- Divisions -->
+    <string name="la_divisions_empty_title">No divisions yet</string>
+    <string name="la_divisions_empty_message">Add a division to split teams into tiers.</string>
+    <string name="la_new_division">New division</string>
+    <string name="la_division_name">Division name</string>
+    <string name="la_division_add">Add division</string>
+    <string name="la_division_tier_top">Top tier</string>
+    <string name="la_division_tier_second">Second tier</string>
+    <string name="la_division_tier_n">Tier %1$d</string>
+    <string name="la_division_line">%1$s · %2$s</string>
+    <string name="la_division_pts">%1$d pts</string>
+    <string name="la_division_more">+ %1$d more teams</string>
+    <string name="la_division_view">View</string>
+    <string name="la_division_view_cd">View standings for %1$s</string>
+    <string name="la_division_created">Division added</string>
+
+    <!-- Promotion -->
+    <string name="la_promo_up">Teams promoted</string>
+    <string name="la_promo_up_sub">Move up from the division below</string>
+    <string name="la_promo_down">Teams relegated</string>
+    <string name="la_promo_down_sub">Move down to the division below</string>
+    <string name="la_promo_preview">Preview · %1$s (%2$s)</string>
+    <string name="la_promo_zone_up">Positions %1$s · Promoted or champions</string>
+    <string name="la_promo_zone_mid">Positions %1$s · Mid table</string>
+    <string name="la_promo_zone_down">Positions %1$s · Relegated</string>
+    <string name="la_promo_zone_chip_up">Up</string>
+    <string name="la_promo_zone_chip_mid">Stay</string>
+    <string name="la_promo_zone_chip_down">Down</string>
+    <string name="la_promo_top_division">top division</string>
+    <string name="la_promo_save">Save rules</string>
+    <string name="la_promo_saved">Promotion rules saved</string>
+    <string name="la_range">%1$d–%2$d</string>
+
+    <!-- Standings rules -->
+    <string name="la_rules_points">Points</string>
+    <string name="la_rules_win">Win</string>
+    <string name="la_rules_draw">Draw</string>
+    <string name="la_rules_loss">Loss</string>
+    <string name="la_rules_qualify">Teams that qualify</string>
+    <string name="la_rules_qualify_sub">Qualification line</string>
+    <string name="la_rules_preview">Preview</string>
+    <string name="la_rules_preview_note">Example table, not real results.</string>
+    <string name="la_rules_qualifies">Qualifies</string>
+    <string name="la_rules_row_pts">%1$d pts</string>
+    <string name="la_rules_tiebreak">Tiebreak order</string>
+    <string name="la_rules_tiebreak_summary">%1$s</string>
+    <string name="la_rules_then">, then </string>
+    <string name="la_rules_edit">Edit</string>
+    <string name="la_rules_done">Done</string>
+    <string name="la_rules_move_up">Move %1$s up</string>
+    <string name="la_rules_move_down">Move %1$s down</string>
+    <string name="la_rules_remove">Remove %1$s</string>
+    <string name="la_rules_add">Add %1$s</string>
+    <string name="la_rules_unused">Not used</string>
+    <string name="la_rules_position">Step %1$d of %2$d: %3$s</string>
+    <string name="la_rules_save">Save</string>
+    <string name="la_rules_saved">Standings rules saved</string>
+    <string name="la_tb_head_to_head">Head-to-head</string>
+    <string name="la_tb_goal_difference">Goal difference</string>
+    <string name="la_tb_goals_for">Goals scored</string>
+    <string name="la_tb_wins">Most wins</string>
+    <string name="la_tb_fair_play">Fair play</string>
+    <string name="la_err_points_range">Points must be between 0 and 9.</string>
+    <string name="la_err_points_win">A win must be worth at least as much as a draw.</string>
+    <string name="la_err_points_draw">A draw must be worth at least as much as a loss.</string>
+</resources>

@@ -15,7 +15,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material.icons.outlined.ShoppingCart
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.graphics.Color
+import com.nascon.league.data.store.CartProblem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarResult
@@ -25,6 +30,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -59,9 +65,10 @@ fun CartScreen(
     val undo = stringResource(R.string.f6_undo)
     val context = LocalContext.current
 
+    // Notice left by checkout (e.g. an item sold out while paying); shown as a card, kept over rotation.
+    var notice by rememberSaveable { mutableStateOf<String?>(null) }
     LaunchedEffect(Unit) {
-        // Notice left by checkout (e.g. an item sold out while paying).
-        CartNotice.take()?.let { snackbar.showSnackbar(it) }
+        CartNotice.take()?.let { notice = it }
     }
     LaunchedEffect(vm) {
         vm.removed.collect { line ->
@@ -72,12 +79,12 @@ fun CartScreen(
     }
 
     if (s.loaded && s.lines.isEmpty()) {
-        EmptyState(
-            icon = Icons.Default.ShoppingCart,
-            title = stringResource(R.string.f6_cart_empty_title),
-            message = stringResource(R.string.f6_cart_empty_message),
-            actionLabel = stringResource(R.string.f6_browse_store),
-            onAction = onBrowse,
+        StoreStateCard(
+            icon = Icons.Outlined.ShoppingCart,
+            title = stringResource(R.string.storestates_cart_empty_title),
+            message = stringResource(R.string.storestates_cart_empty_message),
+            primaryLabel = stringResource(R.string.f6_browse_store),
+            onPrimary = onBrowse,
             modifier = modifier,
         )
         return
@@ -89,6 +96,19 @@ fun CartScreen(
             contentPadding = PaddingValues(Spacing.md),
             verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         ) {
+            val noticeText = notice
+            if (noticeText != null && s.hasBlockingProblem) {
+                item(key = "__notice") {
+                    StoreNoticeStrip(
+                        text = noticeText,
+                        icon = Icons.Default.ErrorOutline,
+                        background = Arena.colors.liveBg,
+                        foreground = Arena.colors.liveFg,
+                        border = Color(0xFFE7A6A0),
+                        live = true,
+                    )
+                }
+            }
             items(s.lines, key = { it.variantId }) { line ->
                 CartLineCard(
                     line = line,
@@ -97,30 +117,36 @@ fun CartScreen(
                     onRemove = { vm.remove(line.variantId) },
                 )
             }
+            item(key = "__subtotal") {
+                ArenaCard(Modifier.fillMaxWidth()) {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            stringResource(R.string.f6_subtotal),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Arena.colors.inkSoft,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Text(formatPkr(s.subtotalMinor), style = MaterialTheme.typography.titleMedium, color = Arena.colors.ink)
+                    }
+                }
+            }
         }
-        Surface(color = androidx.compose.ui.graphics.Color.White, shadowElevation = 6.dp, modifier = Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(Spacing.md), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        stringResource(R.string.f6_subtotal),
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.weight(1f),
-                    )
-                    Text(formatPkr(s.subtotalMinor), style = MaterialTheme.typography.titleLarge, color = Arena.colors.brand)
-                }
-                val canCheckout = checkoutEnabled(s.lines.size, s.hasBlockingProblem)
-                if (!canCheckout) {
-                    Text(
-                        stringResource(R.string.f6_checkout_blocked),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
+        Surface(color = Color.White, shadowElevation = 6.dp, modifier = Modifier.fillMaxWidth()) {
+            val blocking = s.lines.filter { it.problem == CartProblem.SoldOut || it.problem == CartProblem.NoLongerAvailable }
+            if (blocking.isNotEmpty()) {
                 PrimaryButton(
-                    text = stringResource(R.string.f6_checkout),
+                    text = stringResource(
+                        if (blocking.size == 1) R.string.storestates_remove_sold_out else R.string.storestates_remove_sold_out_many,
+                    ),
+                    onClick = { blocking.forEach { vm.remove(it.variantId) } },
+                    modifier = Modifier.fillMaxWidth().padding(Spacing.md).heightIn(min = 56.dp),
+                )
+            } else {
+                PrimaryButton(
+                    text = stringResource(R.string.storestates_go_to_checkout),
                     onClick = onCheckout,
-                    enabled = canCheckout,
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
+                    enabled = checkoutEnabled(s.lines.size, s.hasBlockingProblem),
+                    modifier = Modifier.fillMaxWidth().padding(Spacing.md).heightIn(min = 56.dp),
                 )
             }
         }
@@ -138,24 +164,20 @@ private fun CartLineCard(
     val removeCd = stringResource(R.string.f6_remove_cd, line.name)
     ArenaCard(Modifier.fillMaxWidth()) {
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-            ProductImage(line.imageUrl, line.name, Modifier.size(80.dp))
+            ProductImage(line.imageUrl, line.name, Modifier.size(52.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
                 Text(
-                    line.name,
+                    if (line.variantLabel == com.nascon.league.data.store.variantLabel(null, null)) line.name
+                    else stringResource(R.string.storestates_name_variant, line.name, line.variantLabel),
                     style = MaterialTheme.typography.titleMedium,
                     color = Arena.colors.ink,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    line.variantLabel,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    stringResource(R.string.f6_unit_price, formatPkr(line.unitPriceMinor)),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = Arena.colors.brand,
+                    formatPkr(line.unitPriceMinor),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Arena.colors.inkSoft,
                 )
                 line.problem?.let { ProblemChip(it) }
             }

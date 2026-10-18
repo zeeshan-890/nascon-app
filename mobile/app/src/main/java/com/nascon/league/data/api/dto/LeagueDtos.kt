@@ -129,10 +129,13 @@ data class StandingsDto(
 
 @Serializable
 data class VenueDto(
-    @SerialName("name") val name: String = "",
+    /** JSON `name` may be null. Screens read [name], which is "" when the server sent null. */
+    @SerialName("name") private val rawName: String? = null,
     @SerialName("lat") val lat: Double? = null,
     @SerialName("lng") val lng: Double? = null,
-)
+) {
+    val name: String get() = rawName?.trim().orEmpty()
+}
 
 @Serializable
 data class StaffDto(
@@ -189,6 +192,7 @@ data class ClubSummaryDto(
     @SerialName("club_id") val clubId: String,
     @SerialName("name") val name: String,
     @SerialName("logo_url") val logoUrl: String? = null,
+    @SerialName("venue") val venue: VenueDto? = null,
 )
 
 @Serializable

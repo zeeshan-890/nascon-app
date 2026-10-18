@@ -25,6 +25,13 @@ class SessionRepository(private val tokenStore: TokenStore) {
         _session.value = session
     }
 
+    /** A league the signed-in organizer just created counts as theirs at once, without waiting for a new sign-in. */
+    fun addLeague(leagueId: String) {
+        val cur = _session.value ?: return
+        if (leagueId in cur.user.leagueIds) return
+        setSession(cur.copy(user = cur.user.copy(leagueIds = cur.user.leagueIds + leagueId)))
+    }
+
     fun clear() {
         tokenStore.clear()
         _session.value = null

@@ -96,8 +96,6 @@ fun LoginScreen(
     val container = LocalAppContainer.current
     val vm: LoginViewModel = viewModel(factory = LoginViewModel.factory(container))
     val state by vm.state.collectAsStateWithLifecycle()
-    val demoMode by remember(container) { container.configStore.useDemoData }
-        .collectAsStateWithLifecycle(initialValue = true)
     val focusManager = LocalFocusManager.current
     val emailFocus = remember { FocusRequester() }
     val passwordFocus = remember { FocusRequester() }
@@ -137,7 +135,7 @@ fun LoginScreen(
                 verticalArrangement = Arrangement.spacedBy(Spacing.md),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                    ArenaLogo(Modifier.size(40.dp))
+                    ArenaLogo(Modifier.size(56.dp))
                     Text(
                         stringResource(R.string.ui_login_brand),
                         color = Color.White,
@@ -264,7 +262,7 @@ fun LoginScreen(
                 }
             }
 
-            if (demoMode) ArenaCard(modifier = Modifier.fillMaxWidth()) {
+            ArenaCard(modifier = Modifier.fillMaxWidth()) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()

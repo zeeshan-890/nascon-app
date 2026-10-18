@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Standings -->
+    <string name="cs_offline_saved">Offline · saved copy</string>
+    <string name="cs_empty_message">The table fills in after the first match is finished.</string>
+    <string name="cs_why_above">Why %1$s is above %2$s</string>
+    <string name="cs_why_below">Why %1$s is below %2$s</string>
+    <string name="cs_tied_points">Both have %1$d points. Tiebreaks are checked in order.</string>
+    <string name="cs_label_h2h">Head-to-head</string>
+    <string name="cs_label_diff">Goal difference</string>
+    <string name="cs_label_scored">Scored</string>
+    <string name="cs_label_fair">Fair play</string>
+    <string name="cs_label_lots">Drawing of lots</string>
+    <string name="cs_step_h2h">Head-to-head: %1$s %2$d points, %3$s %4$d points</string>
+    <string name="cs_step_diff">Goal difference: %1$s %2$s, %3$s %4$s</string>
+    <string name="cs_step_scored">Scored: %1$s %2$d, %3$s %4$d</string>
+    <string name="cs_step_fair">Fair play: %1$s %2$d, %3$s %4$d</string>
+    <string name="cs_step_lots">Decided by drawing of lots</string>
+    <string name="cs_step_not_needed">%1$s: not needed</string>
+    <string name="cs_decided">Decided</string>
+    <string name="cs_step_cd">Step %1$d. %2$s</string>
+    <string name="cs_h2h_all_title">Against every team</string>
+
+    <!-- Club profile tabs -->
+    <string name="cs_tab_squad">Squad</string>
+    <string name="cs_tab_staff">Staff</string>
+    <string name="cs_tab_stats">Season stats</string>
+    <string name="cs_tab_selected_cd">%1$s, selected</string>
+
+    <!-- Manage club -->
+    <string name="cs_manage_title">Manage club</string>
+    <string name="cs_edit_club">Edit club</string>
+    <string name="cs_edit_staff">Edit staff</string>
+    <string name="cs_products">Products</string>
+    <string name="cs_orders">Orders</string>
+
+    <!-- Season stats cards -->
+    <string name="cs_stat_played">Played</string>
+    <string name="cs_stat_won">Won</string>
+    <string name="cs_stat_drawn">Drawn</string>
+    <string name="cs_stat_lost">Lost</string>
+    <string name="cs_stat_scored">Scored</string>
+    <string name="cs_stat_conceded">Conceded</string>
+    <string name="cs_stat_cd">%1$s: %2$d</string>
+    <string name="cs_stats_season">Season %1$s</string>
+    <string name="cs_stats_earlier">All seasons</string>
+</resources>

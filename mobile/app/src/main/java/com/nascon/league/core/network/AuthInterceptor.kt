@@ -14,7 +14,12 @@ internal fun Request.isAuthFree(): Boolean {
 
 class AuthInterceptor(private val tokenStore: TokenStore) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
-        val builder = chain.request().newBuilder().header("Accept", "application/json")
+        val accept = if (chain.request().url.encodedPath.endsWith("receipt.pdf")) {
+            "application/pdf"
+        } else {
+            "application/json"
+        }
+        val builder = chain.request().newBuilder().header("Accept", accept)
         if (!chain.request().isAuthFree()) {
             tokenStore.accessToken()?.let { builder.header("Authorization", "Bearer $it") }
         }

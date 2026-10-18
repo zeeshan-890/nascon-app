@@ -62,6 +62,21 @@ data class TimelineItem(
     val minute: String? = null,
 )
 
+/** One row per event id. A repeat keeps the higher sequence. Blank ids are left alone. */
+fun dedupeEvents(events: List<com.nascon.league.data.api.dto.MatchEventDto>): List<com.nascon.league.data.api.dto.MatchEventDto> {
+    val best = LinkedHashMap<String, com.nascon.league.data.api.dto.MatchEventDto>()
+    val blank = ArrayList<com.nascon.league.data.api.dto.MatchEventDto>()
+    for (e in events) {
+        if (e.eventId.isBlank()) {
+            blank += e
+            continue
+        }
+        val prev = best[e.eventId]
+        if (prev == null || e.sequence >= prev.sequence) best[e.eventId] = e
+    }
+    return best.values.toList() + blank
+}
+
 /** Pending (offline) events first, then server events newest first. */
 fun buildTimeline(
     events: List<com.nascon.league.data.api.dto.MatchEventDto>,
@@ -69,7 +84,7 @@ fun buildTimeline(
     teamName: (String?) -> String?,
 ): List<TimelineItem> {
     val pendingItems = pending.map { TimelineItem("p-" + it.actionId, null, it.label, false, true) }
-    val serverItems = events.sortedByDescending { it.sequence }.map {
+    val serverItems = dedupeEvents(events).sortedByDescending { it.sequence }.map {
         TimelineItem(
             "e-" + it.eventId, it.sequence, eventLabel(it.type, it.payload, teamName), it.compensated, false,
             teamName = teamName(eventTeamId(it.payload)),

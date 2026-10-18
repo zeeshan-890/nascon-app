@@ -101,6 +101,12 @@ data class ScoringUiState(
     val buttons: List<ScoreButton> = emptyList(),
     val disciplineOptions: List<Int> = emptyList(),
     val tiebreakAvailable: Boolean = false,
+    val supportsDiscipline: Boolean = false,
+    /** Level score, no draws allowed, no tie-break winner yet: ending the match must be blocked. */
+    val tiebreakRequired: Boolean = false,
+    val showTiebreak: Boolean = false,
+    val showDiscipline: Boolean = false,
+    val showTieBlocked: Boolean = false,
     val timeline: List<TimelineItem> = emptyList(),
     /** Server event ids that may be undone right now. */
     val undoableEventIds: Set<String> = emptySet(),
@@ -114,6 +120,9 @@ data class ScoringUiState(
 private const val K_END = "f8_end_confirm"
 private const val K_UNDO = "f8_undo_id"
 private const val K_ERROR = "f8_reason_error"
+private const val K_TIEBREAK = "sp_tiebreak_sheet"
+private const val K_DISCIPLINE = "sp_discipline_sheet"
+private const val K_TIE_BLOCKED = "sp_tie_blocked"
 
 private data class Core(
     val match: MatchDetailDto?,
@@ -159,13 +168,30 @@ class ScoringViewModel(
 
     private data class Dialogs(val end: Boolean, val undoId: String?, val error: ReasonError?)
 
+    private val sheets: Flow<Sheets> = combine(
+        handle.getStateFlow(K_TIEBREAK, false),
+        handle.getStateFlow(K_DISCIPLINE, false),
+        handle.getStateFlow(K_TIE_BLOCKED, false),
+    ) { tb, di, blocked -> Sheets(tb, di, blocked) }
+
+    private data class Sheets(val tiebreak: Boolean, val discipline: Boolean, val tieBlocked: Boolean)
+
     val state: StateFlow<ScoringUiState> = combine(
         core,
         container.pendingRepository.observePendingScoreEvents(matchId),
         container.sessionRepository.session,
         container.connectivity.state,
         dialogs,
-    ) { c, pendingEntities, session, conn, d ->
+        sheets,
+    ) { values ->
+        @Suppress("UNCHECKED_CAST")
+        val c = values[0] as Core
+        @Suppress("UNCHECKED_CAST")
+        val pendingEntities = values[1] as List<com.nascon.league.core.db.PendingActionEntity>
+        val session = values[2] as com.nascon.league.domain.model.Session?
+        val conn = values[3] as ConnState
+        val d = values[4] as Dialogs
+        val sh = values[5] as Sheets
         val m = c.match
             ?: return@combine ScoringUiState(loaded = true, offline = conn == ConnState.OFFLINE)
         val showPanel = ScoringLogic.canShowPanel(session, m.leagueId)
@@ -201,6 +227,13 @@ class ScoringViewModel(
             buttons = ScoringLogic.scoreButtons(c.config),
             disciplineOptions = if (ScoringLogic.supportsDiscipline(c.config)) ScoringLogic.disciplineOptions(c.config) else emptyList(),
             tiebreakAvailable = ScoringLogic.tiebreakAvailable(c.config, opt.home, opt.away),
+            supportsDiscipline = ScoringLogic.supportsDiscipline(c.config),
+            tiebreakRequired = ScoringLogic.tiebreakRequired(
+                c.config, opt.home, opt.away, ScoringLogic.tiebreakRecorded(m.events, pendingEntities),
+            ),
+            showTiebreak = sh.tiebreak && canAct,
+            showDiscipline = sh.discipline && canAct,
+            showTieBlocked = sh.tieBlocked && canAct,
             timeline = buildTimeline(m.events, pendingEvents, teamName),
             undoableEventIds = if (!canAct) emptySet()
             else m.events.filter { ScoringLogic.canUndo(it, m.events) }.map { it.eventId }.toSet(),
@@ -211,6 +244,22 @@ class ScoringViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ScoringUiState())
 
     init {
+        // A queued match end the server refused because the score was level and draws are not allowed.
+        viewModelScope.launch {
+            var seen: Set<String>? = null
+            container.syncRepository.observeResults().collect { list ->
+                val prior = seen
+                seen = list.map { it.actionId }.toSet()
+                if (prior == null) return@collect
+                val hit = list.any {
+                    it.actionId !in prior && it.status == com.nascon.league.core.db.SyncResultStatus.REJECTED &&
+                        ScoringLogic.isTieNotAllowed(it.reasonCode)
+                }
+                if (hit && state.value.mode == ControlsMode.SCORE) {
+                    handle[K_TIE_BLOCKED] = true
+                }
+            }
+        }
         // Make sure the sport config exists locally even if the user never opened another screen.
         viewModelScope.launch {
             val sportId = cache.map { it?.data?.sportId.orEmpty() }.filter { it.isNotBlank() }.first()
@@ -257,7 +306,44 @@ class ScoringViewModel(
     }
 
     fun requestEnd() {
-        if (canAct()) handle[K_END] = true
+        if (!canAct()) return
+        if (state.value.tiebreakRequired) handle[K_TIE_BLOCKED] = true else handle[K_END] = true
+    }
+
+    fun dismissTieBlocked() {
+        handle[K_TIE_BLOCKED] = false
+    }
+
+    /** Primary action of the tie-not-allowed screen: close it and open the tie-break sheet. */
+    fun openTiebreakFromBlocked() {
+        handle[K_TIE_BLOCKED] = false
+        handle[K_TIEBREAK] = true
+    }
+
+    fun openTiebreak() {
+        if (canAct()) handle[K_TIEBREAK] = true
+    }
+
+    fun dismissTiebreak() {
+        handle[K_TIEBREAK] = false
+    }
+
+    fun openDiscipline() {
+        if (canAct()) handle[K_DISCIPLINE] = true
+    }
+
+    fun dismissDiscipline() {
+        handle[K_DISCIPLINE] = false
+    }
+
+    fun confirmTiebreak(teamId: String, teamName: String?) {
+        handle[K_TIEBREAK] = false
+        onTiebreak(teamId, teamName)
+    }
+
+    fun confirmDiscipline(teamId: String, teamName: String?, points: Int) {
+        handle[K_DISCIPLINE] = false
+        onDiscipline(teamId, teamName, points)
     }
 
     fun dismissEnd() {
@@ -267,6 +353,10 @@ class ScoringViewModel(
     fun confirmEnd() {
         handle[K_END] = false
         if (!canAct() || !debouncer.allow("state:end")) return
+        if (state.value.tiebreakRequired) {
+            handle[K_TIE_BLOCKED] = true
+            return
+        }
         enqueue("match_end", ScoringLogic.emptyPayload(), ScoringLogic.label("match_end", null, null), ActionKind.STATE)
     }
 

@@ -10,6 +10,7 @@ import com.nascon.league.core.network.NetworkResult
 import com.nascon.league.di.AppContainer
 import com.nascon.league.ui.club.ClubProfileState
 import com.nascon.league.ui.club.ClubRefresh
+import com.nascon.league.ui.failure.RateLimitRetry
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -103,6 +104,8 @@ data class RosterFlowState(
     val step: RosterStep = RosterStep.NONE,
     val draft: RosterDraft? = null,
     val submitting: Boolean = false,
+    /** A rule rejection to explain in the form (E11-E14); cleared when the form is edited. */
+    val rejection: RosterRejection? = null,
 )
 
 data class RosterState(
@@ -121,6 +124,7 @@ class RosterViewModel(
 ) : ViewModel() {
     private val refreshInfo = MutableStateFlow(ClubRefresh(refreshing = true))
     private var inFlight = false
+    private val rateLimit = RateLimitRetry(viewModelScope)
     private val cacheChecked = MutableStateFlow(false)
     private val flowState = MutableStateFlow(RosterFlowState())
     private val eventChannel = Channel<RosterEvent>(Channel.BUFFERED)
@@ -160,7 +164,9 @@ class RosterViewModel(
         viewModelScope.launch {
             val r = container.clubRepository.refresh(clubId)
             inFlight = false
-            refreshInfo.value = ClubRefresh(false, (r as? NetworkResult.Failure)?.error)
+            val err = (r as? NetworkResult.Failure)?.error
+            refreshInfo.value = ClubRefresh(false, err)
+            rateLimit.consider("roster", err) { refresh() }
         }
     }
 
@@ -174,7 +180,13 @@ class RosterViewModel(
 
     fun edit(transform: (RosterDraft) -> RosterDraft) = flowState.update {
         val d = it.draft
-        if (d == null || it.submitting) it else it.copy(draft = transform(d))
+        if (d == null || it.submitting) it else it.copy(draft = transform(d), rejection = null)
+    }
+
+    /** Shows the rejection card in the open form (returns to the form step). Ignored for codes without a card. */
+    fun showRejection(code: String, details: kotlinx.serialization.json.JsonObject? = null) = flowState.update {
+        if (it.playerId == null || it.draft == null || !hasRosterRejectionCard(code)) it
+        else it.copy(step = RosterStep.FORM, submitting = false, rejection = RosterRejection(code, details))
     }
 
     fun dismiss() {

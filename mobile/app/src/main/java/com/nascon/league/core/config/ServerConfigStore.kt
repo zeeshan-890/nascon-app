@@ -14,13 +14,24 @@ private val Context.configDataStore by preferencesDataStore(name = "server_confi
 
 data class ServerConfig(val baseUrl: String, val useDemoData: Boolean)
 
+/** Base URL the data layer uses to resolve relative /static paths. Updated from [ServerConfigStore]. */
+object ActiveServer {
+    @Volatile var baseUrl: String = ServerConfigStore.DEFAULT_BASE_URL
+}
+
 class ServerConfigStore(context: Context) {
     private val store = context.applicationContext.configDataStore
 
-    val baseUrl: Flow<String> = store.data.map { it[KEY_BASE_URL] ?: DEFAULT_BASE_URL }
-    val useDemoData: Flow<Boolean> = store.data.map { it[KEY_DEMO] ?: true }
+    val baseUrl: Flow<String> = store.data.map { prefs ->
+        val url = prefs[KEY_BASE_URL] ?: DEFAULT_BASE_URL
+        ActiveServer.baseUrl = url
+        url
+    }
+    val useDemoData: Flow<Boolean> = store.data.map { it[KEY_DEMO] ?: false }
     val config: Flow<ServerConfig> = store.data.map {
-        ServerConfig(it[KEY_BASE_URL] ?: DEFAULT_BASE_URL, it[KEY_DEMO] ?: true)
+        val url = it[KEY_BASE_URL] ?: DEFAULT_BASE_URL
+        ActiveServer.baseUrl = url
+        ServerConfig(url, it[KEY_DEMO] ?: false)
     }
 
     suspend fun snapshot(): ServerConfig = config.first()
@@ -38,6 +49,7 @@ class ServerConfigStore(context: Context) {
 
     suspend fun setBaseUrl(raw: String): Boolean {
         val normalized = normalizeUrl(raw) ?: return false
+        ActiveServer.baseUrl = normalized
         store.edit { it[KEY_BASE_URL] = normalized }
         return true
     }
@@ -47,7 +59,7 @@ class ServerConfigStore(context: Context) {
     }
 
     companion object {
-        const val DEFAULT_BASE_URL = "http://10.0.2.2:8080/"
+        const val DEFAULT_BASE_URL = "http://127.0.0.1:8080/"
         private val KEY_BASE_URL = stringPreferencesKey("base_url")
         private val KEY_DEMO = booleanPreferencesKey("use_demo_data")
         private val KEY_DEVICE_ID = stringPreferencesKey("device_id")

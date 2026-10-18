@@ -61,6 +61,7 @@ fun OrderDetailScreen(
         verticalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
         if (detail != null) DetailBody(orderId, detail) else FallbackBody(orderId, entry, res is Resource.Loading)
+        if (detail != null) ManageOrderSection(orderId, detail)
         PrimaryButton(
             text = stringResource(R.string.ord_view_receipt),
             onClick = { onOpenReceipt(orderId) },

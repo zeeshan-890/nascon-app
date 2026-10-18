@@ -38,7 +38,11 @@ class ClubsListRepository(
         }
 
     suspend fun refresh(): NetworkResult<Unit> = deduper.run("clubs_list", isOnline) {
-        when (val r = safeCall { apiProvider().clubs() }) {
+        when (val r = safeCall {
+            collectPages(CLUB_PAGE_CAP, fetch = { limit, offset ->
+                apiProvider().clubs(limit, offset).toPage()
+            }, idOf = { it.clubId })
+        }) {
             is NetworkResult.Failure -> r
             is NetworkResult.Success -> {
                 dao.putMeta(MetaEntity(KEY_LIST, AppJson.encodeToString(serializer, r.data)))
