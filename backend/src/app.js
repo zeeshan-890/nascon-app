@@ -25,7 +25,7 @@ function createApp(opts = {}) {
   app.use('/api/v1', opts.limiter || createLimiter());
   app.use(jsonBody);
   app.use(hardening);
-  app.use(require('./routes/health'));
+  app.use(require('../day2/health').createHealth()); // Postgres + Redis + seed (+ media when MEDIA_HOST is set)
   app.use(require('./routes/static'));
   app.use('/audit/v1', require('./routes/audit'));
   app.use('/api/v1', require('./routes/api/v1'));

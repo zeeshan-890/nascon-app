@@ -1,0 +1,96 @@
+{
+  "malformed_json_events": {
+    "method": "POST",
+    "path": "/audit/v1/events",
+    "contentType": "application/json",
+    "rawBody": "{\"a\":",
+    "status": 400,
+    "text": "{\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":{\"fields\":[\"body\"]}}}"
+  },
+  "malformed_json_sports": {
+    "method": "POST",
+    "path": "/audit/v1/sports",
+    "contentType": "application/json",
+    "rawBody": "{bad",
+    "status": 400,
+    "text": "{\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":{\"fields\":[\"body\"]}}}"
+  },
+  "array_body_leagues": {
+    "method": "POST",
+    "path": "/audit/v1/leagues",
+    "contentType": "application/json",
+    "rawBody": "[1,2]",
+    "status": 400,
+    "text": "{\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":{\"fields\":[\"body\"]}}}"
+  },
+  "string_body_sports": {
+    "method": "POST",
+    "path": "/audit/v1/sports",
+    "contentType": "application/json",
+    "rawBody": "\"text\"",
+    "status": 400,
+    "text": "{\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":{\"fields\":[\"body\"]}}}"
+  },
+  "empty_body_events": {
+    "method": "POST",
+    "path": "/audit/v1/events",
+    "status": 400,
+    "text": "{\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":{\"fields\":[\"event_id\",\"match_id\",\"type\",\"payload\"]}}}"
+  },
+  "empty_body_checkout": {
+    "method": "POST",
+    "path": "/audit/v1/checkout",
+    "status": 400,
+    "text": "{\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":{\"fields\":[\"order_id\",\"customer_id\",\"items\",\"payment\"]}}}"
+  },
+  "unknown_route_get": {
+    "method": "GET",
+    "path": "/audit/v1/no-such-route",
+    "status": 404,
+    "text": "{\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Route not found\",\"details\":{}}}"
+  },
+  "unknown_route_root": {
+    "method": "GET",
+    "path": "/nothing-here",
+    "status": 404,
+    "text": "{\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Route not found\",\"details\":{}}}"
+  },
+  "unknown_api_route": {
+    "method": "GET",
+    "path": "/api/v1/no-such-route",
+    "status": 404,
+    "text": "{\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Route not found\",\"details\":{}}}"
+  },
+  "delete_on_sports": {
+    "method": "DELETE",
+    "path": "/audit/v1/sports",
+    "status": 404,
+    "text": "{\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Route not found\",\"details\":{}}}"
+  },
+  "invalid_match_id": {
+    "method": "GET",
+    "path": "/audit/v1/score/bad%20id",
+    "status": 400,
+    "text": "{\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":{\"fields\":[\"match_id\"]}}}"
+  },
+  "login_missing_fields": {
+    "method": "POST",
+    "path": "/api/v1/auth/login",
+    "contentType": "application/json",
+    "rawBody": "{}",
+    "status": 400,
+    "text": "{\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":{\"fields\":[\"email\",\"password\"]}}}"
+  },
+  "protected_no_token": {
+    "method": "GET",
+    "path": "/api/v1/me",
+    "status": 401,
+    "text": "{\"error\":{\"code\":\"UNAUTHENTICATED\",\"message\":\"Authentication required\",\"details\":{}}}"
+  },
+  "probe_no_token": {
+    "method": "GET",
+    "path": "/audit/v1/rbac/platform/config",
+    "status": 401,
+    "text": "{\"error\":{\"code\":\"UNAUTHENTICATED\",\"message\":\"Authentication required\",\"details\":{}}}"
+  }
+}

@@ -53,9 +53,8 @@ describe('reset hook', () => {
     delete global.__day2Order;
   });
 
-  test('an empty folder does nothing', async () => {
+  test('an empty folder does nothing (the real folder now holds the M0 base seed)', async () => {
     await expect(reset.run({ seed: 1 }, tmpDir({}))).resolves.toBeUndefined();
-    await expect(reset.run({ seed: 1 })).resolves.toBeUndefined();
   });
 });
 

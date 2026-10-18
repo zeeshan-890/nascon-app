@@ -95,7 +95,8 @@ async function seedBase(client, { seed, stock }) {
     `INSERT INTO players (player_id, club_id, tenant_id, name) VALUES
      ('player-alpha-1', 'club-alpha-1', 'tenant-alpha', 'Alpha Player 1'),
      ('player-alpha-2', 'club-alpha-2', 'tenant-alpha', 'Alpha Player 2'),
-     ('player-beta-1', 'club-beta-1', 'tenant-beta', 'Beta Player 1')`
+     ('player-beta-1', 'club-beta-1', 'tenant-beta', 'Beta Player 1'),
+     ('player-beta-2', 'club-beta-1', 'tenant-beta', 'Beta Player 2')`
   );
   await client.query(
     `INSERT INTO users (user_id, email, password_hash, role, tenant_id, club_id, player_id, league_ids) VALUES
@@ -121,7 +122,7 @@ async function clearCache() {
     const redis = getRedis();
     const work = (async () => {
       if (redis.status === 'wait') await redis.connect();
-      for (const pattern of ['cache:*', 'lt:*']) {
+      for (const pattern of ['cache:*', 'lt:*', 'rl:*']) { // rl:* = /api/v1 rate-limit counters
         let cursor = '0';
         do {
           const [next, keys] = await redis.scan(cursor, 'MATCH', pattern, 'COUNT', 200);
@@ -136,7 +137,7 @@ async function clearCache() {
   }
 }
 
-async function runReset(parsed) {
+async function runResetOnce(parsed) {
   const client = await pool.connect();
   try {
     await client.query('SET statement_timeout = 0');
@@ -168,8 +169,28 @@ async function runReset(parsed) {
   }
 }
 
+// TRUNCATE can deadlock with requests that are mid-flight; those lose, the reset retries.
+async function runReset(parsed) {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await runResetOnce(parsed);
+    } catch (err) {
+      if ((err.code === '40P01' || err.code === '40001' || err.code === '55P03') && attempt < 5) {
+        await new Promise((r) => setTimeout(r, 40 + Math.random() * 80));
+        continue; // eslint-disable-line no-continue
+      }
+      throw err;
+    }
+  }
+}
+
 async function reset(body) {
   const parsed = parseBody(body);
+  // Two concurrent resets are serialised (the second waits, then also runs to completion).
+  return require('../../day2/lib/locks').withLock('phase1:reset', () => resetLocked(parsed));
+}
+
+async function resetLocked(parsed) {
   const sportIds = await runReset(parsed);
   await refreshPolicies();
   await require('./demoSeedService').seedDemoData(parsed.seed);
