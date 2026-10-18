@@ -25,13 +25,14 @@ Or copy the APK to the phone and open it (allow "install unknown apps").
 
 ## Point the app at the server
 
-1. Run the backend on the laptop (port 8080).
-2. Phone and laptop must be on the **same Wi-Fi** network.
-3. Find the laptop LAN IP (`ipconfig`, IPv4 address).
-4. In the app: Settings > Server address > `http://<ip>:8080` > Save address > Test connection.
-5. Windows firewall: allow inbound TCP 8080, e.g. (admin PowerShell)
+1. Run the backend on the laptop. It listens on port **8080**.
+2. The phone and the laptop must be on the **same Wi-Fi**.
+3. Android emulator: Settings > Server address > `http://10.0.2.2:8080`. Leave an address the user already saved as they saved it.
+4. Physical phone: find the laptop LAN IP (`ipconfig`, IPv4 address), then set `http://<laptop LAN IP>:8080`.
+5. Turn **Use demo data** off.
+6. Tap **Test connection**. With demo data off this calls the real server and shows Connected or a plain failure.
+7. Windows firewall: allow inbound TCP 8080, e.g. (admin PowerShell)
    `New-NetFirewallRule -DisplayName "League 8080" -Direction Inbound -Protocol TCP -LocalPort 8080 -Action Allow`
-6. Android emulator: use `http://10.0.2.2:8080` (the emulator's alias for the host machine).
 
 ## Demo mode on/off
 
