@@ -19,6 +19,8 @@ function createApp(opts = {}) {
     });
     next();
   });
+  // Part II: anonymous guest tokens are read-only; this must run before body parsing and any auth check.
+  app.use(require('../day2/lib/guestGuard').guestWriteGuard);
   // Only /api/v1 is rate limited; /audit/v1, /health are exempt.
   app.use('/api/v1', opts.limiter || createLimiter());
   app.use(jsonBody);
@@ -27,6 +29,7 @@ function createApp(opts = {}) {
   app.use(require('./routes/static'));
   app.use('/audit/v1', require('./routes/audit'));
   app.use('/api/v1', require('./routes/api/v1'));
+  require('../day2/routes').mount(app); // Part II route modules (backend/day2/routes/*.js)
   app.use(notFound);
   app.use(errorHandler);
   return app;

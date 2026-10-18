@@ -151,6 +151,7 @@ async function runReset(parsed) {
         await client.query('ALTER SEQUENCE payment_seq RESTART WITH 1');
         const sportIds = await seedBase(client, parsed);
         await seedDemoData(client);
+        await require('../../day2/reset').run({ client, seed: parsed.seed, stock: parsed.stock }); // Part II hooks
         await client.query('COMMIT');
         return sportIds;
       } catch (err) {
