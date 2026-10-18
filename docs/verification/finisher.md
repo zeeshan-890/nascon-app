@@ -37,3 +37,9 @@ Environment: Windows host, private test Postgres 5435 and Redis 6382 (docker), N
 - Docker images: mediamtx 1.9.3-ffmpeg pulled; minio/minio is not on Docker Hub (compose makes it opt-in); the rest were already local.
 - Not run: ffmpeg cut-off timing, 25-client realtime probe against compose, k6, full compose boot (another stack held ports).
 - Decisions are in `backend/day2/decisions.js`.
+
+## k6 (T18), NOT PASSED
+`tests/k6_load.js` added. Two real runs of the exact profile (500 QR inspect VUs + 50 moderation VUs, 15 s) against the API in a node:20-alpine container on a Windows bind mount, with Postgres/Redis reached through host.docker.internal: run 1 failed 1.1 % of requests, p95 8.6 s; after cutting the QR path to two read-only queries, run 2 failed 4 of 6420 requests (0.06 %), p95 9.6 s. Both crossed the thresholds (`http_req_failed rate==0.00`, `p(95)<800`). The setup is not the compose stack (DB is not on the same network), so the numbers are not representative, but no passing run exists. No k6-summary.json was committed. Next step for an owner: run against the real compose stack and, if still slow, cache or reduce the QR inspect query path.
+
+## Not done
+COVERAGE_DAY2.json (no per-module coverage measured), TRACEABILITY update, full compose boot, ffmpeg cut-off, real host-disconnect handoff, old-JWT 401 after erasure, QR decode test.

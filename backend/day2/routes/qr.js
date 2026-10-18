@@ -52,10 +52,11 @@ async function resolve(id) {
 }
 
 async function codeFor(id) {
+  const existing = await pool.query('SELECT code, scan_count FROM day2_qr_code WHERE entity_id = $1', [id]);
+  if (existing.rows[0]) return existing.rows[0];
   const code = crypto.createHash('sha256').update(id).digest('hex').slice(0, 10);
   await pool.query('INSERT INTO day2_qr_code (entity_id, code) VALUES ($1, $2) ON CONFLICT DO NOTHING', [id, code]);
-  const { rows } = await pool.query('SELECT code, scan_count FROM day2_qr_code WHERE entity_id = $1', [id]);
-  return rows[0];
+  return (await pool.query('SELECT code, scan_count FROM day2_qr_code WHERE entity_id = $1', [id])).rows[0];
 }
 
 const deviceOf = (ua) => (/mobi|android|iphone|ipad|ipod/i.test(ua || '') ? 'mobile' : 'desktop');
@@ -72,9 +73,10 @@ async function countScan(id, ua) {
 }
 
 async function loadEntity(id) {
-  const ent = await resolve(id);
+  // A code row only exists for entities that resolved before, so reading both at once is safe: the entity must still resolve.
+  const [ent, known] = await Promise.all([resolve(id), ID_RE.test(id) ? pool.query('SELECT code, scan_count FROM day2_qr_code WHERE entity_id = $1', [id]) : null]);
   if (!ent) throw notFound();
-  const qr = await codeFor(id);
+  const qr = known && known.rows[0] ? known.rows[0] : await codeFor(id);
   return { ent, shortUrl: `${ORIGIN}/q/${qr.code}`, scans: Number(qr.scan_count) };
 }
 
