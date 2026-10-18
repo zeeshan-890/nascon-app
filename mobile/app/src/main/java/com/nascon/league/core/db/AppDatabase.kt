@@ -7,14 +7,16 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.nascon.league.BuildConfig
+import com.nascon.league.data.cart.GuestCartDao
+import com.nascon.league.data.cart.GuestCartItemEntity
 
 @Database(
     entities = [
         LeagueEntity::class, FixtureEntity::class, MatchEntity::class, StandingsEntity::class,
         ClubEntity::class, SportEntity::class, ProductEntity::class, PendingActionEntity::class,
-        MetaEntity::class, SyncResultEntity::class,
+        MetaEntity::class, SyncResultEntity::class, GuestCartItemEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -28,6 +30,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun pendingActionDao(): PendingActionDao
     abstract fun cacheDao(): CacheDao
     abstract fun syncResultDao(): SyncResultDao
+    abstract fun guestCartDao(): GuestCartDao
 
     companion object {
         /** v1 -> v2: sync_results table + attempts/tenant_id on pending_actions. Pending rows are preserved. */
@@ -48,9 +51,22 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** SQL of the guest cart table. Kept as a constant so a unit test can compare it with the exported v3 schema. */
+        const val GUEST_CART_CREATE_SQL =
+            "CREATE TABLE IF NOT EXISTS `guest_cart_item` (`token` TEXT NOT NULL, `variantId` TEXT NOT NULL, " +
+                "`name` TEXT NOT NULL, `priceMinor` INTEGER NOT NULL, `quantity` INTEGER NOT NULL, " +
+                "PRIMARY KEY(`token`, `variantId`))"
+
+        /** v2 -> v3: adds the guest cart. Nothing else changes, so pending offline actions and caches are preserved. */
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(GUEST_CART_CREATE_SQL)
+            }
+        }
+
         fun create(context: Context): AppDatabase {
             val builder = Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, "nascon.db")
-                .addMigrations(MIGRATION_1_2)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
             // Release builds must never destroy pending offline actions.
             if (BuildConfig.DEBUG) builder.fallbackToDestructiveMigration()
             return builder.build()

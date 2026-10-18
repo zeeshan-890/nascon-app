@@ -26,6 +26,8 @@ class ApiFactory(
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(15, TimeUnit.SECONDS)
             .writeTimeout(15, TimeUnit.SECONDS)
+            // Cleartext HTTP is for development hosts only (10.0.2.2, localhost, private LAN); anything else must be https.
+            .addInterceptor(CleartextGuardInterceptor())
         if (authenticated) builder.addInterceptor(AuthInterceptor(tokenStore))
         else builder.addInterceptor(Interceptor { it.proceed(it.request().newBuilder().header("Accept", "application/json").build()) })
         if (authenticator != null) builder.authenticator(authenticator)
