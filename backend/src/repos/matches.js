@@ -22,6 +22,18 @@ async function insertFixtures(db, { sportId, leagueId, fixtures }) {
   );
 }
 
+// Fixtures produced by the schedule generator: each row is { match_id, home, away, round, scheduled_at (ISO) }.
+async function insertGenerated(db, { sportId, leagueId, rows }) {
+  if (!rows.length) return;
+  await db.query(
+    `INSERT INTO matches (match_id, sport_id, league_id, home_team_id, away_team_id, origin, version, round, scheduled_at)
+     SELECT m, $1, $2, h, a, 'fixture', 0, r, s::timestamptz
+     FROM unnest($3::text[], $4::text[], $5::text[], $6::int[], $7::text[]) AS f(m, h, a, r, s)`,
+    [sportId, leagueId, rows.map((x) => x.match_id), rows.map((x) => x.home), rows.map((x) => x.away),
+      rows.map((x) => x.round), rows.map((x) => x.scheduled_at)],
+  );
+}
+
 // Returns the inserted row, or null when the match_id already exists.
 async function insertInit(db, { match_id, sport_id, league_id, home_team_id, away_team_id }) {
   const { rows } = await db.query(
@@ -37,4 +49,4 @@ async function bumpVersion(db, matchId) {
   await db.query('UPDATE matches SET version = version + 1 WHERE match_id = $1', [matchId]);
 }
 
-module.exports = { get, findExistingIds, insertFixtures, insertInit, bumpVersion };
+module.exports = { get, findExistingIds, insertFixtures, insertGenerated, insertInit, bumpVersion };

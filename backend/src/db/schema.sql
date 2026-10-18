@@ -73,6 +73,12 @@ CREATE TABLE IF NOT EXISTS leagues (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- Approval workflow: organizer-created leagues start 'pending'; a super admin approves ('active') or rejects.
+ALTER TABLE leagues ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'active';
+ALTER TABLE leagues ADD COLUMN IF NOT EXISTS created_by text;
+ALTER TABLE leagues ADD COLUMN IF NOT EXISTS reviewed_by text;
+ALTER TABLE leagues ADD COLUMN IF NOT EXISTS reviewed_at timestamptz;
+
 CREATE TABLE IF NOT EXISTS league_teams (
   league_id text NOT NULL,
   team_id text NOT NULL,

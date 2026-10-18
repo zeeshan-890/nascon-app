@@ -26,7 +26,8 @@ async function listLeagues(tenantScope, query) {
     `SELECT l.league_id, COALESCE(l.name, l.league_id) AS name, l.sport_id,
             COALESCE(s.name, l.config->>'season') AS season, count(*) OVER ()::int AS total
      FROM leagues l LEFT JOIN seasons s ON s.season_id = l.season_id
-     WHERE ($1::text IS NULL OR l.tenant_id = $1) ORDER BY l.league_id LIMIT $2 OFFSET $3`,
+     WHERE ($1::text IS NULL OR l.tenant_id = $1) AND l.status = 'active'
+     ORDER BY l.league_id LIMIT $2 OFFSET $3`,
     [tenantScope, limit, offset],
   );
   return {
