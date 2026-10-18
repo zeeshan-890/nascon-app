@@ -12,3 +12,7 @@ Environment: Windows host, API/worker on Node 20+, test Postgres 5433 and Redis 
 | 3 Gate: NFR-1 against compose stack | `NFR1_BASE_URL=http://localhost:8080 jest ...nfr1` | compose stack not started in this session (port 8080 was occupied by another project) | NOT RUN |
 | 4 Docs | `docs/part2-interfaces.md` section "Realtime channels (NFR-1)" | written | PASS |
 | 2.3/2.6 timed heartbeats | SSE `: keep-alive` every 15 s and WS ping every 25 s are implemented but no test waits that long | not exercised | NOT RUN |
+| Full suite | `jest` (whole repo, test DB 5433 + Redis 6380 reachable) | 67 suites, 1698 tests, 0 failed (the 2 realtime Phase I tests pass because Redis was reachable) | PASS |
+| Ancestry | `git merge-base --is-ancestor 2adf2c75... HEAD` | ancestor | PASS |
+| Secret scan | grep staged diff for the public test salts and (if exported) the real ones | no matches | PASS |
+| Push 1 | commit a9dd07a, on origin/main at 12:51 PKT | confirmed by `git fetch` (origin/main = a9dd07a) | PASS |
