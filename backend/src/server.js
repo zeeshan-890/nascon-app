@@ -19,6 +19,7 @@ async function main() {
     const { reset } = require('./services/resetService');
     await reset({});
   }
+  await require('./services/rbacService').topUpDefaults();
   await require('./services/rbacService').refreshPolicies();
   config.state.ready = true;
 

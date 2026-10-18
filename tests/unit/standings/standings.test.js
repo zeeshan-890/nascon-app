@@ -312,3 +312,22 @@ describe('qualification', () => {
     expect(r.sport_id).toBe('sp');
   });
 });
+
+describe('draw_lots is always applied last', () => {
+  // All four teams finish on 1 point; only `scored` can separate {B, D} (3 scored) from {A, C} (1 scored).
+  const matches = [m('A', 'C', 1, 1), m('B', 'D', 3, 3)];
+  const tied = (order) => run(['A', 'B', 'C', 'D'], matches, { tie_break_order: order, lots_seed: 4 });
+
+  test('a mid-list draw_lots does not hide the criteria listed after it', () => {
+    const r = tied(['draw_lots', 'scored']);
+    expect(ids(r).slice(0, 2).sort()).toEqual(['B', 'D']);
+    expect(ids(r).slice(2).sort()).toEqual(['A', 'C']);
+    expect(ids(tied(['draw_lots', 'scored']))).toEqual(ids(tied(['scored', 'draw_lots'])));
+  });
+
+  test('withLots moves or appends draw_lots at the end', () => {
+    expect(withLots(['draw_lots', 'scored'])).toEqual(['scored', 'draw_lots']);
+    expect(withLots(['scored'])).toEqual(['scored', 'draw_lots']);
+    expect(withLots(undefined)).toEqual(['draw_lots']);
+  });
+});

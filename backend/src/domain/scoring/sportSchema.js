@@ -18,8 +18,9 @@ const hasOwn = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
 
 function normaliseTieBreak(arr) {
   if (!Array.isArray(arr)) return TIE_BREAK_TOKENS.slice();
-  const out = arr.slice();
-  if (!out.includes('draw_lots')) out.push('draw_lots');
+  // draw_lots is always applied last, wherever (or whether) it was listed.
+  const out = arr.filter((c) => c !== 'draw_lots');
+  out.push('draw_lots');
   return out;
 }
 

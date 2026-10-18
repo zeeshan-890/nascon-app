@@ -34,6 +34,16 @@ const matchResolver = (param = 'id', { read = false } = {}) => async (req) => {
   return { ...row, open: read && !row.league_id };
 };
 
+const seasonResolver = (param = 'id') => async (req) => one(
+  'SELECT season_id, tenant_id FROM seasons WHERE season_id = $1', [idParam(req, param, 'season_id')],
+  'SEASON_NOT_FOUND', 'Season not found',
+);
+
+const productResolver = (param = 'id') => async (req) => one(
+  'SELECT product_id, tenant_id, club_id FROM products WHERE product_id = $1', [idParam(req, param, 'product_id')],
+  'PRODUCT_NOT_FOUND', 'Product not found',
+);
+
 const clubResolver = (param = 'id') => async (req) => one(
   'SELECT club_id, tenant_id FROM clubs WHERE club_id = $1', [idParam(req, param, 'club_id')],
   'NOT_FOUND', 'Club not found',
@@ -64,4 +74,4 @@ const orderResolver = (param = 'id') => async (req) => {
 // Collection endpoints are scoped by the query itself (tenant filter), so the guard only checks the role.
 const openResource = () => ({ open: true });
 
-module.exports = { openResource, idParam, leagueResolver, matchResolver, clubResolver, playerResolver, orderResolver };
+module.exports = { openResource, idParam, leagueResolver, matchResolver, seasonResolver, productResolver, clubResolver, playerResolver, orderResolver };

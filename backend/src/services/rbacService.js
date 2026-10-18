@@ -2,6 +2,7 @@ const pool = require('../db/pool');
 const AppError = require('../http/AppError');
 const { Id } = require('../http/validators');
 const { authorize, findPolicy } = require('../domain/rbac/engine');
+const { DEFAULT_POLICIES } = require('../domain/rbac/defaultPolicies');
 
 let cache = null;
 let loading = null;
@@ -21,6 +22,15 @@ async function refreshPolicies() {
   } finally {
     if (loading === p) loading = null;
   }
+}
+
+// Boot top-up: a database seeded by an older build gains the rows added since (existing rows are never touched).
+async function topUpDefaults() {
+  await pool.query(
+    `INSERT INTO role_policies (role, action, scope)
+     SELECT * FROM unnest($1::text[], $2::text[], $3::text[]) ON CONFLICT (role, action) DO NOTHING`,
+    [DEFAULT_POLICIES.map((p) => p.role), DEFAULT_POLICIES.map((p) => p.action), DEFAULT_POLICIES.map((p) => p.scope)],
+  );
 }
 
 async function ensurePolicies() {
@@ -72,4 +82,4 @@ async function probe(principal, action, kind, id) {
   return { authorized: true };
 }
 
-module.exports = { ensurePolicies, refreshPolicies, probe, loadResource };
+module.exports = { ensurePolicies, refreshPolicies, topUpDefaults, probe, loadResource };

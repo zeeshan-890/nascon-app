@@ -1,5 +1,5 @@
 const WebSocket = require('../../backend/node_modules/ws');
-const { describeDb } = require('../helpers/db');
+const { describeDbRedis } = require('../helpers/db');
 const { boot, resetAll, as, token, pool } = require('../helpers/mobilekit');
 const { createHttpServer } = require('../../backend/src/httpServer');
 const { createHub } = require('../../backend/src/realtime/hub');
@@ -11,7 +11,7 @@ let hub;
 let port;
 
 beforeAll(async () => {
-  if (process.env.DB_AVAILABLE !== '1') return;
+  if (process.env.DB_AVAILABLE !== '1' || process.env.REDIS_AVAILABLE !== '1') return;
   await resetAll();
   server = createHttpServer(await boot());
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
@@ -53,7 +53,7 @@ const pump = async () => {
   for (let i = 0; i < 3; i += 1) await relayOnce();
 };
 
-describeDb('websocket hub', () => {
+describeDbRedis('websocket hub', () => {
   test('bad, missing or expired token: handshake completes, then close 4401', async () => {
     for (const t of ['', 'garbage']) {
       const ws = await connect(t);

@@ -82,7 +82,7 @@ describeDb('mobile API: read endpoints (contract)', () => {
     expect(keys(list.body[0])).toEqual(['club_id', 'logo_url', 'name']);
     const r = await as('manager').get('/api/v1/clubs/club-alpha-1');
     expect(r.status).toBe(200);
-    expect(keys(r.body)).toEqual(['club_id', 'logo_url', 'name', 'roster', 'socials', 'squads', 'staff', 'stats', 'tenant_id', 'venue']);
+    expect(keys(r.body)).toEqual(['club_id', 'destination_squads', 'logo_url', 'name', 'roster', 'socials', 'squads', 'staff', 'stats', 'tenant_id', 'venue']);
     expect(r.body.venue).toEqual({ name: 'Gaddafi Park', lat: 31.5134, lng: 74.3333 });
     expect(r.body.staff).toHaveLength(3);
     expect(r.body.stats[0]).toMatchObject({ season: '2025/26', played: 22 });
@@ -207,7 +207,7 @@ describeDb('mobile API: checkout and receipts', () => {
 
     const o = await as('manager').get(`/api/v1/orders/${body.order_id}`);
     expect(o.status).toBe(200);
-    expect(keys(o.body)).toEqual(['currency', 'discount_minor', 'items', 'order_id', 'paid_at', 'status', 'subtotal_minor', 'total_minor']);
+    expect(keys(o.body)).toEqual(['created_at', 'currency', 'discount_minor', 'items', 'order_id', 'paid_at', 'status', 'status_history', 'subtotal_minor', 'total_minor']);
     expect(o.body.total_minor).toBe(240000);
 
     const pdf = await (await http()).get(`/api/v1/orders/${body.order_id}/receipt.pdf`)

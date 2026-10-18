@@ -44,20 +44,35 @@ const iso = (d) => (d ? new Date(d).toISOString().replace(/\.\d{3}Z$/, 'Z') : nu
 
 router.get('/orders/:id', authenticate, guard('order.read', orderResolver()), wrap(async (req, res) => {
   const { rows } = await pool.query(
-    'SELECT order_id, status, subtotal_minor, discount_minor, total_minor, currency, paid_at FROM orders WHERE order_id = $1',
+    'SELECT order_id, status, subtotal_minor, discount_minor, total_minor, currency, paid_at, created_at FROM orders WHERE order_id = $1',
     [req.params.id],
   );
   const o = rows[0];
   const items = await store.getItems(pool, o.order_id);
+  // Display names for the app's order screen; a variant that no longer exists simply has no name.
+  const { rows: names } = await pool.query(
+    `SELECT v.variant_id, p.name FROM variants v JOIN products p ON p.product_id = v.product_id
+     WHERE v.variant_id = ANY($1::text[])`,
+    [items.map((i) => i.variant_id)],
+  );
+  const nameOf = new Map(names.map((n) => [n.variant_id, n.name]));
+  const { rows: history } = await pool.query(
+    'SELECT from_status, to_status, at FROM order_status_history WHERE order_id = $1 ORDER BY id',
+    [o.order_id],
+  );
   send(res, 200, {
     order_id: o.order_id,
     status: o.status,
-    items: items.map((i) => ({ variant_id: i.variant_id, quantity: i.quantity, unit_price_minor: i.unit_price_minor })),
+    items: items.map((i) => ({
+      variant_id: i.variant_id, name: nameOf.get(i.variant_id) || null, quantity: i.quantity, unit_price_minor: i.unit_price_minor,
+    })),
     subtotal_minor: o.subtotal_minor,
     discount_minor: o.discount_minor,
     total_minor: o.total_minor,
     currency: o.currency,
     paid_at: iso(o.paid_at),
+    created_at: iso(o.created_at),
+    status_history: history.map((h) => ({ from_status: h.from_status || null, to_status: h.to_status, at: iso(h.at) })),
   });
 }));
 

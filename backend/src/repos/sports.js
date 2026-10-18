@@ -10,4 +10,11 @@ async function insert(db, config) {
   );
 }
 
-module.exports = { get, insert };
+async function list(db, { limit, offset }) {
+  const { rows } = await db.query(
+    'SELECT config, count(*) OVER ()::int AS total FROM sports ORDER BY sport_id LIMIT $1 OFFSET $2', [limit, offset]
+  );
+  return { total: rows.length ? rows[0].total : 0, items: rows.map((r) => r.config) };
+}
+
+module.exports = { get, insert, list };

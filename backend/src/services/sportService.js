@@ -26,4 +26,21 @@ async function createSport(body, db = pool) {
   return { sport_id: config.sport_id, status: 'created', config };
 }
 
-module.exports = { createSport, normalise };
+// Production variant: replaying an identical definition answers 200 with the stored config; a different one is 409.
+async function createSportIdempotent(body, db = pool) {
+  const config = normalise(body);
+  const found = await sports.get(db, config.sport_id);
+  if (found) {
+    if (canon(found) === canon(config)) return { status: 200, body: { sport_id: config.sport_id, status: 'exists', config: found } };
+    throw exists();
+  }
+  return { status: 201, body: await createSport(body, db) };
+}
+
+const canon = (v) => {
+  if (Array.isArray(v)) return `[${v.map(canon).join(',')}]`;
+  if (v && typeof v === 'object') return `{${Object.keys(v).sort().map((k) => `${JSON.stringify(k)}:${canon(v[k])}`).join(',')}}`;
+  return JSON.stringify(v === undefined ? null : v);
+};
+
+module.exports = { createSport, createSportIdempotent, normalise };

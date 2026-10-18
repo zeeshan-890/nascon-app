@@ -3,7 +3,7 @@ const { Router } = require('express');
 const router = Router();
 router.use(require('./ping'));
 router.use(require('./auth'));
-for (const name of ['leagues', 'matches', 'sports', 'clubs', 'products', 'orders', 'sync', 'matchOps', 'orderAdmin', 'players', 'leagueAdmin']) {
+for (const name of ['seasons', 'leagues', 'matches', 'sports', 'clubs', 'products', 'orders', 'sync', 'matchOps', 'orderAdmin', 'players', 'leagueAdmin']) {
   router.use(require(`./${name}`));
 }
 

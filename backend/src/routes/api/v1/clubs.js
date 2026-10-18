@@ -10,6 +10,7 @@ const pool = require('../../../db/pool');
 const roster = require('../../../domain/roster');
 const read = require('../../../services/readModelService');
 const rosterService = require('../../../services/rosterService');
+const clubProfile = require('../../../services/clubProfileService');
 const { wrap, sendList } = require('./util');
 
 const router = Router();
@@ -21,6 +22,10 @@ router.get('/clubs', authenticate, guard('club.read', openResource), wrap(async 
 
 router.get('/clubs/:id', authenticate, guard('club.read', clubResolver()), wrap(async (req, res) => {
   send(res, 200, await read.clubDetail(req.params.id));
+}));
+
+router.patch('/clubs/:id', authenticate, guard('club.write', clubResolver()), wrap(async (req, res) => {
+  send(res, 200, await clubProfile.patchClub(req.params.id, req.body));
 }));
 
 // The squad a player leaves must belong to the club of the URL; a missing squad is left to the

@@ -61,8 +61,11 @@ describe('normaliseTieBreak', () => {
   test('appends draw_lots when missing', () => {
     expect(normaliseTieBreak(['scored'])).toEqual(['scored', 'draw_lots']);
   });
-  test('keeps draw_lots position when present', () => {
-    expect(normaliseTieBreak(['draw_lots', 'scored'])).toEqual(['draw_lots', 'scored']);
+  test('moves draw_lots to the end when listed earlier (always applied last)', () => {
+    expect(normaliseTieBreak(['draw_lots', 'scored'])).toEqual(['scored', 'draw_lots']);
+    expect(normaliseTieBreak(['fair_play', 'draw_lots', 'h2h_diff'])).toEqual(['fair_play', 'h2h_diff', 'draw_lots']);
+    expect(normaliseTieBreak(['scored', 'draw_lots'])).toEqual(['scored', 'draw_lots']);
+    expect(normaliseTieBreak(['draw_lots'])).toEqual(['draw_lots']);
   });
 });
 

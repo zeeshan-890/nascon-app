@@ -2,6 +2,7 @@ const express = require('../../backend/node_modules/express');
 const request = require('../../backend/node_modules/supertest');
 const createApp = require('../../backend/src/app');
 const { createLimiter } = require('../../backend/src/middleware/rateLimit');
+const { getRedis } = require('../../backend/src/db/redis');
 const { describeDb } = require('../helpers/db');
 const { api, resetDb, pool } = require('../helpers/app');
 
@@ -18,10 +19,19 @@ describeDb('rate limiting', () => {
   });
 
   // Each scenario gets its own app+limiter so counts are isolated (redis: null forces the in-memory path;
-  // Redis is unavailable locally, so the default getRedis() path falls back to the same logic).
+  // without a reachable Redis the default getRedis() path falls back to the same logic).
   const scenarios = [['in-memory (Redis disabled)', () => createLimiter({ redis: null })], ['default (Redis -> fallback)', () => createLimiter()]];
 
   describe.each(scenarios)('%s', (name, mk) => {
+    // With a live Redis the default limiter shares `rl:*` keys across tests/runs; start each test from a clean window.
+    beforeEach(async () => {
+      if (process.env.REDIS_AVAILABLE !== '1') return;
+      const redis = getRedis();
+      if (redis.status === 'wait') await redis.connect();
+      const keys = await redis.keys('rl:*');
+      if (keys.length) await redis.del(...keys);
+    });
+
     test('150 quick pings: first 100 are 200, next 50 are 429 with Retry-After', async () => {
       const limiter = mk();
       const app = request(createApp({ limiter }));
