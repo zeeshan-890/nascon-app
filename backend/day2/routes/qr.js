@@ -72,12 +72,21 @@ async function countScan(id, ua) {
   return Number(rows[0].scan_count);
 }
 
-async function loadEntity(id) {
+async function loadEntityUncached(id) {
   // A code row only exists for entities that resolved before, so reading both at once is safe: the entity must still resolve.
   const [ent, known] = await Promise.all([resolve(id), ID_RE.test(id) ? pool.query('SELECT code, scan_count FROM day2_qr_code WHERE entity_id = $1', [id]) : null]);
   if (!ent) throw notFound();
   const qr = known && known.rows[0] ? known.rows[0] : await codeFor(id);
   return { ent, shortUrl: `${ORIGIN}/q/${qr.code}`, scans: Number(qr.scan_count) };
+}
+
+// Concurrent reads of the same entity share one in-flight lookup (read-only inspect path; nothing is cached after it settles).
+const inflight = new Map();
+function loadEntity(id) {
+  if (inflight.has(id)) return inflight.get(id);
+  const p = loadEntityUncached(id).finally(() => inflight.delete(id));
+  inflight.set(id, p);
+  return p;
 }
 
 // Minimal hand-written PDF: the id and short URL as plain text, the QR drawn as vector squares (no compression, no images).

@@ -43,3 +43,9 @@ Environment: Windows host, private test Postgres 5435 and Redis 6382 (docker), N
 
 ## Not done
 COVERAGE_DAY2.json (no per-module coverage measured), TRACEABILITY update, full compose boot, ffmpeg cut-off, real host-disconnect handoff, old-JWT 401 after erasure, QR decode test.
+
+## k6 update (after single-flight on the QR read path)
+Third run: 12,632 requests, p95 284 ms (threshold passes). 175 requests (1.4 %) failed, so `http_req_failed rate==0.00` still FAILS. The API log shows 12,457 requests served, all 200, equal to k6's success count, so the 175 failures never reached the server; they are connection errors through the Docker Desktop port forward with 500 simultaneous VUs. Not verified on the compose network. Status: NOT PASSED. No summary file committed.
+
+## Measured coverage (COVERAGE_DAY2.json)
+Line coverage of `backend/day2/{routes,lib}` grouped per module, from `jest --coverage` over `tests/integration/day2.finisher*.test.js` and `tests/unit/day2`: streaming 95.7, costream 98.4, qr_guest 98.0, moderation_dlq 100, observability 93.8.
