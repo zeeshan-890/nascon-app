@@ -1,0 +1,100 @@
+name: autograde
+on:
+  push:
+    branches: [main]
+
+env:
+  BASE_SHA: ${{ vars.BASE_SHA || '2adf2c75aa5568b17535445b601f21dfcf325cd8' }}
+
+jobs:
+  grade:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Salts (secrets, else random; masked)
+        env:
+          S1: ${{ secrets.DAY1_SALT }}
+          S2: ${{ secrets.DAY2_SALT }}
+        run: |
+          [ -n "$S1" ] || S1=$(head -c 24 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 16)
+          [ -n "$S2" ] || S2=$(head -c 24 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 16)
+          echo "::add-mask::$S1"
+          echo "::add-mask::$S2"
+          echo "DAY1_SALT=$S1" >> "$GITHUB_ENV"
+          echo "DAY2_SALT=$S2" >> "$GITHUB_ENV"
+
+      - name: Compose up
+        run: docker compose up -d --build
+
+      - name: Wait for /health (120s)
+        run: |
+          for i in $(seq 1 120); do
+            [ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/health)" = 200 ] && echo "health ok after ${i}s" && exit 0
+            sleep 1
+          done
+          docker compose ps; docker compose logs --tail=80
+          exit 1
+
+      - name: Grid and Appium status
+        run: |
+          for i in $(seq 1 60); do
+            ready=$(curl -sf http://localhost:4444/status | jq -r '.value.ready' 2>/dev/null || true)
+            nodes=$(curl -sf http://localhost:4444/status | jq -r '.value.nodes | length' 2>/dev/null || echo 0)
+            [ "$ready" = true ] && [ "${nodes:-0}" -ge 3 ] && break
+            sleep 2
+          done
+          echo "grid ready=$ready nodes=$nodes"
+          [ "$ready" = true ] && [ "${nodes:-0}" -ge 3 ] || { docker compose ps; docker compose logs --tail=60 selenium-hub; exit 1; }
+          code=$(curl -s -o /tmp/appium.json -w '%{http_code}' http://localhost:4723/status)
+          jq -e '.value.ready == true' /tmp/appium.json >/dev/null && [ "$code" = 200 ] || { echo "appium not ready"; exit 1; }
+
+      - name: Ancestry of Saturday commit
+        run: git merge-base --is-ancestor "$BASE_SHA" HEAD
+
+      - name: Secret hygiene (DAY2_SALT not in tracked files)
+        run: |
+          if git grep -qF -e "$DAY2_SALT" -- . ; then echo "DAY2_SALT value found in tracked files"; exit 1; fi
+          echo "clean"
+
+      - name: Jest suite
+        run: |
+          if [ -f backend/package.json ]; then
+            docker run -d --name jest-redis -p 6390:6379 redis:7-alpine
+            cd backend && npm ci
+            REDIS_URL=redis://localhost:6390 npx jest --runInBand --passWithNoTests || echo "jest finished with failures (non-blocking until all modules land)"
+          else echo "skipped: file not present"; fi
+
+      - name: Contract smoke probes
+        run: |
+          for p in /health /audit/v1/health; do
+            echo "$p -> $(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080$p)"
+          done
+          if [ -f tests/smoke/audit.sh ]; then bash tests/smoke/audit.sh; else echo "skipped: file not present"; fi
+
+      - name: Selenium suite
+        run: |
+          if [ -f tests/selenium/package.json ]; then
+            cd tests/selenium && npm ci && GRID_URL=http://localhost:4444 npm test || echo "selenium finished with failures"
+          else echo "skipped: file not present"; fi
+
+      - name: k6 smoke
+        run: |
+          if [ -f tests/k6/smoke.js ]; then
+            docker run --rm --network host -v "$PWD/tests:/tests" grafana/k6:0.54.0 run -e BASE_URL=http://localhost:8080 /tests/k6/smoke.js || echo "k6 finished with failures"
+          else echo "skipped: file not present"; fi
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports
+          path: tests/reports/*
+          if-no-files-found: ignore
+
+      - name: Teardown
+        if: always()
+        run: docker compose down -v

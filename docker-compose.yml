@@ -1,5 +1,6 @@
 x-backend-env: &backend-env
   DAY1_SALT: ${DAY1_SALT}
+  DAY2_SALT: ${DAY2_SALT}
   DATABASE_URL: ${DATABASE_URL:-postgres://nascon:nascon@postgres:5432/nascon}
   REDIS_URL: ${REDIS_URL:-redis://redis:6379}
   MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio}
@@ -9,6 +10,7 @@ x-backend-env: &backend-env
   MINIO_BUCKET: ${MINIO_BUCKET:-receipts}
   PORT: 8080
   LOG_LEVEL: ${LOG_LEVEL:-info}
+  MEDIA_CONTROL_URL: http://media:9997
 
 services:
   postgres:
@@ -48,6 +50,14 @@ services:
     ports:
       - "8080:8080"
     environment: *backend-env
+    networks:
+      default:
+        aliases: [backend]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/health"]
+      interval: 2s
+      timeout: 3s
+      retries: 60
     depends_on:
       postgres:
         condition: service_healthy
@@ -59,9 +69,97 @@ services:
     build: ./backend
     command: node src/worker.js
     environment: *backend-env
+    healthcheck:
+      test: ["CMD-SHELL", "pidof node >/dev/null || ps | grep -q '[w]orker.js'"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     restart: unless-stopped
+
+  # ---- Part II infrastructure -------------------------------------------------------------
+  # Media server: RTMP ingest 1935, HLS 8888, WebRTC (WHIP/WHEP) 8889. Control API 9997 is internal only.
+  media:
+    image: bluenviron/mediamtx:1.9.3-ffmpeg
+    container_name: nascon-media
+    volumes:
+      - ./infra/mediamtx/mediamtx.yml:/mediamtx.yml:ro
+    ports:
+      - "1935:1935"
+      - "8888:8888"
+      - "8889:8889"
+      - "8189:8189/udp"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:9997/v3/config/global/get"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+  selenium-hub:
+    image: selenium/hub:4.25.0
+    container_name: nascon-selenium-hub
+    ports:
+      - "4444:4444"
+      - "4442:4442"
+      - "4443:4443"
+    healthcheck:
+      # liveness only: the hub reports ready=false until a node registers, and nodes wait for this check
+      test: ["CMD-SHELL", "curl -sf http://localhost:4444/readyz"]
+      interval: 3s
+      timeout: 5s
+      retries: 30
+
+  node-chrome-1:
+    image: selenium/node-chrome:4.25.0
+    shm_size: "1gb"
+    depends_on:
+      selenium-hub:
+        condition: service_healthy
+    environment: &selenium-node-env
+      SE_EVENT_BUS_HOST: selenium-hub
+      SE_EVENT_BUS_PUBLISH_PORT: "4442"
+      SE_EVENT_BUS_SUBSCRIBE_PORT: "4443"
+      SE_NODE_MAX_SESSIONS: "2"
+      SE_START_VNC: "false"
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    healthcheck: &selenium-node-hc
+      test: ["CMD-SHELL", "curl -sf http://localhost:5555/status | grep -q '\"ready\": *true' || curl -sf http://localhost:5555/status | grep -q '\"message\": *\"Node is up'"]
+      interval: 3s
+      timeout: 5s
+      retries: 40
+
+  node-chrome-2:
+    image: selenium/node-chrome:4.25.0
+    shm_size: "1gb"
+    depends_on:
+      selenium-hub:
+        condition: service_healthy
+    environment: *selenium-node-env
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    healthcheck: *selenium-node-hc
+
+  node-firefox:
+    image: selenium/node-firefox:4.25.0
+    shm_size: "1gb"
+    depends_on:
+      selenium-hub:
+        condition: service_healthy
+    environment: *selenium-node-env
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    healthcheck: *selenium-node-hc
+
+  appium:
+    image: appium/appium:v2.19.0-p4
+    container_name: nascon-appium
+    ports:
+      - "4723:4723"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:4723/status | grep -q '\"ready\": *true'"]
+      interval: 3s
+      timeout: 5s
+      retries: 30

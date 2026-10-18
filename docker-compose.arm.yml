@@ -1,0 +1,8 @@
+# Apple Silicon only. Not used by the grader (x86). Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.arm.yml up -d --build
+# Seleniarm multi-arch images; confirm the tag exists before relying on it.
+services:
+  selenium-hub: { image: "seleniarm/hub:4.20.0" }
+  node-chrome-1: { image: "seleniarm/node-chromium:4.20.0" }
+  node-chrome-2: { image: "seleniarm/node-chromium:4.20.0" }
+  node-firefox: { image: "seleniarm/node-firefox:4.20.0" }

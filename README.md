@@ -130,3 +130,40 @@ appear in `backend/src`.
 - **Observed cold boot** (no images or volumes, clean clone): about 83 s to build the images and about
   88 s until `/health` returned 200.
 - Logs: `docker compose logs api worker`.
+
+## Part II: run it
+
+Required environment variables (names only, set them in your shell or a git-ignored `.env`): `DAY1_SALT`, `DAY2_SALT`.
+
+Start (from the repo root):
+
+```
+docker compose up -d --build
+docker compose ps        # every container should be healthy
+```
+
+| Port | Service |
+|---|---|
+| 8080 | API (`/health`, also reachable in the compose network as `http://backend:8080`) |
+| 4444 / 4442 / 4443 | Selenium Grid hub (`/status`; event bus 4442/4443) |
+| 4723 | Appium 2 (uiautomator2 driver) |
+| 1935 | RTMP ingest, `rtmp://localhost:1935/live/<key>` |
+| 8888 | HLS playback, `/live/<key>/index.m3u8`, `/costream/<id>/index.m3u8` |
+| 8889 | WebRTC (WHIP `/live/<key>/whip`, WHEP playback); ICE on UDP/TCP 8189 |
+
+Internal only (not published): media control API `http://media:9997` (kick a publisher with
+`POST /v3/rtmpconns/kick/{id}` or `POST /v3/webrtcsessions/kick/{id}`; ids from `GET /v3/rtmpconns/list`
+and `GET /v3/webrtcsessions/list`), and the auth hook `POST http://api:8080/internal/media/auth`.
+
+Running the suites:
+- Selenium: point WebDriver at `http://localhost:4444`; from inside a browser container the app is
+  `http://backend:8080` (or `http://host.docker.internal:8080`).
+- Appium: client URL `http://localhost:4723`.
+- k6: `docker run --rm --network host -v "$PWD/tests:/tests" grafana/k6:0.54.0 run /tests/k6/smoke.js`.
+
+Apple Silicon: the default images are x86. On arm64 use the override file
+`docker compose -f docker-compose.yml -f docker-compose.arm.yml up -d --build` (seleniarm images).
+
+Multi-laptop option: laptop 1 runs backend + media (`docker compose up -d api worker postgres redis media`),
+laptop 2 runs Appium (`docker compose up -d appium`), laptop 3 runs the hub + nodes (`selenium-hub node-chrome-1
+node-chrome-2 node-firefox`) and k6, pointing at laptop 1's IP instead of `localhost`.

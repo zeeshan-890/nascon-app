@@ -16,3 +16,8 @@ Environment: Windows host, API/worker on Node 20+, test Postgres 5433 and Redis 
 | Ancestry | `git merge-base --is-ancestor 2adf2c75... HEAD` | ancestor | PASS |
 | Secret scan | grep staged diff for the public test salts and (if exported) the real ones | no matches | PASS |
 | Push 1 | commit a9dd07a, on origin/main at 12:51 PKT | confirmed by `git fetch` (origin/main = a9dd07a) | PASS |
+| Coverage | `jest day2.realtime*.test.js --coverage` over `backend/day2/realtime/**` + `routes/realtime.js` | 87.57 % lines (gauge 100, index 87.5, streams 89.0, wsServer 84.8, routes/realtime 82.8); 17/17 tests | PASS |
+| Re-run NFR-1 under load | same probe, machine busy | 0 missing; from request p50 74.6 / p95 153.4 / max 154.7 ms (target p95 < 250) | PASS |
+| Shared-DB caveat | a run at 13:10 failed 3-9 tests with 404s on `demo-m-live` | another session's full jest run (started 13:02) was resetting the same test database; re-run after it ended: 17/17 | NOTE |
+| Phase I suite BEFORE changes | not run before the first edit; only the after-run (67 suites, 1698 passed) exists | NOT RUN |
+| Secret scan scope | greps for the public test salts and for any exported DAY1_SALT/DAY2_SALT; the real salts were not exported in this shell, so they were not searched for literally | PARTIAL |
