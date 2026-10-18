@@ -113,7 +113,8 @@ fun MatchLiveRoute(vm: MatchLiveViewModel, onGoHome: () -> Unit, onSignIn: () ->
             onOpenCart = onOpenCart,
         )
     }
-    MatchLiveScreen(state, actions)
+    // The tag is on the route container so it exists in every state (loading, error, not found, content).
+    Box(Modifier.fillMaxSize().testTag(MatchLiveTags.LIVE_ROOT)) { MatchLiveScreen(state, actions) }
 }
 
 @Composable

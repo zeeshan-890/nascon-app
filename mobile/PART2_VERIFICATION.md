@@ -83,7 +83,7 @@ Gate 1
      and a secure lock cannot be bypassed from here. The resumed activity was `MainActivity`.
 6. Bad links (`nascon://entity/`, `.../match-m1/extra`, `.../%00`, `nascon://unknown/x`, 200-char id): no crash (Status ok, no FATAL in logcat).
    The not-found screen itself was not seen on the device (same reason). The parser returns the right NotFound reason for each (unit tests).
-7. Secret scan of the diff (T37D, DAY1/DAY2_SALT, AWS/GitHub/Slack/private-key/JWT shapes): PASS, no hits. The only `guest_anon_tok_7721`
+7. Secret scan of the diff (old-salt prefix, salt variable names, AWS/GitHub/Slack/private-key/JWT shapes): PASS, no hits. The only `guest_anon_tok_7721`
    occurrence is the debug-only constant in `GuestSession.kt`.
 8. `git status` clean after commit: see below.
 - Side effect on the test phone: `screen_off_timeout` was set to 600000 ms so screenshots can be taken; the original value was not recorded.
@@ -149,3 +149,60 @@ Gate 3
 5. `am start -W` with the real screens: **NOT RUN** (device). Phase 1 timings above were with placeholder screens.
 6. Accessibility check (TalkBack order, touch targets, font scale 200%): **NOT RUN** on a device. Code uses >= 48 dp targets and content descriptions; unverified visually.
 7. Secret scan: PASS. `git status` clean after commit: see below.
+
+---
+
+## Phase 2/3 push
+
+- Merge commit `bcd1ca4` pushed at 13:09:36 PKT (target 13:10). Ancestor check: PASS.
+
+---
+
+## Phase 4: Co-Stream viewer H06 and chat
+
+- Start 13:10, code complete 13:27, tests green 13:29. Parallel agents (logic/data/view model, screen) with the lead wiring.
+- Built: `costream/` (`CoStreamLogic`: layouts SOLO / GRID_2 / GRID_4 / SPOTLIGHT, never more than 4 tiles, kicked excluded, host first, handoff banner "Host changed to <name>",
+  `CoStreamViewModel` polling the session every 2 s, `RemoteCoStreamRepository`) and `ui/costream/CoStreamScreen.kt` (composite video, tiles with host and muted icon+text, handoff banner as a polite live region,
+  shared `ChatPanel`, skeleton, offline strip, session-ended state). The deep link `nascon://stream/cs-session-*` now opens this screen instead of the Phase 1 placeholder.
+- Real bug found by the tests and fixed: the view model never started polling after the first load (a guard compared the load job with itself). The app only worked because the screen calls `setActive(true)`.
+- Assumed backend route (does not exist): `GET /api/v1/costream/{id}`; chat reuses the assumed chat routes from Phase 3. Realtime for co-stream is polling only.
+- Not done: the host console (H07) and solo broadcast (H08, Phase 7). Chat mute/kick notices inline are not rendered (the server contract for them is unknown).
+
+Gate 4
+1. Build + tests: PASS, **1023 tests, 0 failures** (52 new co-stream tests: 27 logic, 25 view model).
+2. Device walk-through: **NOT RUN**. The phone was attached at 13:29 but locked (`isKeyguardShowing=true`), screenshots are black.
+3. Session with `simulate_host_drop`: **NOT RUN** (the backend co-stream routes and the audit wrapper do not exist yet).
+4. Deep link `nascon://stream/cs-session-101` on the device: `am start -W` Status ok, MainActivity resumed, no FATAL in logcat; **WaitTime 3024 ms (cold, debug build), above the 2 s target**.
+5. Browser-to-app chat latency: **NOT RUN** (no web player route or chat backend yet).
+6. Secret scan: PASS.
+
+---
+
+## Phase 5: progressive sign-in H12, guest cart H13, safe cart merge
+
+- Start 13:10, code complete 13:27, tests green 13:29.
+- Built: `ui/guest/ProgressiveSignInSheet.kt` (modal bottom sheet, tag `progressive_sheet`, "Your cart is saved", Log in / Register / Close), `GuestCartScreen.kt` (list, + / - stepper capped at 10, subtotal, count tagged `guest_cart_count`, Proceed to checkout),
+  `cartmerge/` (`CartMergeMachine`: the body is frozen once and re-sent byte-identical on every retry, cart cleared only on Merged / AlreadyMerged, Conflict, VariantMissing, TooManyItems, FailedRetryable, UserMissing; `RemoteCartMergeRepository` for `POST /audit/v1/guest/cart-merge`),
+  `GuestCheckoutApi` (a real `POST /audit/v1/checkout` from a guest with the declined test card, so a 403 opens the sheet and nothing is paid if a server ever let it through).
+- Flow wired in `AppNavHost`/`AppContainer`: guest taps Send chat or Proceed to checkout -> real request -> 403 -> sheet (origin screen recorded, the guest token staged in app storage) -> login -> merge the staged cart with the frozen body ->
+  snackbar -> back to the origin screen. If the app is killed mid-merge, the next start with a member session retries the same body.
+- Partial: the playback second is NOT recorded or restored (the video card has no position callback), only the origin screen is. Register uses the login screen (no separate register screen exists).
+  The guest cart for a member is not shown from the server's `active_cart`; after a successful merge the local guest rows are dropped and a snackbar confirms.
+
+Gate 5
+1. Build + tests: PASS, **1023 tests, 0 failures** (31 cart merge, 24 guest UI, 18 cart storage).
+2. Device walk-through of the whole flow: **NOT RUN** (device locked; backend merge/checkout routes and the guest write guard are not on the running stack).
+3. Two identical merges give `total_items` 1 against the audit probe: **NOT RUN** (route not on the backend yet). Covered by `CartMergeMachineTest`: a retry and a restart send identical bodies and the cart total does not change.
+4. Secret scan: PASS.
+
+---
+
+## Phase 8: test tags and Appium files
+
+- `testTagsAsResourceId` is enabled at the app root (`AppRoot`). The roots `match_live_root` and `costream_root` are on the route containers, so they exist in every state (loading, error, not found, content).
+- Added `tests/appium/README.md` and `tests/appium/test_mobile_deeplink.py` (two deep links, warm link, bad links, a skipping cross-surface skeleton; JUnit XML to `tests/reports/appium-report.xml`). Nothing else under `tests/` was edited.
+
+Gate 8
+1. Python syntax check of the Appium file: see below.
+2. Tags present in the code: PASS (`match_live_root`, `match_score`, `match_status`, `chat_list`, `chat_input`, `chat_send`, `guest_cart_count`, `costream_root`, `costream_tile_0..3`, `costream_host_marker`, `costream_handoff_banner`, `progressive_sheet`, `not_found_root`).
+3. Tags verified in a UI dump on a device: **NOT RUN** (device locked).

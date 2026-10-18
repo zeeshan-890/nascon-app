@@ -25,7 +25,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -133,7 +136,10 @@ private fun titleFor(route: String?): String = when (baseRoute(route)) {
         ?: "Arena360"
 }
 
+private const val GUEST_CART_ROUTE = "guestcart"
+
 private val deepLinkTitles: Map<String, String> = mapOf(
+    GUEST_CART_ROUTE to "Cart",
     com.nascon.league.deeplink.DeepLinkRoutes.NOT_FOUND_PATTERN to "Not found",
     com.nascon.league.deeplink.DeepLinkRoutes.COSTREAM_PATTERN to "Co-stream",
     com.nascon.league.deeplink.DeepLinkRoutes.LIVE_MATCH_BASE to "Match",
@@ -149,12 +155,20 @@ private fun NavHostController.clearAndGoToLogin() {
     }
 }
 
+@OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
 fun AppRoot() {
     val container = LocalAppContainer.current
     val session by container.sessionRepository.session.collectAsStateWithLifecycle()
     NasconTheme(tenant = session?.tenant) {
-        AppShell(session)
+        // Test tags become Android resource ids so Appium (uiautomator2) can find them.
+        androidx.compose.foundation.layout.Box(
+            Modifier
+                .fillMaxSize()
+                .semantics { testTagsAsResourceId = true },
+        ) {
+            AppShell(session)
+        }
     }
 }
 
@@ -202,6 +216,48 @@ private fun AppShell(session: Session?) {
             // A match link opens the Part II match screen (live, preview, VOD or notice by status), not the scoring screen.
             val dest = if (r.startsWith("match/")) com.nascon.league.deeplink.DeepLinkRoutes.liveMatch(r.removePrefix("match/"), plan.startSeconds) else r
             navController.navigate(dest) { launchSingleTop = true }
+        }
+    }
+
+    // Progressive sign-in sheet (H12). Log in and Register both go to the login screen; the origin is already recorded.
+    val sheetVisible by container.signInSheetVisible.collectAsStateWithLifecycle()
+    com.nascon.league.ui.guest.ProgressiveSignInSheet(
+        visible = sheetVisible,
+        onLogin = {
+            container.signInSheetVisible.value = false
+            navController.navigate(Destinations.LOGIN) { launchSingleTop = true }
+        },
+        onRegister = {
+            container.signInSheetVisible.value = false
+            navController.navigate(Destinations.LOGIN) { launchSingleTop = true }
+        },
+        onClose = { container.signInSheetVisible.value = false },
+    )
+
+    // After a member signs in (or the app restarts mid-merge), merge the staged guest cart with the identical frozen body,
+    // then return to the screen the user came from.
+    val memberId = session?.user?.userId?.takeIf { !com.nascon.league.data.repo.GuestSession.isGuest(session) }
+    LaunchedEffect(memberId) {
+        val uid = memberId ?: return@LaunchedEffect
+        if (container.stagedGuestToken == null) return@LaunchedEffect
+        val machine = container.newCartMergeMachine()
+        if (!machine.stage()) {
+            container.stagedGuestToken = null
+        } else {
+            when (machine.merge(uid)) {
+                is com.nascon.league.cartmerge.MergeState.Merged,
+                is com.nascon.league.cartmerge.MergeState.AlreadyMerged -> {
+                    container.stagedGuestToken = null
+                    snackbar.showSnackbar("Your cart is merged.")
+                }
+                is com.nascon.league.cartmerge.MergeState.Conflict -> snackbar.showSnackbar("An item is out of stock. Your cart is saved.")
+                is com.nascon.league.cartmerge.MergeState.VariantMissing -> snackbar.showSnackbar("An item is no longer sold. Your cart is saved.")
+                is com.nascon.league.cartmerge.MergeState.TooManyItems -> snackbar.showSnackbar("Too many items to merge at once. Your cart is saved.")
+                else -> snackbar.showSnackbar("We could not merge your cart yet. It is saved.")
+            }
+        }
+        container.signInOrigin.consume()?.route?.let { r ->
+            navController.navigate(r) { launchSingleTop = true }
         }
     }
 
@@ -341,17 +397,56 @@ private fun AppShell(session: Session?) {
                         com.nascon.league.ui.matchlive.MatchLiveRoute(
                             vm = liveVm,
                             onGoHome = { navController.navigate(Destinations.HOME) { popUpTo(Destinations.HOME); launchSingleTop = true } },
-                            onSignIn = { navController.navigate(Destinations.LOGIN) { launchSingleTop = true } },
-                            onOpenCart = { navController.navigate(Destinations.CART) { launchSingleTop = true } },
+                            onSignIn = { container.openSignInSheet(com.nascon.league.deeplink.DeepLinkRoutes.liveMatch(liveId, start)) },
+                            onOpenCart = { navController.navigate(GUEST_CART_ROUTE) { launchSingleTop = true } },
                         )
                     }
                     composable(
                         com.nascon.league.deeplink.DeepLinkRoutes.COSTREAM_PATTERN,
                         arguments = listOf(androidx.navigation.navArgument("sessionId") { type = androidx.navigation.NavType.StringType }),
                     ) { e ->
-                        com.nascon.league.ui.deeplink.CoStreamPlaceholderScreen(
-                            sessionId = e.arguments?.getString("sessionId").orEmpty(),
+                        val csId = e.arguments?.getString("sessionId").orEmpty()
+                        val csVm: com.nascon.league.costream.CoStreamViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                            key = "costream-$csId",
+                            factory = com.nascon.league.costream.CoStreamViewModel.factory(container, csId),
+                        )
+                        LaunchedEffect(connState) { csVm.onNetworkOffline(connState == ConnState.OFFLINE) }
+                        com.nascon.league.ui.costream.CoStreamRoute(
+                            vm = csVm,
                             onGoHome = { navController.navigate(Destinations.HOME) { popUpTo(Destinations.HOME); launchSingleTop = true } },
+                            onSignIn = { container.openSignInSheet(com.nascon.league.deeplink.DeepLinkRoutes.coStream(csId)) },
+                        )
+                    }
+                    composable(GUEST_CART_ROUTE) {
+                        val cartVm: com.nascon.league.ui.guest.GuestCartViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                            factory = com.nascon.league.ui.guest.GuestCartViewModel.factory(container),
+                        )
+                        com.nascon.league.ui.guest.GuestCartScreen(
+                            vm = cartVm,
+                            onProceedToCheckout = {
+                                scope.launch {
+                                    if (!container.sessionRepository.isGuest) {
+                                        navController.navigate(Destinations.CART) { launchSingleTop = true }
+                                        return@launch
+                                    }
+                                    val lines = cartVm.lines.value
+                                    when (val r = container.guestCheckoutAttempt(lines)) {
+                                        is com.nascon.league.core.network.NetworkResult.Failure -> {
+                                            val action = com.nascon.league.core.error.Part2Errors.map(r.error)
+                                            if (action is com.nascon.league.core.error.UiErrorAction.OpenSignInSheet ||
+                                                action is com.nascon.league.core.error.UiErrorAction.GoGuestAndOfferSignIn
+                                            ) {
+                                                container.openSignInSheet(GUEST_CART_ROUTE)
+                                            } else {
+                                                snackbar.showSnackbar("Checkout is not available right now. Your cart is saved.")
+                                            }
+                                        }
+                                        is com.nascon.league.core.network.NetworkResult.Success ->
+                                            snackbar.showSnackbar("Sign in to finish your order. Your cart is saved.")
+                                    }
+                                }
+                            },
+                            onBrowse = { navController.navigate(Destinations.STORE) { launchSingleTop = true } },
                         )
                     }
                     composable(Destinations.SETTINGS) {
