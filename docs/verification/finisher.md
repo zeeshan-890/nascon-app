@@ -49,3 +49,6 @@ Third run: 12,632 requests, p95 284 ms (threshold passes). 175 requests (1.4 %) 
 
 ## Measured coverage (COVERAGE_DAY2.json)
 Line coverage of `backend/day2/{routes,lib}` grouped per module, from `jest --coverage` over `tests/integration/day2.finisher*.test.js` and `tests/unit/day2`: streaming 95.7, costream 98.4, qr_guest 98.0, moderation_dlq 100, observability 93.8.
+
+## QR decode check (scratch, not committed as a test)
+Ran with a throwaway decoder (jsqr + pngjs, installed outside the repo; no dependency added): the 512 px PNG produced by the same `qrcode` call as the export route decoded to exactly `http://localhost:8080/q/m1-live` and `http://localhost:8080/q/p-alpha-1`. PASS for the PNG generator. The SVG and PDF exports were not rasterised and decoded (the PDF draws the same module matrix as vector squares): NOT RUN.
