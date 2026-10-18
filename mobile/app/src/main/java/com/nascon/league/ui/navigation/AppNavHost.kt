@@ -133,8 +133,13 @@ private fun titleFor(route: String?): String = when (baseRoute(route)) {
         ?: "Arena360"
 }
 
+private val deepLinkTitles: Map<String, String> = mapOf(
+    com.nascon.league.deeplink.DeepLinkRoutes.NOT_FOUND_PATTERN to "Not found",
+    com.nascon.league.deeplink.DeepLinkRoutes.COSTREAM_PATTERN to "Co-stream",
+)
+
 private val extraTitles: Map<String, String> = clubAdminTitles + fixtureGenTitles + leagueAdminTitles +
-    matchOpsTitles + ordersExtraTitles + platformAdminTitles + rosterExtraTitles + userAdminTitles
+    matchOpsTitles + ordersExtraTitles + platformAdminTitles + rosterExtraTitles + userAdminTitles + deepLinkTitles
 
 private fun NavHostController.clearAndGoToLogin() {
     navigate(Destinations.LOGIN) {
@@ -180,6 +185,19 @@ private fun AppShell(session: Session?) {
                 navController.clearAndGoToLogin()
             }
         }
+    }
+
+    // nascon:// links: wait for a real destination (never while on login), then open Home with the target on top.
+    val deepLinkSignal by container.deepLinkSignal.collectAsStateWithLifecycle()
+    LaunchedEffect(deepLinkSignal, route) {
+        if (!container.deepLinks.hasPending() || com.nascon.league.deeplink.DeepLinkGate.shouldHold(route)) return@LaunchedEffect
+        val raw = container.deepLinks.consume() ?: return@LaunchedEffect
+        val plan = com.nascon.league.deeplink.DeepLinkRouter.plan(com.nascon.league.deeplink.DeepLinkParser.parse(raw))
+        navController.navigate(plan.routes.first()) {
+            popUpTo(navController.graph.id) { inclusive = true }
+            launchSingleTop = true
+        }
+        plan.routes.drop(1).forEach { r -> navController.navigate(r) { launchSingleTop = true } }
     }
 
     fun navigateTab(target: String) {
@@ -290,6 +308,25 @@ private fun AppShell(session: Session?) {
                     }
                     composable(Destinations.HOME) {
                         HomeScreen(onNavigate = ::navigateFromHome)
+                    }
+                    composable(
+                        com.nascon.league.deeplink.DeepLinkRoutes.NOT_FOUND_PATTERN,
+                        arguments = listOf(androidx.navigation.navArgument("reason") { type = androidx.navigation.NavType.StringType }),
+                    ) { e ->
+                        com.nascon.league.ui.deeplink.NotFoundScreen(
+                            reason = e.arguments?.getString("reason"),
+                            onRetry = null,
+                            onGoHome = { navController.navigate(Destinations.HOME) { popUpTo(Destinations.HOME); launchSingleTop = true } },
+                        )
+                    }
+                    composable(
+                        com.nascon.league.deeplink.DeepLinkRoutes.COSTREAM_PATTERN,
+                        arguments = listOf(androidx.navigation.navArgument("sessionId") { type = androidx.navigation.NavType.StringType }),
+                    ) { e ->
+                        com.nascon.league.ui.deeplink.CoStreamPlaceholderScreen(
+                            sessionId = e.arguments?.getString("sessionId").orEmpty(),
+                            onGoHome = { navController.navigate(Destinations.HOME) { popUpTo(Destinations.HOME); launchSingleTop = true } },
+                        )
                     }
                     composable(Destinations.SETTINGS) {
                         SettingsScreen(
