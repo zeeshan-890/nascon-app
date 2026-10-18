@@ -140,6 +140,13 @@ function createWsServer() {
       ws.on('pong', () => { ws.alive = true; });
       ws.on('error', () => {});
       ws.on('close', () => leaveAll(ws));
+      // A room socket opened with ?player_id=<host> that drops hands the host role to the next participant.
+      const hostId = route.kind === 'room' ? url.searchParams.get('player_id') : null;
+      if (hostId) {
+        ws.on('close', () => {
+          require('../lib/costreamHandoff').promoteHost(id, hostId).catch((err) => logger.warn({ err: err.message }, 'host handoff failed'));
+        });
+      }
       // Messages are processed in arrival order, after the initial subscription has finished.
       let queue = subscribeTo(ws, route.kind, id).then((ok) => {
         if (!ok && ws.readyState === ws.OPEN) ws.close(4404, `${route.label} not found`);

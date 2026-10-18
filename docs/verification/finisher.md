@@ -52,3 +52,12 @@ Line coverage of `backend/day2/{routes,lib}` grouped per module, from `jest --co
 
 ## QR decode check (scratch, not committed as a test)
 Ran with a throwaway decoder (jsqr + pngjs, installed outside the repo; no dependency added): the 512 px PNG produced by the same `qrcode` call as the export route decoded to exactly `http://localhost:8080/q/m1-live` and `http://localhost:8080/q/p-alpha-1`. PASS for the PNG generator. The SVG and PDF exports were not rasterised and decoded (the PDF draws the same module matrix as vector squares): NOT RUN.
+
+## Final additions (before the extended 14:15 deadline)
+- Old access tokens of erased users now get 401 (`backend/day2/lib/erased.js`, one `use` line in `src/app.js`); test in `day2.finisher2.test.js`.
+- Host disconnect: a room socket opened with `?player_id=<host>` that closes promotes the next participant (`lib/costreamHandoff.js`); five timed runs promoted in 52, 39, 36, 36, 35 ms (limit 1500 ms); termination with nobody left tested. This works on the room WebSocket only; a drop of the media publisher itself is NOT detected.
+- Room snapshots now also read sessions created through `POST /audit/v1/costream/session`.
+- FR-3.1 follow/unfollow/followers (`routes/follow.js`): idempotent, count derived from rows; tested including a 60-call toggle burst.
+- `tests/k6_load.js` replaced with the specification's exact profile (hard-coded localhost:8080).
+- Full suite after these changes (run before the follow files existed): 71 suites, 1762 tests, 0 failed. The follow tests (2) passed separately.
+- Still NOT done: MinIO recording and VOD indexing, overlay events, host moderation controls (invite token, mute, spotlight, kick), unified chat sequencing and wiring moderation into a real chat route, Selenium suite and Guest Web Player (`web/` absent on main), k6 pass on the compose stack, full compose boot.

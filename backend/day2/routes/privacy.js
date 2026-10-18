@@ -3,17 +3,19 @@ const crypto = require('crypto');
 const { withTransaction } = require('../../src/db/tx');
 const { ApiError } = require('../lib/errors');
 const media = require('../lib/media');
+const erasedLib = require('../lib/erased');
 
 const ID_RE = /^[A-Za-z0-9._-]{1,128}$/;
 
 async function erase(id) {
   const stable = crypto.createHash('sha256').update(`erase:${id}`).digest('hex').slice(0, 12);
   const revoked = [];
+  let userIds = [];
   await withTransaction(async (client) => {
     const player = await client.query('SELECT player_id FROM players WHERE player_id = $1', [id]);
     const users = await client.query('SELECT user_id FROM users WHERE user_id = $1 OR player_id = $1', [id]);
     if (!player.rowCount && !users.rowCount) throw new ApiError(404, 'PLAYER_NOT_FOUND', 'User not found.', { user_id: id });
-    const userIds = users.rows.map((r) => r.user_id);
+    userIds = users.rows.map((r) => r.user_id);
     await client.query('UPDATE players SET name = $2 WHERE player_id = $1', [id, `Anonymized ${stable}`]);
     for (const uid of userIds) {
       const h = crypto.createHash('sha256').update(`erase:${uid}`).digest('hex').slice(0, 12);
@@ -26,6 +28,7 @@ async function erase(id) {
     );
     revoked.push(...keys.rows.map((r) => r.stream_key));
   });
+  erasedLib.markErased([id, ...userIds]);
   await Promise.all(revoked.map((k) => media.kickKey(k)));
 }
 

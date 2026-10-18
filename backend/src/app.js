@@ -21,6 +21,7 @@ function createApp(opts = {}) {
   });
   // Part II: anonymous guest tokens are read-only; this must run before body parsing and any auth check.
   app.use(require('../day2/lib/guestGuard').guestWriteGuard);
+  app.use(require('../day2/lib/erased').rejectErasedTokens); // tokens of privacy-erased users get 401
   // Only /api/v1 is rate limited; /audit/v1, /health are exempt.
   app.use('/api/v1', opts.limiter || createLimiter());
   app.use(jsonBody);

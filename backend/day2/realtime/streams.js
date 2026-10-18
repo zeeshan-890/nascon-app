@@ -39,10 +39,21 @@ async function loadRoom(id) {
     const { rows } = await pool.query('SELECT * FROM day2_costream_session WHERE session_id = $1', [id]);
     [session] = rows;
   } catch (err) {
-    if (missingTable(err)) return null;
-    throw err;
+    if (!missingTable(err)) throw err;
   }
-  if (!session) return null;
+  if (!session) {
+    // Sessions created through POST /audit/v1/costream/session live in day2_costream_state.
+    const { rows } = await pool.query('SELECT response FROM day2_costream_state WHERE session_id = $1', [id]).catch((err) => {
+      if (missingTable(err)) return { rows: [] };
+      throw err;
+    });
+    if (!rows.length) return null;
+    const r = rows[0].response;
+    session = {
+      status: r.status, active_host: r.active_host, host_player_id: r.active_host, layout: r.layout,
+      participants: r.active_participants, active_participants: r.active_participants, handoff_occurred: r.handoff_occurred,
+    };
+  }
   let recent = [];
   try {
     const { rows } = await pool.query(

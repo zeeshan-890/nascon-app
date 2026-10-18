@@ -125,6 +125,7 @@ describe('co-stream', () => {
 });
 
 describe('privacy erasure', () => {
+  afterAll(async () => { if (process.env.DB_AVAILABLE === '1') await resetDb(); });
   beforeEach(async () => { if (process.env.DB_AVAILABLE === '1') await resetDb(); });
 
   dbIt('anonymizes in place, is idempotent and restores on reset', async () => {
@@ -140,5 +141,20 @@ describe('privacy erasure', () => {
     expect((await (await api()).get('/audit/v1/qr/player-alpha-1?inspect=true')).status).toBe(200);
     await resetDb();
     expect((await pool.query(`SELECT name FROM players WHERE player_id = 'player-alpha-1'`)).rows[0].name).toBe('Alpha Player 1');
+  });
+
+  dbIt('a token issued before erasure is rejected afterwards, and works again after reset', async () => {
+    const { signAccessToken } = require('../../backend/src/services/authService');
+    const token = signAccessToken({ user_id: 'user-player', role: 'player', tenant_id: 'tenant-alpha', club_id: 'club-alpha-1', player_id: 'player-alpha-1' });
+    const before = await (await api()).get('/api/v1/me').set('Authorization', `Bearer ${token}`);
+    expect(before.status).toBe(200);
+    await (await api()).delete('/audit/v1/privacy/user/player-alpha-1');
+    const after = await (await api()).get('/api/v1/me').set('Authorization', `Bearer ${token}`);
+    expect(after.status).toBe(401);
+    expect(after.body.error.code).toBe('UNAUTHENTICATED');
+    const other = signAccessToken({ user_id: 'user-viewer', role: 'viewer', tenant_id: 'tenant-alpha' });
+    expect((await (await api()).get('/api/v1/me').set('Authorization', `Bearer ${other}`)).status).toBe(200);
+    await resetDb();
+    expect((await (await api()).get('/api/v1/me').set('Authorization', `Bearer ${token}`)).status).toBe(200);
   });
 });

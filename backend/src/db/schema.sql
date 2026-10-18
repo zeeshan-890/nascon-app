@@ -501,3 +501,8 @@ CREATE TABLE IF NOT EXISTS day2_costream_state (
   response jsonb NOT NULL,
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+CREATE TABLE IF NOT EXISTS day2_follow (
+  follower_id text NOT NULL,
+  athlete_id text NOT NULL,
+  PRIMARY KEY (follower_id, athlete_id)
+);
