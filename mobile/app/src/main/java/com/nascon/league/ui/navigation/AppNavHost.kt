@@ -136,6 +136,7 @@ private fun titleFor(route: String?): String = when (baseRoute(route)) {
 private val deepLinkTitles: Map<String, String> = mapOf(
     com.nascon.league.deeplink.DeepLinkRoutes.NOT_FOUND_PATTERN to "Not found",
     com.nascon.league.deeplink.DeepLinkRoutes.COSTREAM_PATTERN to "Co-stream",
+    com.nascon.league.deeplink.DeepLinkRoutes.LIVE_MATCH_BASE to "Match",
 )
 
 private val extraTitles: Map<String, String> = clubAdminTitles + fixtureGenTitles + leagueAdminTitles +
@@ -197,7 +198,11 @@ private fun AppShell(session: Session?) {
             popUpTo(navController.graph.id) { inclusive = true }
             launchSingleTop = true
         }
-        plan.routes.drop(1).forEach { r -> navController.navigate(r) { launchSingleTop = true } }
+        plan.routes.drop(1).forEach { r ->
+            // A match link opens the Part II match screen (live, preview, VOD or notice by status), not the scoring screen.
+            val dest = if (r.startsWith("match/")) com.nascon.league.deeplink.DeepLinkRoutes.liveMatch(r.removePrefix("match/"), plan.startSeconds) else r
+            navController.navigate(dest) { launchSingleTop = true }
+        }
     }
 
     fun navigateTab(target: String) {
@@ -317,6 +322,27 @@ private fun AppShell(session: Session?) {
                             reason = e.arguments?.getString("reason"),
                             onRetry = null,
                             onGoHome = { navController.navigate(Destinations.HOME) { popUpTo(Destinations.HOME); launchSingleTop = true } },
+                        )
+                    }
+                    composable(
+                        com.nascon.league.deeplink.DeepLinkRoutes.LIVE_MATCH_PATTERN,
+                        arguments = listOf(
+                            androidx.navigation.navArgument("matchId") { type = androidx.navigation.NavType.StringType },
+                            androidx.navigation.navArgument("t") { type = androidx.navigation.NavType.IntType; defaultValue = -1 },
+                        ),
+                    ) { e ->
+                        val liveId = e.arguments?.getString("matchId").orEmpty()
+                        val start = e.arguments?.getInt("t")?.takeIf { it >= 0 }
+                        val liveVm: com.nascon.league.matchlive.MatchLiveViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                            key = "matchlive-$liveId",
+                            factory = com.nascon.league.matchlive.MatchLiveViewModel.factory(container, liveId, start),
+                        )
+                        LaunchedEffect(connState) { liveVm.onNetworkOffline(connState == ConnState.OFFLINE) }
+                        com.nascon.league.ui.matchlive.MatchLiveRoute(
+                            vm = liveVm,
+                            onGoHome = { navController.navigate(Destinations.HOME) { popUpTo(Destinations.HOME); launchSingleTop = true } },
+                            onSignIn = { navController.navigate(Destinations.LOGIN) { launchSingleTop = true } },
+                            onOpenCart = { navController.navigate(Destinations.CART) { launchSingleTop = true } },
                         )
                     }
                     composable(

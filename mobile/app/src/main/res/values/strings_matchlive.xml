@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ml_offline_strip">Offline - showing saved data</string>
+    <string name="ml_offline_icon_desc">Offline</string>
+    <string name="ml_loading_desc">Loading match</string>
+    <string name="ml_error_title">Could not load this match</string>
+    <string name="ml_error_message">Something went wrong. Check your connection and try again.</string>
+    <string name="ml_retry">Retry</string>
+    <string name="ml_retry_desc">Retry loading the match</string>
+    <string name="ml_status_live">Live</string>
+    <string name="ml_status_upcoming">Upcoming</string>
+    <string name="ml_status_completed">Completed</string>
+    <string name="ml_status_postponed">Postponed</string>
+    <string name="ml_status_cancelled">Cancelled</string>
+    <string name="ml_status_abandoned">Abandoned</string>
+    <string name="ml_status_unknown">Match</string>
+    <string name="ml_score_desc">Score %1$s, %2$s versus %3$s</string>
+    <string name="ml_score_unavailable">- : -</string>
+    <string name="ml_kickoff_label">Kickoff</string>
+    <string name="ml_kickoff_unknown">Kickoff time to be announced</string>
+    <string name="ml_countdown_label">Starts in</string>
+    <string name="ml_countdown_format">%1$dd %2$02d:%3$02d:%4$02d</string>
+    <string name="ml_countdown_now">Starting now</string>
+    <string name="ml_vs">vs</string>
+    <string name="ml_vod_pending_title">Recording will appear soon</string>
+    <string name="ml_vod_pending_message">Check back later to watch this match.</string>
+    <string name="ml_recap_title">Match recap</string>
+    <string name="ml_notice_postponed">Match postponed</string>
+    <string name="ml_notice_cancelled">Match cancelled</string>
+    <string name="ml_notice_abandoned">Match abandoned</string>
+    <string name="ml_notice_default">Match update</string>
+    <string name="ml_notice_no_reason">No reason has been shared yet.</string>
+    <string name="ml_back_home">Back to Home</string>
+    <string name="ml_back_home_desc">Go back to Home</string>
+    <string name="ml_merch_title">Pinned merch</string>
+    <string name="ml_add_to_cart">Add to cart</string>
+    <string name="ml_add_to_cart_desc">Add %1$s to cart</string>
+    <string name="ml_cart_desc">Cart, %1$d items</string>
+    <string name="ml_cart_open_desc">Open cart</string>
+</resources>

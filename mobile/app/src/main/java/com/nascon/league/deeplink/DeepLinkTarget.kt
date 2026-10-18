@@ -32,5 +32,10 @@ object DeepLinkRoutes {
     fun coStream(id: String) = "costream/$id"
     fun notFound(reason: String) = "notfound/$reason"
     const val NOT_FOUND_PATTERN = "notfound/{reason}"
+
+    /** The Part II match screen (live, preview, VOD or notice chosen from the status). `t` is the optional start offset in seconds. */
+    const val LIVE_MATCH_PATTERN = "matchlive/{matchId}?t={t}"
+    const val LIVE_MATCH_BASE = "matchlive/{matchId}"
+    fun liveMatch(id: String, startSeconds: Int? = null) = if (startSeconds != null) "matchlive/$id?t=$startSeconds" else "matchlive/$id"
     const val COSTREAM_PATTERN = "costream/{sessionId}"
 }

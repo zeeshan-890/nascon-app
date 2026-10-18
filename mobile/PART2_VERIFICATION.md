@@ -87,3 +87,65 @@ Gate 1
    occurrence is the debug-only constant in `GuestSession.kt`.
 8. `git status` clean after commit: see below.
 - Side effect on the test phone: `screen_off_timeout` was set to 600000 ms so screenshots can be taken; the original value was not recorded.
+
+---
+
+## Phase 1 push
+
+- Commit `de9c920`, merged and pushed as `9d45b95` at 12:27 PKT (target 12:40). Ancestor check against the Saturday base: PASS.
+
+---
+
+## Phase 2: guest session, network config, realtime client, error mapping
+
+- Start 12:28, end 12:41. Parallel agents on disjoint files; the lead wired everything and ran every build.
+- Built:
+  - `data/realtime/ResilientMatchStream.kt` + `LiveModels.kt`: WebSocket -> SSE -> polling fallback, backoff 250 ms doubling to 2 s with jitter,
+    resync after every reconnect and sequence gap, dedupe by id, order and stale-discard by sequence and timestamp, state flow
+    CONNECTING / LIVE / RECONNECTING / OFFLINE.
+  - `data/realtime/OkHttpTransports.kt` (WebSocket, SSE, polling over the unauthenticated score route) and `LiveFrameParser.kt`.
+  - `core/error/Part2Errors.kt`: every code in the brief maps to a UI action; unknown codes give a generic retry state; no raw JSON is shown.
+  - `core/network/CleartextPolicy.kt` + `CleartextGuardInterceptor` (wired into both OkHttp clients in `ApiFactory`), `core/config/BaseUrlValidator.kt`.
+  - Guest session start (from Phase 1) with GuestSession tests.
+- Not done: `BaseUrlValidator` is written and tested but is NOT yet used by the Settings screen (Settings still uses `ServerConfigStore.normalizeUrl`).
+  `pollIntervalMs` on `ResilientMatchStream` is accepted but unused (polling cadence lives in `PollingTransport`, 1 s).
+
+Gate 2
+1. Build + unit tests: PASS, `assembleDebug` OK, **917 tests, 0 failures** (baseline 492).
+2. Network security config: PARTIAL. The OS-level `network_security_config.xml` still has `base-config cleartextTrafficPermitted="true"` because Android cannot match a LAN IP
+   range in a domain-config. The app-level `CleartextGuardInterceptor` blocks http to every non-development host (localhost, 10.0.2.2, 127.0.0.1, ::1, 10.0.0.0/8,
+   172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16, *.local); 47 unit tests including the interceptor. Not exercised on a device.
+3. Backend probe (docker stack on 127.0.0.1:8080; NOTE this stack was built before the teammates' merge, so it does not have the Part II guest write guard):
+   - `GET /audit/v1/score/demo-m-live` with guest token: **200**.
+   - `GET /api/v1/matches/demo-m-live` with guest token: **401** (JWT only). So guests read through the score route.
+   - `GET /audit/v1/score/match-m1`: **404** (`match-m1` is not seeded).
+   - `/ws/matches/{id}` upgrade: **400**; `GET /api/v1/matches/{id}/stream`: **404**. Neither route exists, so the app falls back to polling.
+   - `POST /audit/v1/checkout` with a guest token returned **400** validation, not 403, confirming the running stack lacks the guard.
+4. Fake-transport tests: PASS (24 `ResilientMatchStreamTest`). Seven of them initially failed because the tests ran the collector in `backgroundScope` and used
+   `advanceUntilIdle()`, which ignores background work; fixed by driving virtual time explicitly (assertions unchanged).
+5. No token in logs: PASS. No `Log.*` or `println` calls in the new realtime, match, deep-link, cart or error code; the HTTP logging interceptor is debug-only and redacts `Authorization`.
+6. Secret scan: PASS (no salts or key shapes). The dev token literal appears only in `GuestSession.kt` (debug constant) and its unit test.
+7. Room migration 2 -> 3 (guest cart): PASS by schema comparison. `GuestCartMigrationTest` checks that the migration SQL equals the table in Room's exported `3.json`, that
+   no version-2 table changed, and that only `guest_cart_item` was added. A device upgrade run was NOT RUN.
+
+---
+
+## Phase 3: match screens H02-H05, guest cart storage, chat panel, video
+
+- Start 12:33, code complete 12:41 (agents), builds and fixes until 13:05.
+- Built: `matchlive/` contracts, `MatchLiveLogic` (score `H - A`, PKR price, status icon+text, event application, countdown), `ChatTimeline` (strict sequence order, dedupe, pending to
+  confirmed), `RemoteMatchLiveRepository` + `MatchJsonMapper`, `MatchLiveViewModel`; `ui/matchlive/` `MatchLiveScreens.kt` (Live, Preview, VOD, Notice, skeleton, offline strip, pinned merch card),
+  `ChatPanel.kt`, `VideoPlayerCard.kt` (media3 ExoPlayer, HLS, muted autoplay); Room `guest_cart_item` (DB v3) with `RoomGuestCart`.
+  Deep links to a match now open the Part II screen at route `matchlive/{id}?t=`; in-app match links keep the existing scoring screen.
+- Assumed backend routes (do not exist yet): chat `GET /api/v1/chat/{room}/messages` and `POST /api/v1/chat` `{room_id,text}`; SSE `GET /api/v1/matches/{id}/stream`;
+  WebSocket `/ws/matches/{id}`; stream URL/poster fields on the match JSON (`stream_url`, `playback_url`, `hls_url`, `poster_url`).
+- Live reads for guests use `GET /audit/v1/score/{id}` (unauthenticated) because the app-facing match route needs a JWT.
+
+Gate 3
+1. Build + all tests: PASS, `assembleDebug` OK, **917 tests, 0 failures** (baseline 492; +425).
+2. Device walk-through of H02-H05: **NOT RUN**. The phone was awake at 12:41 but disconnected from ADB before the walk-through could start; no device is listed by `adb devices` at 13:05.
+3. Score-event-to-screen latency (< 500 ms): **NOT RUN** (needs the device). Covered only by the view-model unit tests (a snapshot event updates the score in the same step, with no debounce).
+4. Offline strip and recovery on a device: **NOT RUN**. The offline state is unit tested in the view model.
+5. `am start -W` with the real screens: **NOT RUN** (device). Phase 1 timings above were with placeholder screens.
+6. Accessibility check (TalkBack order, touch targets, font scale 200%): **NOT RUN** on a device. Code uses >= 48 dp targets and content descriptions; unverified visually.
+7. Secret scan: PASS. `git status` clean after commit: see below.

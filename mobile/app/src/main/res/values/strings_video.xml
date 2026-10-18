@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="vid_card_description">Match video</string>
+    <string name="vid_starting_soon">Stream starting soon</string>
+    <string name="vid_retry">Retry</string>
+    <string name="vid_buffering">Buffering</string>
+    <string name="vid_mute">Mute video</string>
+    <string name="vid_unmute">Unmute video</string>
+</resources>

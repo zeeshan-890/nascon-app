@@ -3,6 +3,7 @@ package com.nascon.league.di
 import android.content.Context
 import androidx.compose.runtime.staticCompositionLocalOf
 import com.nascon.league.core.config.ServerConfigStore
+import com.nascon.league.matchlive.asMatchEventSource
 import com.nascon.league.core.db.AppDatabase
 import com.nascon.league.core.network.ApiFactory
 import com.nascon.league.core.network.ConnState
@@ -93,6 +94,48 @@ class AppContainer(context: Context) {
         if (demoMode) fake { hasNetwork() } else apiFactory.createService(currentBaseUrl, service)
 
     val connectivity = ConnectivityMonitor(appContext, scope, apiProvider)
+
+    // ---- Part II: live match screens ----
+    private val offlineMatchLiveApi = object : com.nascon.league.matchlive.MatchLiveApi {
+        private fun off(): Nothing = throw java.io.IOException("Live match data is not available in demo mode")
+        override suspend fun score(matchId: String) = off()
+        override suspend fun match(matchId: String) = off()
+        override suspend fun chatMessages(roomId: String, afterSequence: Long?) = off()
+        override suspend fun sendChat(body: kotlinx.serialization.json.JsonObject) = off()
+    }
+    private fun matchLiveApi(): com.nascon.league.matchlive.MatchLiveApi =
+        service(com.nascon.league.matchlive.MatchLiveApi::class.java) { offlineMatchLiveApi }
+
+    val matchLiveRepository: com.nascon.league.matchlive.MatchLiveRepository by lazy {
+        com.nascon.league.matchlive.RemoteMatchLiveRepository(api = ::matchLiveApi, tokenProvider = { tokenStore.accessToken() })
+    }
+
+    val guestCart: com.nascon.league.matchlive.GuestCart by lazy {
+        com.nascon.league.data.cart.RoomGuestCart(database.guestCartDao()) { tokenStore.accessToken() }
+    }
+
+    private val realtimeHttp: okhttp3.OkHttpClient by lazy {
+        okhttp3.OkHttpClient.Builder()
+            .addInterceptor(com.nascon.league.core.network.CleartextGuardInterceptor())
+            .pingInterval(20, java.util.concurrent.TimeUnit.SECONDS)
+            .build()
+    }
+
+    /** One resilient stream per screen: WebSocket, then SSE, then polling the unauthenticated score route. */
+    fun newMatchEventSource(): com.nascon.league.matchlive.MatchEventSource {
+        val base = { currentBaseUrl }
+        val token = { tokenStore.accessToken() }
+        val transports = listOf(
+            com.nascon.league.data.realtime.WebSocketTransport(base, token, realtimeHttp),
+            com.nascon.league.data.realtime.SseTransport(base, token, realtimeHttp),
+            com.nascon.league.data.realtime.PollingTransport(fetch = { id ->
+                com.nascon.league.data.realtime.ScorePollMapper.fromScoreJson(matchLiveApi().score(id))
+            }),
+        )
+        return com.nascon.league.data.realtime.ResilientMatchStream(transports = transports, resync = { })
+            .asMatchEventSource()
+    }
+
     private val currentUserId: () -> String? = { sessionRepository.session.value?.user?.userId }
     private val isOnline: () -> Boolean = { connectivity.state.value != ConnState.OFFLINE }
     private val deduper = RefreshDeduper(scope)
