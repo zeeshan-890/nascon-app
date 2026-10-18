@@ -522,3 +522,10 @@ CREATE TABLE IF NOT EXISTS day2_costream_ctrl (
   player_id text NOT NULL,
   PRIMARY KEY (session_id, kind, player_id)
 );
+CREATE TABLE IF NOT EXISTS day2_vod (
+  vod_id bigserial PRIMARY KEY,
+  player_id text NOT NULL,
+  stream_key text NOT NULL,
+  recording_path text,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
