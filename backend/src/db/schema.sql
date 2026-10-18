@@ -447,3 +447,57 @@ $$ LANGUAGE plpgsql;
 DROP TRIGGER IF EXISTS trg_roster_audit_append_only ON roster_audit;
 CREATE TRIGGER trg_roster_audit_append_only BEFORE UPDATE OR DELETE ON roster_audit
   FOR EACH ROW EXECUTE FUNCTION forbid_roster_audit_mutation();
+
+-- Part II (day2) tables. Additive; the reset truncates every public table so these are wiped with the rest.
+CREATE TABLE IF NOT EXISTS day2_guest_token (
+  token text PRIMARY KEY,
+  role text NOT NULL DEFAULT 'guest',
+  expires_at timestamptz NOT NULL,
+  cart jsonb NOT NULL DEFAULT '[]'::jsonb,
+  merged boolean NOT NULL DEFAULT false,
+  merged_user_id text,
+  merge_fingerprint text,
+  merge_response text,
+  erased boolean NOT NULL DEFAULT false,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS day2_cart (
+  user_id text NOT NULL,
+  variant_id text NOT NULL,
+  quantity int NOT NULL CHECK (quantity > 0),
+  PRIMARY KEY (user_id, variant_id)
+);
+CREATE TABLE IF NOT EXISTS day2_qr_code (
+  entity_id text PRIMARY KEY,
+  code text NOT NULL UNIQUE,
+  scan_count bigint NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS day2_qr_bucket (
+  entity_id text NOT NULL,
+  hour_utc timestamptz NOT NULL,
+  device text NOT NULL,
+  count bigint NOT NULL DEFAULT 0,
+  PRIMARY KEY (entity_id, hour_utc, device)
+);
+CREATE TABLE IF NOT EXISTS day2_dlq (
+  id bigserial PRIMARY KEY,
+  event_id text NOT NULL,
+  event_type text NOT NULL,
+  attempts int NOT NULL,
+  status text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS day2_stream_key (
+  stream_key text PRIMARY KEY,
+  player_id text NOT NULL,
+  label text NOT NULL,
+  status text NOT NULL,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_day2_stream_key_player ON day2_stream_key (player_id);
+CREATE TABLE IF NOT EXISTS day2_costream_state (
+  session_id text PRIMARY KEY,
+  fingerprint text NOT NULL,
+  response jsonb NOT NULL,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
