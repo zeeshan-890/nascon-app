@@ -55,13 +55,13 @@ object MatchJsonMapper {
 
     fun chatMessage(json: JsonObject): ChatMessage? = try {
         val id = json.str("message_id")
-        val seq = json.long("sequence")
+        val seq = json.long("sequence") ?: json.long("seq")
         val text = json.str("text")
         if (id == null || seq == null || text == null) {
             null
         } else {
             ChatMessage(
-                roomId = json.str("room_id") ?: "",
+                roomId = json.str("room_id") ?: json.str("chat_room_id") ?: "",
                 messageId = id,
                 sequence = seq,
                 sender = json.str("sender") ?: "",

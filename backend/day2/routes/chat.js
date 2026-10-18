@@ -1,5 +1,6 @@
 // Real chat route (FR-3.3 unified chat, FR-5.3 moderation): gapless increasing room sequence, pre-broadcast filtering.
 const crypto = require('crypto');
+const pool = require('../../src/db/pool');
 const { withTransaction } = require('../../src/db/tx');
 const { ApiError } = require('../lib/errors');
 const { verifyAccessToken } = require('../../src/services/authService');
@@ -20,6 +21,25 @@ const rateLimited = (sender) => {
 };
 
 module.exports = (router) => {
+  // History for a room, oldest first. Open to guests (reads are allowed); `after` returns only newer sequence numbers.
+  router.get('/api/v1/chat/:room/messages', async (req, res, next) => {
+    try {
+      const room = String(req.params.room || '');
+      if (!/^[A-Za-z0-9_.:-]{1,80}$/.test(room)) throw invalid(['room']);
+      const after = req.query.after === undefined ? 0 : Number(req.query.after);
+      if (!Number.isInteger(after) || after < 0) throw invalid(['after']);
+      const { rows } = await pool.query(
+        `SELECT room_id, seq, message_id, sender, text, flagged FROM day2_chat_message
+         WHERE room_id = $1 AND seq > $2 ORDER BY seq ASC LIMIT 200`, [room, after],
+      );
+      return res.status(200).json({
+        messages: rows.map((r) => ({
+          message_id: r.message_id, room_id: r.room_id, sequence: Number(r.seq), sender: r.sender, text: r.text, flagged: r.flagged,
+        })),
+      });
+    } catch (e) { return next(e); }
+  });
+
   router.post('/api/v1/chat', async (req, res, next) => {
     try {
       const m = /^\s*bearer\s+(\S+)/i.exec(req.headers.authorization || '');

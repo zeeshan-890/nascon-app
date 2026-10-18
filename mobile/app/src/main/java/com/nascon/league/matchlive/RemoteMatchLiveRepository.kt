@@ -40,7 +40,7 @@ class RemoteMatchLiveRepository(
         }
 
     override suspend fun sendChat(roomId: String, text: String): NetworkResult<ChatMessage> {
-        val body = JsonObject(mapOf("room_id" to JsonPrimitive(roomId), "text" to JsonPrimitive(text)))
+        val body = JsonObject(mapOf("chat_room_id" to JsonPrimitive(roomId), "text" to JsonPrimitive(text)))
         return when (val r = safeCall { api().sendChat(body) }) {
             is NetworkResult.Failure -> r
             is NetworkResult.Success -> MatchJsonMapper.chatMessage(r.data)
