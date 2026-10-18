@@ -20,21 +20,21 @@ for source and to the repository root for tests.
 | **NFR-5** Security (OWASP API hardening: validation, rate limiting, body limits, injection safety) *(inferred)* | `middleware/{hardening,rateLimit,bodyParser,errorHandler}.js`, `domain/rbac/{bodyWalk,slidingWindow}.js`, `http/validators.js`, `httpServer.js` | `tests/unit/security/*`, `tests/unit/{errorHandler,validators}.test.js`, `tests/integration/{hardening,ratelimit,errors}.test.js` | Done. The Redis rate-limit script was verified against a live Redis; the in-memory fallback is covered by unit tests. |
 | **NFR-7** Reproducible deployment and real-time delivery *(inferred)* | `docker-compose.yml`, `backend/Dockerfile`, `db/migrate.js`, `server.js`, `worker.js`, `services/outboxRelayService.js`, `realtime/hub.js` | `tests/integration/{health,reset,realtime}.test.js` | Done for the API, worker, Postgres and Redis. MinIO is opt-in (`--profile storage`). |
 
-## Part II (requirement titles inferred from the interface docs; mapping marked where a guess was needed)
+## Part II (requirement numbering taken from the Part II specification)
 
 | Requirement | Implementing source | Tests | Status |
 |---|---|---|---|
-| **FR-3.1** Stream key lifecycle and media auth | `backend/day2/routes/streamKey.js`, `backend/day2/lib/media.js`, `backend/day2/lib/sign.js` | `tests/integration/day2.finisher2.test.js`, `tests/integration/day2.finisher3.test.js` | **Partial**: generate/rotate/revoke, override, auth hook and publisher kick against a fake control API are tested. A real ffmpeg cut-off within 2 s was NOT RUN. |
-| **FR-3.2** Co-stream orchestration and handoff | `backend/day2/routes/costream.js`, `backend/day2/realtime/*` | `tests/integration/day2.finisher2.test.js`, `tests/integration/day2.realtime.test.js` | **Partial**: HTTP contract, replay, replace, layouts and signatures done. Promotion on a real host disconnect is not implemented. |
-| **FR-3.3** QR codes, short links, exports | `backend/day2/routes/qr.js`, `backend/day2/reset/qr.js` | `tests/integration/day2.finisher.test.js` | **Implemented**: metadata, atomic scan count, 302, svg/png/pdf. The codes were not decoded back in a test (no decoder installed). |
-| **FR-4.1** Guest session and cart staging | `backend/day2/routes/guest.js` | `tests/integration/day2.finisher.test.js` | Implemented |
-| **FR-4.2** Cart merge | `backend/day2/routes/guest.js`, `backend/day2/reset/guest.js` | `tests/integration/day2.finisher.test.js` | Implemented (idempotent replay, 409 conflicts, concurrent identical requests) |
-| **FR-4.3** Guest write guard | `backend/day2/lib/guestGuard.js` | `tests/unit/day2/guardHardening.test.js`, `tests/integration/day2.finisher.test.js` | Implemented |
-| **FR-4.4** Chat moderation and DLQ | `backend/day2/lib/moderation.js`, `backend/day2/lib/dlq.js`, `backend/day2/routes/moderation.js` | `tests/integration/day2.finisher.test.js` | **Implemented as the probe route**; it is not wired into a real chat path (none exists). |
-| **FR-5.2** Web shell and deep links *(inferred)* | `backend/day2/routes/web.js` | `tests/unit/day2/web.test.js` | Implemented |
-| **FR-5.3** Reset, base seed and health *(inferred)* | `backend/day2/reset/*`, `backend/day2/health.js` | `tests/integration/day2.baseSeed.test.js`, `tests/integration/health.test.js` | Implemented |
-| **NFR-1** Realtime delivery under 500 ms | `backend/day2/realtime/*`, `backend/day2/routes/realtime.js` | `tests/integration/day2.realtime.test.js`, `tests/integration/day2.realtime.nfr1.test.js` | Implemented in-process; not measured against the compose stack |
-| **NFR-2** Load: 500 viewers + 50 chat posters *(inferred)* | `tests/k6_load.js` | k6 run | **Not met**: two runs crossed the thresholds (see docs/verification/finisher.md) |
-| **NFR-6** Observability metrics | `backend/day2/routes/metrics.js`, `backend/day2/lib/metrics.js` | `tests/integration/day2.finisher.test.js`, `tests/integration/day2.finisher3.test.js` | Implemented |
-| **NFR-8** Privacy erasure | `backend/day2/routes/privacy.js` | `tests/integration/day2.finisher2.test.js` | **Partial**: rows anonymised in one transaction, tokens revoked; an old JWT is not rejected afterwards. |
-| **NFR-9** Reproducible deployment *(inferred)* | `docker-compose.yml`, `.github/workflows/autograde.yml` | none run by this session | **Partial**: compose and workflow exist from another session; a full boot was NOT RUN here. |
+| **FR-3.1** Athlete identity and concurrency-safe follow graph | ,  | ,  | **Partial**: idempotent follow/unfollow with a row-derived count, tested under a toggle burst; VOD archive list. The aggregated athlete profile (career record, fixtures) is not built as one endpoint. |
+| **FR-3.2** Solo streaming, stream keys, overlays, recording | , ,  | , ,  | **Partial**: key lifecycle, signatures, auth hook, publisher kick (tested against a fake control API; a real 2 s ffmpeg cut-off was NOT RUN), VOD index hook. MinIO recording and overlay events are NOT implemented. |
+| **FR-3.3** Co-streaming, host handoff, host controls, unified chat | , , ,  | , , ,  | **Implemented (basic)**: session contract, handoff on host socket drop (35-52 ms), invite/mute/spotlight/kick, gapless chat sequence. Handoff on a media-publisher drop is not detected. |
+| **FR-4.1** Dynamic QR deep links, exports, telemetry | ,  |  | Implemented; the PNG decodes to the short URL (scratch check). |
+| **FR-4.2** Zero-account guest experience | ,  | ,  | **Partial**: guest tokens and the /web mount exist; the Guest Web Player pages are not on main. |
+| **FR-4.3** Server-enforced read-only boundary |  | ,  | Implemented |
+| **FR-4.4** Progressive registration and atomic cart merge |  |  | Implemented (the redirect to the playback timestamp is client side) |
+| **FR-5.2** Notification bus and DLQ | ,  | ,  | **Partial**: DLQ with 3 recorded attempts through the probe; order-status and invite notifications are not wired to it. |
+| **FR-5.3** Chat moderation engine | , ,  | ,  | Implemented, including masking, flood and the 3-in-2-second limit on the real chat route |
+| **NFR-1** Real-time score latency |  |  | Implemented; measured in-process only |
+| **NFR-2** 500 viewers + 50 posters |  | k6 run | **Not met in my environment** (see docs/verification/finisher.md) |
+| **NFR-6** Prometheus metrics | ,  | ,  | Implemented |
+| **NFR-8** Guest web accessibility | none | none | **Not implemented** (needs the Guest Web Player) |
+| **NFR-9** Privacy and data minimization | , ,  | ,  | Implemented: PII replaced in one transaction, old tokens rejected, scan buckets store no IP or User-Agent |
