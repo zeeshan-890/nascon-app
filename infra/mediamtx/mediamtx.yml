@@ -1,0 +1,39 @@
+# MediaMTX 1.9.3. Publish/read are authorised by the backend (external HTTP auth hook).
+logLevel: info
+
+# Control API: compose-network only (never published to the host). Used by the backend to kick publishers.
+api: yes
+apiAddress: :9997
+
+# Auth hook. MediaMTX POSTs {user,password,ip,action,path,protocol,id,query} and expects 2xx to allow.
+authMethod: http
+authHTTPAddress: http://api:8080/internal/media/auth
+# Internal callers (backend kick/healthcheck on the compose network) skip the hook.
+authHTTPExclude:
+  - action: api
+  - action: metrics
+  - action: pprof
+
+rtmp: yes
+rtmpAddress: :1935
+
+hls: yes
+hlsAddress: :8888
+hlsAlwaysRemux: no
+hlsVariant: mpegts
+hlsSegmentCount: 6
+hlsSegmentDuration: 1s
+hlsAllowOrigin: '*'
+
+webrtc: yes
+webrtcAddress: :8889
+webrtcAllowOrigin: '*'
+webrtcLocalUDPAddress: :8189
+webrtcLocalTCPAddress: :8189
+webrtcICEServers2: []
+
+rtsp: no
+srt: no
+
+paths:
+  all_others:
