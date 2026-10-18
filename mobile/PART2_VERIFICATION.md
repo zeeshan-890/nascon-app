@@ -206,3 +206,36 @@ Gate 8
 1. Python syntax check of the Appium file: see below.
 2. Tags present in the code: PASS (`match_live_root`, `match_score`, `match_status`, `chat_list`, `chat_input`, `chat_send`, `guest_cart_count`, `costream_root`, `costream_tile_0..3`, `costream_host_marker`, `costream_handoff_banner`, `progressive_sheet`, `not_found_root`).
 3. Tags verified in a UI dump on a device: **NOT RUN** (device locked).
+
+---
+
+## Phase 4/5/8 push
+
+- Merge commit `600b437` pushed at 13:31:45 PKT (target 13:40). Ancestor check: PASS.
+
+---
+
+## Phase 9: final verification
+
+- Final unit tests: **1023 total, 0 failures** (baseline 492). Debug and release builds succeed.
+- Lint: baseline 6 errors / 186 warnings; final **6 errors / 209 warnings**. No new errors; 23 new warnings, not triaged.
+- Secret scan across `mobile/` and `tests/appium/`: PASS (no salt, key or token shapes). Only the debug-only dev token constant and its unit test contain `guest_anon_tok_7721`.
+- Merged release manifest (aapt on `mobile/release/app-release.apk`): VIEW + BROWSABLE + `scheme="nascon"`, `launchMode=singleTask`, `exported`: PASS.
+- Deep link timings, **release build**, Note 20, cold, `nascon://entity/match-m1`: WaitTime 3015, 3023, 3034 ms. Plain launcher cold: 3024 ms.
+  **This misses the 2 s target.** The identical figure for a plain launch shows it is app cold-start, not link handling. Warm links: 22-25 ms (Phase 1, debug).
+  Not fixed in time. Likely cause: startup work in `AppContainer` / splash. Needs profiling.
+- What the screens look like on the device: **NOT RUN**. The phone stayed locked (`isKeyguardShowing=true`) and every screenshot was black.
+  The match, co-stream, sheet and cart screens have therefore never been seen running. Verified only by compilation and unit tests.
+- Lint/runtime/Appium: Appium was NOT RUN (not installed, device locked).
+
+### NOT RUN list
+Device walk-throughs (H02-H06, H12, H13), score-event latency, offline recovery on device, TalkBack and 200% font scale, Room 2->3 upgrade on a device,
+Appium run, browser-to-app chat latency, UI dump of test tags.
+
+### Not built
+H07 host console, H08 solo broadcast, H09 QR scanner, H10 QR display, H11 athlete profile and follow, H14 notifications (Phases 6-7, not started).
+`BaseUrlValidator` is not hooked into Settings. Playback second is not restored after sign-in.
+
+### Backend routes assumed that do not exist
+Guest session route; `/ws/matches/{id}`; `GET /api/v1/matches/{id}/stream`; chat `GET /api/v1/chat/{room}/messages` and `POST /api/v1/chat`;
+`GET /api/v1/costream/{id}`; `POST /audit/v1/guest/cart-merge`. `match-m1` and `cs-session-101` are not seeded.
