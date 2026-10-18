@@ -506,3 +506,13 @@ CREATE TABLE IF NOT EXISTS day2_follow (
   athlete_id text NOT NULL,
   PRIMARY KEY (follower_id, athlete_id)
 );
+CREATE TABLE IF NOT EXISTS day2_chat_message (
+  room_id text NOT NULL,
+  seq bigint NOT NULL,
+  message_id text NOT NULL,
+  sender text NOT NULL,
+  text text NOT NULL,
+  flagged boolean NOT NULL DEFAULT false,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (room_id, seq)
+);
