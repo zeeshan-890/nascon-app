@@ -516,3 +516,9 @@ CREATE TABLE IF NOT EXISTS day2_chat_message (
   created_at timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (room_id, seq)
 );
+CREATE TABLE IF NOT EXISTS day2_costream_ctrl (
+  session_id text NOT NULL,
+  kind text NOT NULL,
+  player_id text NOT NULL,
+  PRIMARY KEY (session_id, kind, player_id)
+);
