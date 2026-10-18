@@ -114,6 +114,84 @@ class AppContainer(context: Context) {
         com.nascon.league.data.cart.RoomGuestCart(database.guestCartDao()) { tokenStore.accessToken() }
     }
 
+    // ---- Part II: co-stream, progressive sign-in, cart merge ----
+    private val offlineCoStreamApi = object : com.nascon.league.costream.CoStreamApi {
+        override suspend fun session(id: String): kotlinx.serialization.json.JsonObject =
+            throw java.io.IOException("Co-stream is not available in demo mode")
+    }
+    val coStreamRepository: com.nascon.league.costream.CoStreamRepository by lazy {
+        com.nascon.league.costream.RemoteCoStreamRepository(
+            api = { service(com.nascon.league.costream.CoStreamApi::class.java) { offlineCoStreamApi } },
+        )
+    }
+
+    /** Where the user was when the sign-in sheet opened, so they return there after login. */
+    val signInOrigin = com.nascon.league.ui.guest.SignInOriginStore()
+    val signInSheetVisible = kotlinx.coroutines.flow.MutableStateFlow(false)
+
+    private val mergePrefs by lazy { appContext.getSharedPreferences("guest_merge", android.content.Context.MODE_PRIVATE) }
+
+    /** The guest token whose cart is waiting to be merged. It survives the login (which replaces the active token) and a process kill. */
+    var stagedGuestToken: String?
+        get() = mergePrefs.getString("token", null)
+        set(value) {
+            mergePrefs.edit().apply { if (value == null) remove("token") else putString("token", value) }.apply()
+        }
+
+    private val offlineCartMergeApi = object : com.nascon.league.cartmerge.CartMergeApi {
+        override suspend fun merge(body: kotlinx.serialization.json.JsonObject): kotlinx.serialization.json.JsonObject =
+            throw java.io.IOException("Cart merge is not available in demo mode")
+    }
+    val cartMergeRepository: com.nascon.league.cartmerge.CartMergeRepository by lazy {
+        com.nascon.league.cartmerge.RemoteCartMergeRepository(
+            api = { service(com.nascon.league.cartmerge.CartMergeApi::class.java) { offlineCartMergeApi } },
+        )
+    }
+
+    /** A merge machine over the STAGED guest cart (rows keyed by the guest token), not the active token. */
+    fun newCartMergeMachine(): com.nascon.league.cartmerge.CartMergeMachine {
+        val staged = com.nascon.league.data.cart.RoomGuestCart(database.guestCartDao()) { stagedGuestToken }
+        return com.nascon.league.cartmerge.CartMergeMachine(
+            repo = cartMergeRepository,
+            cart = staged,
+            guestTokenProvider = { stagedGuestToken },
+            snapshotLines = { staged.snapshot() },
+        )
+    }
+
+    /** Opens the progressive sign-in sheet and remembers the guest token and the screen to come back to. */
+    fun openSignInSheet(originRoute: String?) {
+        val token = tokenStore.accessToken()
+        if (com.nascon.league.data.repo.GuestSession.isGuestToken(token)) stagedGuestToken = token
+        signInOrigin.record(originRoute, null)
+        signInSheetVisible.value = true
+    }
+
+    private val offlineGuestCheckoutApi = object : com.nascon.league.cartmerge.GuestCheckoutApi {
+        override suspend fun checkout(body: kotlinx.serialization.json.JsonObject): kotlinx.serialization.json.JsonObject =
+            throw java.io.IOException("Checkout is not available in demo mode")
+    }
+
+    /** The protected write for a guest cart. Returns the failure so the caller can open the sheet on 403. */
+    suspend fun guestCheckoutAttempt(lines: List<com.nascon.league.matchlive.CartLine>): com.nascon.league.core.network.NetworkResult<kotlinx.serialization.json.JsonObject> {
+        val api = service(com.nascon.league.cartmerge.GuestCheckoutApi::class.java) { offlineGuestCheckoutApi }
+        val body = kotlinx.serialization.json.buildJsonObject {
+            put("order_id", kotlinx.serialization.json.JsonPrimitive("guest-" + java.util.UUID.randomUUID().toString().take(12)))
+            put("customer_id", kotlinx.serialization.json.JsonPrimitive("guest"))
+            put("items", kotlinx.serialization.json.buildJsonArray {
+                lines.forEach { l ->
+                    add(kotlinx.serialization.json.buildJsonObject {
+                        put("variant_id", kotlinx.serialization.json.JsonPrimitive(l.variantId))
+                        put("quantity", kotlinx.serialization.json.JsonPrimitive(l.quantity))
+                    })
+                }
+            })
+            put("discount_code", kotlinx.serialization.json.JsonNull)
+            put("payment", kotlinx.serialization.json.buildJsonObject { put("token", kotlinx.serialization.json.JsonPrimitive("tok_declined")) })
+        }
+        return com.nascon.league.core.network.safeCall { api.checkout(body) }
+    }
+
     private val realtimeHttp: okhttp3.OkHttpClient by lazy {
         okhttp3.OkHttpClient.Builder()
             .addInterceptor(com.nascon.league.core.network.CleartextGuardInterceptor())

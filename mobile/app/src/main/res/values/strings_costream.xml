@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="cs_live">LIVE</string>
+    <string name="cs_reconnecting">Reconnecting</string>
+    <string name="cs_ended">Session ended</string>
+    <string name="cs_ended_message">This co-stream has finished.</string>
+    <string name="cs_host">Host</string>
+    <string name="cs_muted">Muted</string>
+    <string name="cs_tile_desc">%1$s</string>
+    <string name="cs_tile_desc_host">, host</string>
+    <string name="cs_tile_desc_muted">, muted</string>
+    <string name="cs_participants_title">On stage</string>
+    <string name="cs_banner_desc">Notice: %1$s</string>
+    <string name="cs_watch_recording">Watch the recording</string>
+    <string name="cs_watch_recording_desc">Watch the recording of this session</string>
+    <string name="cs_go_home">Go Home</string>
+    <string name="cs_go_home_desc">Go back to the home screen</string>
+    <string name="cs_offline_strip">Offline - showing saved data</string>
+    <string name="cs_error_title">Could not load this session</string>
+    <string name="cs_error_message">Something went wrong. Check your connection and try again.</string>
+    <string name="cs_retry">Retry</string>
+    <string name="cs_retry_desc">Retry loading the session</string>
+    <string name="cs_loading_desc">Loading co-stream</string>
+</resources>

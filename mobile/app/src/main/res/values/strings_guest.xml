@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gs_sheet_title">Sign in to continue</string>
+    <string name="gs_sheet_body">Sign in to do this. Your cart is saved.</string>
+    <string name="gs_sheet_saved">Your cart is saved</string>
+    <string name="gs_login">Log in</string>
+    <string name="gs_register">Register</string>
+    <string name="gs_close">Close</string>
+    <string name="gs_close_cd">Close sign in</string>
+    <string name="gs_cart_empty_title">Your cart is empty</string>
+    <string name="gs_cart_empty_message">Add something from the store and it will show up here.</string>
+    <string name="gs_cart_browse">Browse the store</string>
+    <string name="gs_cart_inc">Increase quantity of %1$s</string>
+    <string name="gs_cart_dec">Decrease quantity of %1$s</string>
+    <string name="gs_cart_remove">Remove %1$s</string>
+    <string name="gs_cart_items">Items in cart</string>
+    <string name="gs_cart_subtotal">Subtotal</string>
+    <string name="gs_cart_checkout">Proceed to checkout</string>
+    <string name="gs_cart_each">%1$s each</string>
+</resources>
