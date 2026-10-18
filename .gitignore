@@ -3,6 +3,8 @@ mobile/app/build/
 mobile/.gradle/
 mobile/local.properties
 mobile/.idea/
+screens/
+newscreens/
 .gradle/
 local.properties
 .idea/
